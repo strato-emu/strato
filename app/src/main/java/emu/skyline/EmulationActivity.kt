@@ -42,7 +42,7 @@ import kotlin.math.abs
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener, DisplayManager.DisplayListener {
     companion object {
         private val Tag = EmulationActivity::class.java.simpleName
-        val ReturnToMainTag = "returnToMain"
+        const val ReturnToMainTag = "returnToMain"
 
         /**
          * The Kotlin thread on which emulation code executes
@@ -78,6 +78,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     @Inject
     lateinit var inputManager : InputManager
+
+    lateinit var inputHandler : InputHandler
 
     /**
      * This is the entry point into the emulation code for libskyline
@@ -122,71 +124,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private external fun updatePerformanceStatistics()
 
     /**
-     * This initializes a guest controller in libskyline
-     *
-     * @param index The arbitrary index of the controller, this is to handle matching with a partner Joy-Con
-     * @param type The type of the host controller
-     * @param partnerIndex The index of a partner Joy-Con if there is one
-     * @note This is blocking and will stall till input has been initialized on the guest
-     */
-    private external fun setController(index : Int, type : Int, partnerIndex : Int = -1)
-
-    /**
-     * This flushes the controller updates on the guest
-     *
-     * @note This is blocking and will stall till input has been initialized on the guest
-     */
-    private external fun updateControllers()
-
-    /**
-     * This sets the state of the buttons specified in the mask on a specific controller
-     *
-     * @param index The index of the controller this is directed to
-     * @param mask The mask of the button that are being set
-     * @param pressed If the buttons are being pressed or released
-     */
-    private external fun setButtonState(index : Int, mask : Long, pressed : Boolean)
-
-    /**
-     * This sets the value of a specific axis on a specific controller
-     *
-     * @param index The index of the controller this is directed to
-     * @param axis The ID of the axis that is being modified
-     * @param value The value to set the axis to
-     */
-    private external fun setAxisValue(index : Int, axis : Int, value : Int)
-
-    /**
-     * This sets the values of the points on the guest touch-screen
-     *
-     * @param points An array of skyline::input::TouchScreenPoint in C++ represented as integers
-     */
-    private external fun setTouchState(points : IntArray)
-
-    /**
-     * This initializes all of the controllers from [InputManager] on the guest
+     * @see [InputHandler.initializeControllers]
      */
     @Suppress("unused")
     private fun initializeControllers() {
-        for (controller in inputManager.controllers.values) {
-            if (controller.type != ControllerType.None) {
-                val type = when (controller.type) {
-                    ControllerType.None -> throw IllegalArgumentException()
-                    ControllerType.HandheldProController -> if (preferenceSettings.isDocked) ControllerType.ProController.id else ControllerType.HandheldProController.id
-                    ControllerType.ProController, ControllerType.JoyConLeft, ControllerType.JoyConRight -> controller.type.id
-                }
-
-                val partnerIndex = when (controller) {
-                    is JoyConLeftController -> controller.partnerId
-                    is JoyConRightController -> controller.partnerId
-                    else -> null
-                }
-
-                setController(controller.id, type, partnerIndex ?: -1)
-            }
-        }
-
-        updateControllers()
+        inputHandler.initializeControllers()
     }
 
     /**
@@ -246,6 +188,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         val rom = intent.data!!
         val romType = getRomFormat(rom, contentResolver).ordinal
+
+        @SuppressLint("Recycle")
         val romFd = contentResolver.openFileDescriptor(rom, "r")!!
 
         GpuDriverHelper.ensureFileRedirectDir(this)
@@ -266,6 +210,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         super.onCreate(savedInstanceState)
         requestedOrientation = preferenceSettings.orientation
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        inputHandler = InputHandler(inputManager, preferenceSettings)
         setContentView(binding.root)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -316,10 +261,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         // Hide on screen controls when first controller is not set
         binding.onScreenControllerView.apply {
-            inputManager.controllers[0]!!.type.let {
-                controllerType = it
-                isGone = it == ControllerType.None || !preferenceSettings.onScreenControl
-            }
+            controllerType = inputHandler.getFirstControllerType()
+            isGone = controllerType == ControllerType.None || !preferenceSettings.onScreenControl
             setOnButtonStateChangedListener(::onButtonStateChanged)
             setOnStickStateChangedListener(::onStickStateChanged)
             recenterSticks = preferenceSettings.onScreenControlRecenterSticks
@@ -383,7 +326,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         Log.d(Tag, "surfaceCreated Holder: $holder")
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            // Note: We need FRAME_RATE_COMPATIBILITY_FIXED_SOURCE as there will be a degradation of user experience with FRAME_RATE_COMPATIBILITY_DEFAULT due to game speed alterations when the frame rate doesn't match the display refresh rate
+        // Note: We need FRAME_RATE_COMPATIBILITY_FIXED_SOURCE as there will be a degradation of user experience with FRAME_RATE_COMPATIBILITY_DEFAULT due to game speed alterations when the frame rate doesn't match the display refresh rate
             holder.surface.setFrameRate(desiredRefreshRate, if (preferenceSettings.maxRefreshRate) Surface.FRAME_RATE_COMPATIBILITY_DEFAULT else Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
 
         while (emulationThread!!.isAlive)
@@ -408,134 +351,24 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 return
     }
 
-    /**
-     * This handles translating any [KeyHostEvent]s to a [GuestEvent] that is passed into libskyline
-     */
     override fun dispatchKeyEvent(event : KeyEvent) : Boolean {
-        if (event.repeatCount != 0)
-            return super.dispatchKeyEvent(event)
-
-        val action = when (event.action) {
-            KeyEvent.ACTION_DOWN -> ButtonState.Pressed
-            KeyEvent.ACTION_UP -> ButtonState.Released
-            else -> return super.dispatchKeyEvent(event)
-        }
-
-        return when (val guestEvent = inputManager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
-            is ButtonGuestEvent -> {
-                if (guestEvent.button != ButtonId.Menu)
-                    setButtonState(guestEvent.id, guestEvent.button.value(), action.state)
-                true
-            }
-
-            is AxisGuestEvent -> {
-                setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (if (action == ButtonState.Pressed) if (guestEvent.polarity) Short.MAX_VALUE else Short.MIN_VALUE else 0).toInt())
-                true
-            }
-
-            else -> super.dispatchKeyEvent(event)
-        }
+        return if (inputHandler.handleKeyEvent(event)) true else super.dispatchKeyEvent(event)
     }
 
-    /**
-     * The last value of the axes so the stagnant axes can be eliminated to not wastefully look them up
-     */
-    private val axesHistory = arrayOfNulls<Float>(MotionHostEvent.axes.size)
-
-    /**
-     * The last value of the HAT axes so it can be ignored in [onGenericMotionEvent] so they are handled by [dispatchKeyEvent] instead
-     */
-    private var oldHat = PointF()
-
-    /**
-     * This handles translating any [MotionHostEvent]s to a [GuestEvent] that is passed into libskyline
-     */
-    override fun onGenericMotionEvent(event : MotionEvent) : Boolean {
-        if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE) {
-            val hat = PointF(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
-
-            if (hat == oldHat) {
-                for (axisItem in MotionHostEvent.axes.withIndex()) {
-                    val axis = axisItem.value
-                    var value = event.getAxisValue(axis)
-
-                    if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
-                        var polarity = value >= 0
-
-                        val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
-                            inputManager.eventMap[hostEvent] ?: if (value == 0f) {
-                                polarity = false
-                                inputManager.eventMap[hostEvent.copy(polarity = false)]
-                            } else {
-                                null
-                            }
-                        }
-
-                        when (guestEvent) {
-                            is ButtonGuestEvent -> {
-                                if (guestEvent.button != ButtonId.Menu)
-                                    setButtonState(guestEvent.id, guestEvent.button.value(), if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.state else ButtonState.Released.state)
-                            }
-
-                            is AxisGuestEvent -> {
-                                value = guestEvent.value(value)
-                                value = if (polarity) abs(value) else -abs(value)
-                                value = if (guestEvent.axis == AxisId.LX || guestEvent.axis == AxisId.RX) value else -value
-
-                                setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (value * Short.MAX_VALUE).toInt())
-                            }
-                        }
-                    }
-
-                    axesHistory[axisItem.index] = value
-                }
-
-                return true
-            } else {
-                oldHat = hat
-            }
-        }
-
-        return super.onGenericMotionEvent(event)
+    override fun dispatchGenericMotionEvent(event : MotionEvent) : Boolean {
+        return if (inputHandler.handleMotionEvent(event)) true else super.dispatchGenericMotionEvent(event)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(view : View, event : MotionEvent) : Boolean {
-        val count = event.pointerCount
-        val points = IntArray(count * 7) // This is an array of skyline::input::TouchScreenPoint in C++ as that allows for efficient transfer of values to it
-        var offset = 0
-        for (index in 0 until count) {
-            val pointer = MotionEvent.PointerCoords()
-            event.getPointerCoords(index, pointer)
-
-            val x = 0f.coerceAtLeast(pointer.x * 1280 / view.width).toInt()
-            val y = 0f.coerceAtLeast(pointer.y * 720 / view.height).toInt()
-
-            val attribute = when (event.action) {
-                MotionEvent.ACTION_DOWN -> 1
-                MotionEvent.ACTION_UP -> 2
-                else -> 0
-            }
-
-            points[offset++] = attribute
-            points[offset++] = event.getPointerId(index)
-            points[offset++] = x
-            points[offset++] = y
-            points[offset++] = pointer.touchMinor.toInt()
-            points[offset++] = pointer.touchMajor.toInt()
-            points[offset++] = (pointer.orientation * 180 / Math.PI).toInt()
-        }
-
-        setTouchState(points)
-
-        return true
+        return inputHandler.handleTouchEvent(view, event)
     }
 
-    private fun onButtonStateChanged(buttonId : ButtonId, state : ButtonState) = setButtonState(0, buttonId.value(), state.state)
+    private fun onButtonStateChanged(buttonId : ButtonId, state : ButtonState) = InputHandler.setButtonState(0, buttonId.value(), state.state)
 
     private fun onStickStateChanged(stickId : StickId, position : PointF) {
-        setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
-        setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted, since drawing starts from top left
+        InputHandler.setAxisValue(0, stickId.xAxis.ordinal, (position.x * Short.MAX_VALUE).toInt())
+        InputHandler.setAxisValue(0, stickId.yAxis.ordinal, (-position.y * Short.MAX_VALUE).toInt()) // Y is inverted, since drawing starts from top left
     }
 
     @SuppressLint("WrongConstant")
@@ -653,6 +486,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     override fun onDisplayChanged(displayId : Int) {
+        @Suppress("DEPRECATION")
         val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
         if (display.displayId == displayId)
             force60HzRefreshRate(!preferenceSettings.maxRefreshRate)

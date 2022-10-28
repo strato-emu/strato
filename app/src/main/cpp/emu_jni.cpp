@@ -189,17 +189,17 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceSt
     env->SetFloatField(thiz, averageFrametimeDeviationField, AverageFrametimeDeviationMs);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
     auto input{InputWeak.lock()};
     std::lock_guard guard(input->npad.mutex);
     input->npad.controllers[static_cast<size_t>(index)] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_updateControllers(JNIEnv *, jobject) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_updateControllers(JNIEnv *, jobject) {
     InputWeak.lock()->npad.Update();
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jboolean pressed) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jboolean pressed) {
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss button updates while input hasn't been initialized
@@ -208,7 +208,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setButtonSt
         device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss axis updates while input hasn't been initialized
@@ -217,7 +217,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setAxisValu
         device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_EmulationActivity_setTouchState(JNIEnv *env, jobject, jintArray pointsJni) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setTouchState(JNIEnv *env, jobject, jintArray pointsJni) {
     using Point = skyline::input::TouchScreenPoint;
 
     auto input{InputWeak.lock()};
