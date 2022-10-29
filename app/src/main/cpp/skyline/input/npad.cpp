@@ -23,7 +23,7 @@ namespace skyline::input {
             controller.device = nullptr;
 
         for (auto &id : supportedIds) {
-            if (id == NpadId::Unknown)
+            if (id == NpadId::Unknown || !IsNpadIdValid(id))
                 continue;
 
             auto &device{at(id)};

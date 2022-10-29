@@ -81,6 +81,27 @@ namespace skyline::input {
          }
 
         /**
+         * @brief Checks if the NpadId is valid
+         */
+        bool IsNpadIdValid(NpadId id) {
+            switch (id) {
+                case NpadId::Player1:
+                case NpadId::Player2:
+                case NpadId::Player3:
+                case NpadId::Player4:
+                case NpadId::Player5:
+                case NpadId::Player6:
+                case NpadId::Player7:
+                case NpadId::Player8:
+                case NpadId::Unknown:
+                case NpadId::Handheld:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /**
          * @brief Deduces all the mappings from guest controllers -> players based on the configuration supplied by HID services and available controllers
          * @note If any class members were edited, the mutex shouldn't be released till this is called
          */
