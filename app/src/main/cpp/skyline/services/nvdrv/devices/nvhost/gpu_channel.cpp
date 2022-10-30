@@ -34,7 +34,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         mem[offset++] = (fence.id << 8) | 0x10;
     }
 
-    static constexpr size_t SyncpointIncrCmdMaxLen{8};
+    static constexpr size_t SyncpointIncrCmdLen{8};
     static void AddSyncpointIncrCmd(span<u32> mem, Fence fence, bool wfi) {
         size_t offset{};
 
@@ -63,6 +63,11 @@ namespace skyline::service::nvdrv::device::nvhost {
         // Repeat twice, likely due to HW bugs
         mem[offset++] = 0x2001001D;
         mem[offset++] = (fence.id << 8) | 0x1;
+
+        if (!wfi) {
+            mem[offset++] = 0;
+            mem[offset++] = 0;
+        }
     }
 
     PosixResult GpuChannel::SetNvmapFd(In<FileDescriptor> fd) {
@@ -117,14 +122,14 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         if (flags.fenceIncrement) {
             // Wraparound
-            if (pushBufferMemoryOffset + SyncpointIncrCmdMaxLen >= pushBufferMemory.size())
+            if (pushBufferMemoryOffset + SyncpointIncrCmdLen >= pushBufferMemory.size())
                 pushBufferMemoryOffset = 0;
 
-            AddSyncpointIncrCmd(span(pushBufferMemory).subspan(pushBufferMemoryOffset, SyncpointIncrCmdMaxLen), fence, !flags.suppressWfi);
-            channelCtx->gpfifo.Push(soc::gm20b::GpEntry(pushBufferAddr + pushBufferMemoryOffset * sizeof(u32), SyncpointIncrCmdMaxLen));
+            AddSyncpointIncrCmd(span(pushBufferMemory).subspan(pushBufferMemoryOffset, SyncpointIncrCmdLen), fence, !flags.suppressWfi);
+            channelCtx->gpfifo.Push(soc::gm20b::GpEntry(pushBufferAddr + pushBufferMemoryOffset * sizeof(u32), SyncpointIncrCmdLen));
 
             // Increment offset
-            pushBufferMemoryOffset += SyncpointIncrCmdMaxLen;
+            pushBufferMemoryOffset += SyncpointIncrCmdLen;
         }
 
         flags.raw = 0;
@@ -175,7 +180,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         fence = core.syncpointManager.GetSyncpointFence(channelSyncpoint);
 
         // Allocate space for one wait and incr for each entry, though we're not likely to hit this in practice
-        size_t pushBufferWords{numEntries * SyncpointIncrCmdMaxLen + numEntries * SyncpointWaitCmdLen};
+        size_t pushBufferWords{numEntries * SyncpointIncrCmdLen + numEntries * SyncpointWaitCmdLen};
         size_t pushBufferSize{pushBufferWords * sizeof(u32)};
 
         pushBufferMemory.resize(pushBufferWords);
