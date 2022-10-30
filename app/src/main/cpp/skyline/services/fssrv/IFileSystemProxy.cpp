@@ -61,6 +61,12 @@ namespace skyline::service::fssrv {
         return {};
     }
 
+    Result IFileSystemProxy::OpenReadOnlySaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        // Forward to OpenSaveDataFileSystem for now.
+        // TODO: This should wrap the underlying filesystem with nn::fs::ReadOnlyFileSystem.
+        return OpenSaveDataFileSystem(session, request, response);
+    }
+
     Result IFileSystemProxy::OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (!state.loader->romFs)
             return result::NoRomFsAvailable;

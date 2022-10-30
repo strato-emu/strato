@@ -81,6 +81,13 @@ namespace skyline::service::fssrv {
         Result OpenSaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns a handle to a read-only instance of #IFileSystem
+         * @url https://switchbrew.org/wiki/Filesystem_services#IFileSystem for the requested save data area
+         * @url https://switchbrew.org/wiki/Filesystem_services#OpenReadOnlySaveDataFileSystem
+         */
+        Result OpenReadOnlySaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns a handle to an instance of #IStorage
          * @url https://switchbrew.org/wiki/Filesystem_services#IStorage for the application's data storage
          */
@@ -102,6 +109,7 @@ namespace skyline::service::fssrv {
             SFUNC(0x1, IFileSystemProxy, SetCurrentProcess),
             SFUNC(0x12, IFileSystemProxy, OpenSdCardFileSystem),
             SFUNC(0x33, IFileSystemProxy, OpenSaveDataFileSystem),
+            SFUNC(0x35, IFileSystemProxy, OpenReadOnlySaveDataFileSystem),
             SFUNC(0xC8, IFileSystemProxy, OpenDataStorageByCurrentProcess),
             SFUNC(0xCA, IFileSystemProxy, OpenDataStorageByDataId),
             SFUNC(0x3ED, IFileSystemProxy, GetGlobalAccessLogMode)
