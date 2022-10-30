@@ -86,12 +86,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
             case engine::VertexAttribute::NumericalType::Unorm:
             case engine::VertexAttribute::NumericalType::Float:
                 return Shader::AttributeType::Float;
-            case engine::VertexAttribute::NumericalType::Sscaled:
             case engine::VertexAttribute::NumericalType::Sint:
                 return Shader::AttributeType::SignedInt;
-            case engine::VertexAttribute::NumericalType::Uscaled:
             case engine::VertexAttribute::NumericalType::Uint:
                 return Shader::AttributeType::UnsignedInt;
+            case engine::VertexAttribute::NumericalType::Sscaled:
+                return Shader::AttributeType::SignedScaled;
+            case engine::VertexAttribute::NumericalType::Uscaled:
+                return Shader::AttributeType::UnsignedScaled;
             default:
                 throw exception("Invalid numerical type: {}", static_cast<u8>(attribute.numericalType));
         }
@@ -331,6 +333,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             FORMAT_NORM_INT_SCALED_CASE(size, vkFormat); \
             FORMAT_CASE(size, Float, Sfloat, vkFormat)
 
+        // No mobile support scaled formats, so pass as int and the shader compiler will convert to float for us
         if (numericalType == engine::VertexAttribute::NumericalType::Sscaled)
             numericalType = engine::VertexAttribute::NumericalType::Sint;
         else if (numericalType == engine::VertexAttribute::NumericalType::Uscaled)
