@@ -243,6 +243,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (!vm.initialised)
             return PosixResult::InvalidArgument;
 
+        bufSize = 2 * sizeof(VaRegion);
         vaRegions = std::array<VaRegion, 2> {
             VaRegion{
                 .pageSize = VM::PageSize,
@@ -252,7 +253,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             VaRegion{
                 .pageSize = vm.bigPageSize,
                 .pages = vm.bigPageAllocator->vaLimit - vm.bigPageAllocator->vaStart,
-                .offset = vm.bigPageAllocator->vaStart << vm.bigPageSizeBits,
+                .offset = static_cast<u64>(vm.bigPageAllocator->vaStart) << vm.bigPageSizeBits,
             }
         };
 
