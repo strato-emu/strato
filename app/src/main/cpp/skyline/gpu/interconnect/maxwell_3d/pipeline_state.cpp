@@ -68,6 +68,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             FORMAT_CASE(A8BL8GL8RL8, R8G8B8A8Srgb);
             FORMAT_CASE(AN8BN8GN8RN8, R8G8B8A8Snorm);
             FORMAT_CASE(AS8BS8GS8RS8, R8G8B8A8Sint);
+            FORMAT_CASE(AU8BU8GU8RU8, R8G8B8A8Uint);
             FORMAT_CASE(R16_G16, R16G16Unorm);
             FORMAT_CASE(RN16_GN16, R16G16Snorm);
             FORMAT_CASE(RS16_GS16, R16G16Sint);

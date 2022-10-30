@@ -97,6 +97,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             TIC_FORMAT_CASE(R8G24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
             TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Uint, Uint);
             TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
+            TIC_FORMAT_CASE(D24S8, S8UintD24Unorm, Unorm, Uint, Uint, Uint);
+
             TIC_FORMAT_CASE_ST(B10G11R11, B10G11R11, Float);
             TIC_FORMAT_CASE_NORM_INT(A8B8G8R8, R8G8B8A8);
             TIC_FORMAT_CASE_ST_SRGB(A8B8G8R8, R8G8B8A8, Unorm);
