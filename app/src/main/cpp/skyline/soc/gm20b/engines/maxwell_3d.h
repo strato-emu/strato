@@ -70,7 +70,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             }
         } deferredDraw{};
 
-        type::DrawTopology GetCurrentTopology();
+        type::DrawTopology ApplyTopologyOverride(type::DrawTopology beginMethodTopology);
 
         void FlushDeferredDraw();
 
@@ -113,6 +113,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x84, u32> apiMandatedEarlyZEnable;
 
             Register<0xB2, type::SyncpointAction> syncpointAction;
+
+            struct DrawZeroIndex {
+                u32 count;
+            };
+            Register<0xC1, DrawZeroIndex> drawZeroIndex;
 
             Register<0xC8, type::TessellationParameters> tessellationParameters;
 
@@ -184,6 +189,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributes;
 
+            Register<0x484, u32> invalidateSamplerCacheAll;
+            Register<0x485, u32> invalidateTextureHeaderCacheAll;
+
+            struct DrawVertexArrayBeginEndInstance {
+                u16 startIndex;
+                u16 count : 12;
+                type::DrawTopology topology : 4;
+            };
+
+            Register<0x485, DrawVertexArrayBeginEndInstance> drawVertexArrayBeginEndInstanceFirst;
+            Register<0x486, DrawVertexArrayBeginEndInstance> drawVertexArrayBeginEndInstanceSubsequent;
+
             Register<0x487, type::CtSelect> ctSelect;
 
             Register<0x48A, type::ZtSize> ztSize;
@@ -196,9 +213,25 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x4B9, u32> blendStatePerTargetEnable;
             Register<0x4BA, u32> depthWriteEnable;
             Register<0x4BB, u32> alphaTestEnable;
+
+            struct InlineIndexAlign {
+                u32 count : 30;
+                u8 start : 2;
+            };
+
+            struct DrawInlineIndex {
+                u8 index0;
+                u8 index1;
+                u8 index2;
+                u8 index3;
+            };
+
+            Register<0x4C1, DrawInlineIndex> drawInlineIndex4X8;
+
             Register<0x4C3, type::CompareFunc> depthFunc;
             Register<0x4C4, float> alphaRef;
             Register<0x4C5, type::CompareFunc> alphaFunc;
+
             Register<0x4C6, u32> drawAutoStride;
 
             struct BlendConstant {
@@ -247,7 +280,24 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x56F, float> depthBias;
 
+            Register<0x57A, u32> drawInlineIndex;
+
+            struct InlineIndex2X16Align {
+                u32 count : 31;
+                bool startOdd : 1;
+            };
+
+            Register<0x57B, InlineIndex2X16Align> inlineIndex2X16Align;
+
+            struct DrawInlineIndex2X16 {
+                u16 even;
+                u16 odd;
+            };
+
+            Register<0x57C, DrawInlineIndex2X16> drawInlineIndex2X16;
+
             Register<0x581, type::PointCoordReplace> pointCoordReplace;
+
             Register<0x582, Address> programRegion;
 
             Register<0x585, u32> end; //!< Method-only register with no real value, used after calling vertexBeginGl to invoke the draw
@@ -298,6 +348,19 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u32 count;
             };
             Register<0x5F8, DrawIndexBuffer> drawIndexBuffer;
+
+            struct DrawIndexBufferBeginEndInstance {
+                u16 first;
+                u16 count : 12;
+                type::DrawTopology topology : 4;
+            };
+
+            Register<0x5F9, DrawIndexBufferBeginEndInstance> drawIndexBuffer32BeginEndInstanceFirst;
+            Register<0x5FA, DrawIndexBufferBeginEndInstance> drawIndexBuffer16BeginEndInstanceFirst;
+            Register<0x5FB, DrawIndexBufferBeginEndInstance> drawIndexBuffer8BeginEndInstanceFirst;
+            Register<0x5FC, DrawIndexBufferBeginEndInstance> drawIndexBuffer32BeginEndInstanceSubsequent;
+            Register<0x5FD, DrawIndexBufferBeginEndInstance> drawIndexBuffer16BeginEndInstanceSubsequent;
+            Register<0x5FE, DrawIndexBufferBeginEndInstance> drawIndexBuffer8BeginEndInstanceSubsequent;
 
             Register<0x61F, float> depthBiasClamp;
 

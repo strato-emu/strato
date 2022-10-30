@@ -56,9 +56,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
     #undef REGTYPE
 
-    type::DrawTopology Maxwell3D::GetCurrentTopology() {
+    type::DrawTopology Maxwell3D::ApplyTopologyOverride(type::DrawTopology beginMethodTopology) {
         return registers.primitiveTopologyControl->override == type::PrimitiveTopologyControl::Override::UseTopologyInBeginMethods ?
-                registers.begin->op : type::ConvertPrimitiveTopologyToDrawTopology(*registers.primitiveTopology);
+               beginMethodTopology : type::ConvertPrimitiveTopologyToDrawTopology(*registers.primitiveTopology);
     }
 
     Maxwell3D::Maxwell3D(const DeviceState &state, ChannelContext &channelCtx, MacroState &macroState)
@@ -149,6 +149,26 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                         return;
                     })
 
+                    ENGINE_CASE(drawVertexArrayBeginEndInstanceSubsequent, {
+                        deferredDraw.instanceCount++;
+                        return;
+                    })
+
+                    ENGINE_CASE(drawIndexBuffer32BeginEndInstanceSubsequent, {
+                        deferredDraw.instanceCount++;
+                        return;
+                    })
+
+                    ENGINE_CASE(drawIndexBuffer16BeginEndInstanceSubsequent, {
+                        deferredDraw.instanceCount++;
+                        return;
+                    })
+
+                    ENGINE_CASE(drawIndexBuffer8BeginEndInstanceSubsequent, {
+                        deferredDraw.instanceCount++;
+                        return;
+                    })
+
                     // Once we stop calling draw methods flush the current draw since drawing is dependent on the register state not changing
                     default:
                         FlushDeferredDraw();
@@ -210,13 +230,99 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             ENGINE_STRUCT_CASE(drawVertexArray, count, {
                 // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
-                deferredDraw.Set(count, *registers.vertexArrayStart, 0, *registers.globalBaseInstanceIndex, GetCurrentTopology(), false);
+                deferredDraw.Set(count, *registers.vertexArrayStart, 0,
+                                 *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(registers.begin->op),
+                                 false);
                 batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawVertexArrayBeginEndInstanceFirst, {
+                deferredDraw.Set(drawVertexArrayBeginEndInstanceFirst.count, drawVertexArrayBeginEndInstanceFirst.startIndex, 0,
+                                 *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawVertexArrayBeginEndInstanceFirst.topology),
+                                 false);
+                deferredDraw.instanceCount = 1;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawVertexArrayBeginEndInstanceSubsequent, {
+                deferredDraw.Set(drawVertexArrayBeginEndInstanceSubsequent.count, drawVertexArrayBeginEndInstanceSubsequent.startIndex, 0,
+                                 *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawVertexArrayBeginEndInstanceSubsequent.topology),
+                                 false);
+                deferredDraw.instanceCount++;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_STRUCT_CASE(drawInlineIndex4X8, index0, {
+                throw exception("drawInlineIndex4X8 not implemented!");
+            })
+
+            ENGINE_STRUCT_CASE(drawInlineIndex2X16, even, {
+                throw exception("drawInlineIndex2X16 not implemented!");
             })
 
             ENGINE_STRUCT_CASE(drawIndexBuffer, count, {
                 // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
-                deferredDraw.Set(count, registers.indexBuffer->first, *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex, GetCurrentTopology(), true);
+                deferredDraw.Set(count, registers.indexBuffer->first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(registers.begin->op),
+                                 true);
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawIndexBuffer32BeginEndInstanceFirst, {
+                deferredDraw.Set(drawIndexBuffer32BeginEndInstanceFirst.count, drawIndexBuffer32BeginEndInstanceFirst.first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawIndexBuffer32BeginEndInstanceFirst.topology),
+                                 true);
+                deferredDraw.instanceCount = 1;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawIndexBuffer16BeginEndInstanceFirst, {
+                deferredDraw.Set(drawIndexBuffer16BeginEndInstanceFirst.count, drawIndexBuffer16BeginEndInstanceFirst.first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawIndexBuffer16BeginEndInstanceFirst.topology),
+                                 true);
+                deferredDraw.instanceCount = 1;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawIndexBuffer8BeginEndInstanceFirst, {
+                deferredDraw.Set(drawIndexBuffer8BeginEndInstanceFirst.count, drawIndexBuffer8BeginEndInstanceFirst.first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawIndexBuffer8BeginEndInstanceFirst.topology),
+                                 true);
+                deferredDraw.instanceCount = 1;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawIndexBuffer32BeginEndInstanceSubsequent, {
+                deferredDraw.Set(drawIndexBuffer32BeginEndInstanceSubsequent.count, drawIndexBuffer32BeginEndInstanceSubsequent.first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawIndexBuffer32BeginEndInstanceSubsequent.topology),
+                                 true);
+                deferredDraw.instanceCount++;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawIndexBuffer16BeginEndInstanceSubsequent, {
+                deferredDraw.Set(drawIndexBuffer16BeginEndInstanceSubsequent.count, drawIndexBuffer16BeginEndInstanceSubsequent.first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawIndexBuffer16BeginEndInstanceSubsequent.topology),
+                                 true);
+                deferredDraw.instanceCount++;
+                batchEnableState.drawActive = true;
+            })
+
+            ENGINE_CASE(drawIndexBuffer8BeginEndInstanceSubsequent, {
+                deferredDraw.Set(drawIndexBuffer8BeginEndInstanceSubsequent.count, drawIndexBuffer8BeginEndInstanceSubsequent.first,
+                                 *registers.globalBaseVertexIndex, *registers.globalBaseInstanceIndex,
+                                 ApplyTopologyOverride(drawIndexBuffer8BeginEndInstanceSubsequent.topology),
+                                 true);
+                deferredDraw.instanceCount++;
                 batchEnableState.drawActive = true;
             })
 
