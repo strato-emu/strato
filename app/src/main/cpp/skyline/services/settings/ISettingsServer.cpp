@@ -19,8 +19,18 @@ namespace skyline::service::settings {
         return {};
     }
 
+    Result ISettingsServer::GetAvailableLanguageCodeCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<i32>(constant::OldLanguageCodeListSize);
+        return {};
+    }
+
     Result ISettingsServer::GetAvailableLanguageCodes2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.outputBuf.at(0).copy_from(language::LanguageCodeList);
+        response.Push<i32>(constant::NewLanguageCodeListSize);
+        return {};
+    }
+
+    Result ISettingsServer::GetAvailableLanguageCodeCount2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<i32>(constant::NewLanguageCodeListSize);
         return {};
     }
