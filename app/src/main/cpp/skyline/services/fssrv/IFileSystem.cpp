@@ -61,6 +61,8 @@ namespace skyline::service::fssrv {
 
         auto listMode{request.Pop<vfs::Directory::ListMode>()};
         auto directory{backing->OpenDirectory(path, listMode)};
+        if (!directory)
+            return result::PathDoesNotExist;
 
         manager.RegisterService(std::make_shared<IDirectory>(std::move(directory), backing, state, manager), session, response);
         return {};

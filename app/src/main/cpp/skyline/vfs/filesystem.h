@@ -134,11 +134,7 @@ namespace skyline::vfs {
          * @return A shared pointer to a Directory object of the directory
          */
         std::shared_ptr<Directory> OpenDirectory(const std::string &path, Directory::ListMode listMode = {true, true}) {
-            auto dir{OpenDirectoryUnchecked(path, listMode)};
-            if (dir == nullptr)
-                throw exception("Failed to open directory: {}", path);
-
-            return dir;
+            return OpenDirectoryUnchecked(path, listMode);
         };
     };
 }
