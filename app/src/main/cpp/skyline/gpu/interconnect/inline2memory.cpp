@@ -15,24 +15,19 @@ namespace skyline::gpu::interconnect {
           channelCtx{channelCtx},
           executor{channelCtx.executor} {}
 
-    void Inline2Memory::Upload(IOVA dst, span<u32> src) {
-        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(dst, src.size_bytes())};
-
-        if (dstMappings.size() > 1)
-            Logger::Warn("Split mapping are unsupported for DMA copies");
-
-        auto dstBuf{gpu.buffer.FindOrCreate(dstMappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+    void Inline2Memory::UploadSingleMapping(span<u8> dst, span<u8> src) {
+        auto dstBuf{gpu.buffer.FindOrCreate(dst, executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
             executor.AttachLockedBuffer(buffer, std::move(lock));
         })};
         ContextLock dstBufLock{executor.tag, dstBuf};
 
 
-        dstBuf.Write(src.cast<u8>(), 0, [&]() {
+        dstBuf.Write(src, 0, [&]() {
             executor.AttachLockedBufferView(dstBuf, std::move(dstBufLock));
             // This will prevent any CPU accesses to backing for the duration of the usage
             dstBuf.GetBuffer()->BlockAllCpuBackingWrites();
 
-            auto srcGpuAllocation{gpu.megaBufferAllocator.Push(executor.cycle, src.cast<u8>())};
+            auto srcGpuAllocation{gpu.megaBufferAllocator.Push(executor.cycle, src)};
             executor.AddOutsideRpCommand([srcGpuAllocation, dstBuf, src](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
                 vk::BufferCopy copyRegion{
                     .size = src.size_bytes(),
@@ -46,5 +41,15 @@ namespace skyline::gpu::interconnect {
                 }, {}, {});
             });
         });
+    }
+
+    void Inline2Memory::Upload(IOVA dst, span<u32> src) {
+        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(dst, src.size_bytes())};
+
+        size_t offset{};
+        for (auto mapping : dstMappings) {
+            UploadSingleMapping(mapping, src.cast<u8>().subspan(offset, mapping.size()));
+            offset += mapping.size();
+        }
     }
 }

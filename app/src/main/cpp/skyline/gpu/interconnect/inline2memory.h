@@ -28,6 +28,8 @@ namespace skyline::gpu::interconnect {
         soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
 
+        void UploadSingleMapping(span<u8> dst, span<u8> src);
+
       public:
         Inline2Memory(GPU &gpu, soc::gm20b::ChannelContext &channelCtx);
 
