@@ -8,14 +8,15 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KPrivateMemory::KPrivateMemory(const DeviceState &state, span<u8> guest, memory::Permission permission, memory::MemoryState memState)
+    KPrivateMemory::KPrivateMemory(const DeviceState &state, KHandle handle, span<u8> guest, memory::Permission permission, memory::MemoryState memState)
         : permission(permission),
           memoryState(memState),
+          handle(handle),
           KMemory(state, KType::KPrivateMemory, guest) {
         if (!state.process->memory.base.contains(guest))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", guest.data(), guest.data() + guest.size());
         if (!util::IsPageAligned(guest.data()) || !util::IsPageAligned(guest.size()))
-            throw exception("KPrivateMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", guest.data(), guest.data() + guest.size());
+            throw exception("KPrivateMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", guest.data(), guest.data() + guest.size(), guest.size());
 
         if (mprotect(guest.data(), guest.size(), PROT_READ | PROT_WRITE | PROT_EXEC) < 0) // We only need to reprotect as the allocation has already been reserved by the MemoryManager
             throw exception("An occurred while mapping private memory: {} with 0x{:X} @ 0x{:X}", strerror(errno), guest.data(), guest.size());
@@ -25,6 +26,7 @@ namespace skyline::kernel::type {
             .size = guest.size(),
             .permission = permission,
             .state = memState,
+            .memory = this,
         });
     }
 
@@ -44,6 +46,7 @@ namespace skyline::kernel::type {
                 .size = nSize - guest.size(),
                 .permission = permission,
                 .state = memoryState,
+                .memory = this,
             });
         }
         guest = span<u8>{guest.data(), nSize};
@@ -78,6 +81,7 @@ namespace skyline::kernel::type {
             .size = size,
             .permission = pPermission,
             .state = memoryState,
+            .memory = this,
         });
     }
 

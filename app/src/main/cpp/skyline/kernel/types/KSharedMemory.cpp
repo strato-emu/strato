@@ -43,6 +43,7 @@ namespace skyline::kernel::type {
             .attributes = memory::MemoryAttribute{
                 .isBorrowed = objectType == KType::KTransferMemory,
             },
+            .memory = this
         });
 
         return guest.data();
@@ -85,6 +86,7 @@ namespace skyline::kernel::type {
                 .attributes = memory::MemoryAttribute{
                     .isBorrowed = objectType == KType::KTransferMemory,
                 },
+                .memory = this
             });
         }
     }
@@ -118,7 +120,8 @@ namespace skyline::kernel::type {
                     .state = memoryState,
                     .attributes = memory::MemoryAttribute{
                         .isBorrowed = false,
-                    }
+                    },
+                    .memory = this
                 });
             }
         }

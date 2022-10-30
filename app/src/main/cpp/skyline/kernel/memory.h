@@ -8,6 +8,10 @@
 #include <common/file_descriptor.h>
 
 namespace skyline {
+    namespace kernel::type {
+        class KMemory;
+    }
+
     namespace memory {
         union Permission {
             /**
@@ -195,9 +199,10 @@ namespace skyline {
             memory::Permission permission;
             memory::MemoryState state;
             memory::MemoryAttribute attributes;
+            kernel::type::KMemory *memory{};
 
             constexpr bool IsCompatible(const ChunkDescriptor &chunk) const {
-                return chunk.permission == permission && chunk.state.value == state.value && chunk.attributes.value == attributes.value;
+                return chunk.permission == permission && chunk.state.value == state.value && chunk.attributes.value == attributes.value && chunk.memory == memory;
             }
         };
 

@@ -14,12 +14,13 @@ namespace skyline::kernel::type {
       public:
         memory::Permission permission;
         memory::MemoryState memoryState;
+        KHandle handle;
 
         /**
          * @param permission The permissions for the allocated memory (As reported to the application, host memory permissions aren't reflected by this)
          * @note 'ptr' needs to be in guest-reserved address space
          */
-        KPrivateMemory(const DeviceState &state, span<u8> guest, memory::Permission permission, memory::MemoryState memState);
+        KPrivateMemory(const DeviceState &state, KHandle handle, span<u8> guest, memory::Permission permission, memory::MemoryState memState);
 
         /**
          * @note There is no check regarding if any expansions will cause the memory mapping to leak into other mappings

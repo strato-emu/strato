@@ -1067,20 +1067,23 @@ namespace skyline::kernel::svc {
 
         auto end{pointer + size};
         while (pointer < end) {
-            auto memory{state.process->GetMemoryObject(pointer)};
-            if (memory) {
-                auto item{static_pointer_cast<type::KPrivateMemory>(memory->item)};
-                auto initialSize{item->guest.size()};
-                if (item->memoryState == memory::states::Heap) {
-                    if (item->guest.data() >= pointer) {
-                        if (item->guest.size() <= size) {
-                            item->Resize(0);
+            auto chunk{state.process->memory.Get(pointer)};
+            if (chunk && chunk->memory) {
+                if (chunk->memory->objectType != type::KType::KPrivateMemory)
+                    throw exception("Trying to unmap non-private memory");
+
+                auto memory{static_cast<type::KPrivateMemory *>(chunk->memory)};
+                auto initialSize{memory->guest.size()};
+                if (memory->memoryState == memory::states::Heap) {
+                    if (memory->guest.data() >= pointer) {
+                        if (memory->guest.size() <= size) {
+                            memory->Resize(0);
                             state.process->CloseHandle(memory->handle);
                         } else {
-                            item->Remap(span<u8>{pointer + size, static_cast<size_t>((pointer + item->guest.size() - item->guest.data())) - size});
+                            memory->Remap(span<u8>{pointer + size, static_cast<size_t>((pointer + memory->guest.size() - memory->guest.data())) - size});
                         }
-                    } else if (item->guest.data() < pointer) {
-                        item->Resize(static_cast<size_t>(pointer - item->guest.data()));
+                    } else if (memory->guest.data() < pointer) {
+                        memory->Resize(static_cast<size_t>(pointer - memory->guest.data()));
                     }
                 }
                 pointer += initialSize;

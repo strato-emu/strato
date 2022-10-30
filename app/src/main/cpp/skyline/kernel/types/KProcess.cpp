@@ -49,7 +49,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
-        heap = std::make_shared<KPrivateMemory>(state, span<u8>{state.process->memory.heap.data(), DefaultHeapSize}, memory::Permission{true, true, false}, memory::states::Heap);
+        heap = std::make_shared<KPrivateMemory>(state, 0, span<u8>{state.process->memory.heap.data(), DefaultHeapSize}, memory::Permission{true, true, false}, memory::states::Heap);
         InsertItem(heap); // Insert it into the handle table so GetMemoryObject will contain it
         tlsExceptionContext = AllocateTlsSlot();
     }
@@ -61,8 +61,8 @@ namespace skyline::kernel::type {
             if ((slot = tlsPage->ReserveSlot()))
                 return slot;
 
-        slot = tlsPages.empty() ? reinterpret_cast<u8 *>(memory.tlsIo.data()) : ((*(tlsPages.end() - 1))->memory->guest.data() + PAGE_SIZE);
-        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, span<u8>{slot, PAGE_SIZE}, memory::Permission(true, true, false), memory::states::ThreadLocal))};
+        slot = tlsPages.empty() ? reinterpret_cast<u8 *>(memory.tlsIo.data()) : ((*(tlsPages.end() - 1))->memory->guest.data() + constant::PageSize);
+        auto tlsPage{std::make_shared<TlsPage>(std::make_shared<KPrivateMemory>(state, 0, span<u8>{slot, constant::PageSize}, memory::Permission(true, true, false), memory::states::ThreadLocal))};
         tlsPages.push_back(tlsPage);
         return tlsPage->ReserveSlot();
     }
@@ -72,7 +72,7 @@ namespace skyline::kernel::type {
         if (disableThreadCreation)
             return nullptr;
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
-            mainThreadStack = std::make_shared<KPrivateMemory>(state, span<u8>{state.process->memory.stack.data(), state.process->npdm.meta.mainThreadStackSize}, memory::Permission{true, true, false}, memory::states::Stack);
+            mainThreadStack = std::make_shared<KPrivateMemory>(state, 0, span<u8>{state.process->memory.stack.data(), state.process->npdm.meta.mainThreadStackSize}, memory::Permission{true, true, false}, memory::states::Stack);
             stackTop = mainThreadStack->guest.end().base();
         }
         auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};

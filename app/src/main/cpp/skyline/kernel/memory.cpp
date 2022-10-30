@@ -210,6 +210,7 @@ namespace skyline::kernel {
             lower->state = chunk.state;
             lower->permission = chunk.permission;
             lower->attributes = chunk.attributes;
+            lower->memory = chunk.memory;
         } else if (lower->ptr + lower->size > chunk.ptr + chunk.size) {
             auto lowerExtension{*lower};
             lowerExtension.ptr = chunk.ptr + chunk.size;
