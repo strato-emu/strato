@@ -71,8 +71,9 @@ namespace skyline {
             */
             Result InitializeApplicationInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
-            Result IsUserAccountSwitchLocked(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+            Result ListOpenContextStoredUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+            Result IsUserAccountSwitchLocked(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
           SERVICE_DECL(
               SFUNC(0x0, IAccountServiceForApplication, GetUserCount),
@@ -85,6 +86,7 @@ namespace skyline {
               SFUNC(0x64, IAccountServiceForApplication, InitializeApplicationInfoV0),
               SFUNC(0x65, IAccountServiceForApplication, GetBaasAccountManagerForApplication),
               SFUNC(0x6E, IAccountServiceForApplication, StoreSaveDataThumbnail),
+              SFUNC(0x83, IAccountServiceForApplication, ListOpenContextStoredUsers),
               SFUNC(0x8C, IAccountServiceForApplication, InitializeApplicationInfo),
               SFUNC(0x96, IAccountServiceForApplication, IsUserAccountSwitchLocked)
           )
