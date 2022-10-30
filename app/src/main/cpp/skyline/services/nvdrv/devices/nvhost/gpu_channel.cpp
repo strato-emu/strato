@@ -186,7 +186,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         pushBufferMemory.resize(pushBufferWords);
 
         // Allocate pages in the GPU AS
-        pushBufferAddr = static_cast<u64>(asAllocator->Allocate((static_cast<u32>(pushBufferWords) >> AsGpu::VM::PageSizeBits) + 1)) << AsGpu::VM::PageSizeBits;
+        pushBufferAddr = static_cast<u64>(asAllocator->Allocate((static_cast<u32>(pushBufferSize) >> AsGpu::VM::PageSizeBits) + 1)) << AsGpu::VM::PageSizeBits;
         if (!pushBufferAddr)
             throw exception("Failed to allocate channel pushbuffer!");
 
