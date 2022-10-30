@@ -264,6 +264,12 @@ namespace skyline::util {
         FillRandomBytes(std::span(reinterpret_cast<typename IntegerFor<T>::Type *>(&object), IntegerFor<T>::Count));
     }
 
+    template<IsPointerOrUnsignedIntegral T>
+    T RandomNumber(T min, T max) {
+        std::uniform_int_distribution dist(PointerValue(min), PointerValue(max));
+        return ValuePointer<T>(dist(detail::generator));
+    }
+
     /**
      * @brief A temporary shim for C++ 20's bit_cast to make transitioning to it easier
      */
@@ -352,5 +358,9 @@ namespace skyline::util {
     template<typename T, size_t Size, typename... TSrcs>
     std::array<T, Size> MergeInto(TSrcs &&... srcs) {
         return MergeInto<T>(std::make_index_sequence<Size>(), std::forward<TSrcs>(srcs)...);
+    }
+
+    inline std::string HexDump(std::span<u8> data) {
+        return std::accumulate(data.begin(), data.end(), std::string{}, [](std::string str, u8 el) { return std::move(str) + fmt::format("{:02X}", el); });
     }
 }
