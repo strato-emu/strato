@@ -50,19 +50,26 @@ namespace skyline::service::hosbinder {
         }
 
         /**
+         * @return A reference to an item from the top of data
+         */
+        template<typename ValueType>
+        ValueType &PopFlattenable() {
+            auto size{Pop<u64>()};
+            if (size != sizeof(ValueType))
+                throw exception("Popping flattenable of size 0x{:X} with type size 0x{:X}", size, sizeof(ValueType));
+            return Pop<ValueType>();
+        }
+
+        /**
          * @return A pointer to an optional flattenable from the top of data, nullptr will be returned if the object doesn't exist
          */
         template<typename ValueType>
         ValueType *PopOptionalFlattenable() {
             bool hasObject{Pop<u32>() != 0};
-            if (hasObject) {
-                auto size{Pop<u64>()};
-                if (size != sizeof(ValueType))
-                    throw exception("Popping flattenable of size 0x{:X} with type size 0x{:X}", size, sizeof(ValueType));
-                return &Pop<ValueType>();
-            } else {
+            if (hasObject)
+                return &PopFlattenable<ValueType>();
+            else
                 return nullptr;
-            }
         }
 
         template<typename ValueType>

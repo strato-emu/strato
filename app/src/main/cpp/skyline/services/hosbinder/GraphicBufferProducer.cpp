@@ -660,7 +660,7 @@ namespace skyline::service::hosbinder {
             }
 
             case TransactionCode::CancelBuffer: {
-                CancelBuffer(in.Pop<i32>(), in.Pop<AndroidFence>());
+                CancelBuffer(in.Pop<i32>(), in.PopFlattenable<AndroidFence>());
                 break;
             }
 
