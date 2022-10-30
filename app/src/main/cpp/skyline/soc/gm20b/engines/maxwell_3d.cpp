@@ -93,6 +93,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
 
         bool redundant{registers.raw[method] == argument};
+        u32 origRegisterValue{registers.raw[method]};
         registers.raw[method] = argument;
 
         if (batchEnableState.raw) {
@@ -111,10 +112,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     #undef LOAD_CONSTANT_BUFFER_CALLBACKS
                     default:
                         // When a method other than constant buffer update is called submit our submit the previously built-up update as a batch
+                        registers.raw[method] = origRegisterValue;
                         interconnect.DisableQuickConstantBufferBind();
                         interconnect.LoadConstantBuffer(batchLoadConstantBuffer.buffer, batchLoadConstantBuffer.startOffset);
                         batchEnableState.constantBufferActive = false;
                         batchLoadConstantBuffer.Reset();
+                        registers.raw[method] = argument;
                         break; // Continue on here to handle the actual method
                 }
             } else if (batchEnableState.drawActive) { // See DeferredDrawState comment for full details
@@ -171,7 +174,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                     // Once we stop calling draw methods flush the current draw since drawing is dependent on the register state not changing
                     default:
+                        registers.raw[method] = origRegisterValue;
                         FlushDeferredDraw();
+                        registers.raw[method] = argument;
                         break;
                 }
             }
