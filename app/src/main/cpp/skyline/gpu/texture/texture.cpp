@@ -857,6 +857,11 @@ namespace skyline::gpu {
         if (gpu.traits.quirks.vkImageMutableFormatCostly && viewFormat != textureFormat && (!gpu.traits.quirks.adrenoRelaxedFormatAliasing || !texture::IsAdrenoAliasCompatible(viewFormat, textureFormat)))
             Logger::Warn("Creating a view of a texture with a different format without mutable format: {} - {}", vk::to_string(viewFormat), vk::to_string(textureFormat));
 
+        if ((pFormat->vkAspect & format->vkAspect) == vk::ImageAspectFlagBits{}) {
+            pFormat = format; // If the requested format doesn't share any aspects then fallback to the texture's format in the hope it's more likely to function
+            range.aspectMask = format->Aspect(mapping.r == vk::ComponentSwizzle::eR);
+        }
+
         return std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping);
     }
 

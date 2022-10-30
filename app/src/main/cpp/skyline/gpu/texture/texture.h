@@ -115,7 +115,6 @@ namespace skyline::gpu {
             constexpr bool IsCompatible(const FormatBase &other) const {
                 return vkFormat == other.vkFormat
                     || (vkFormat == vk::Format::eD32Sfloat && other.vkFormat == vk::Format::eR32Sfloat)
-                    || (vkFormat == vk::Format::eR32Sfloat && other.vkFormat == vk::Format::eD32Sfloat)
                     || (componentCount(vkFormat) == componentCount(other.vkFormat) &&
                         ranges::all_of(ranges::views::iota(u8{0}, componentCount(vkFormat)), [this, other](auto i) {
                             return componentBits(vkFormat, i) == componentBits(other.vkFormat, i);
