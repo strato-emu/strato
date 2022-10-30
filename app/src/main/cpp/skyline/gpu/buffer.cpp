@@ -354,8 +354,10 @@ namespace skyline::gpu {
             return BufferBinding{unifiedMegaBuffer.buffer, unifiedMegaBuffer.offset + offset, size};
         }
 
-        if (size > MegaBufferingDisableThreshold && sequenceNumber < FrequentlySyncedThresholdHigh)
+        if (size > MegaBufferingDisableThreshold) {
+            megaBufferViewAccumulatedSize += size;
             return {};
+        }
 
         size_t entryIdx{offset >> megaBufferTableShift};
         size_t bufferEntryOffset{entryIdx << megaBufferTableShift};
@@ -409,6 +411,7 @@ namespace skyline::gpu {
     void Buffer::unlock() {
         tag = ContextTag{};
         AllowAllBackingWrites();
+        lastExecutionNumber = 0;
         mutex.unlock();
     }
 

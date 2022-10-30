@@ -69,7 +69,6 @@ namespace skyline::gpu {
 
         static constexpr u32 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
         static constexpr u32 FrequentlySyncedThreshold{6}; //!< Threshold for the sequence number after which the buffer is considered elegible for megabuffering
-        static constexpr u32 FrequentlySyncedThresholdHigh{16}; //!< Threshold for the sequence number after which the buffer is considered elegible for megabuffering irrespective of view size
         u32 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
 
         constexpr static vk::DeviceSize MegaBufferingDisableThreshold{1024 * 256}; //!< The threshold at which a view is considered to be too large to be megabuffered (256KiB)
