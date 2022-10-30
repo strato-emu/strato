@@ -5,6 +5,7 @@
 #include "controller_applet.h"
 #include "error_applet.h"
 #include "player_select_applet.h"
+#include "web_applet.h"
 #include "swkbd/software_keyboard_applet.h"
 
 namespace skyline::applet {
@@ -23,6 +24,8 @@ namespace skyline::applet {
                 return std::make_shared<swkbd::SoftwareKeyboardApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             case AppletId::LibraryAppletError:
                 return std::make_shared<ErrorApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
+            case AppletId::LibraryAppletOfflineWeb:
+                return std::make_shared<WebApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             default:
                 throw exception{"Unimplemented Applet: 0x{:X} ({})", static_cast<u32>(appletId), ToString(appletId)};
         }
