@@ -149,23 +149,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             return PosixResult::InvalidArgument;
 
         try {
-            auto mapping{mappingMap.at(offset)};
-
-            if (!mapping->fixed) {
-                auto &allocator{mapping->bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
-                u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
-
-                allocator.Free(static_cast<u32>(mapping->offset >> pageSizeBits), static_cast<u32>(mapping->size >> pageSizeBits));
-            }
-
-            // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
-            // Only FreeSpace can unmap them fully
-            if (mapping->sparseAlloc)
-                asCtx->gmmu.Map(offset, GMMU::SparsePlaceholderAddress(), mapping->size, {true});
-            else
-                asCtx->gmmu.Unmap(offset, mapping->size);
-
-            mappingMap.erase(offset);
+            FreeMappingLocked(offset);
         } catch (const std::out_of_range &e) {
             Logger::Warn("Couldn't find region to unmap at 0x{:X}", offset);
         }
