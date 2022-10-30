@@ -111,6 +111,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             TIC_FORMAT_CASE_INT_FLOAT(R32G32, R32G32);
             TIC_FORMAT_CASE(D32S8, D32FloatS8Uint, Float, Uint, Uint, Unorm);
             TIC_FORMAT_CASE(D32S8, D32FloatS8Uint, Float, Uint, Unorm, Unorm);
+            TIC_FORMAT_CASE(R32B24G8, D32FloatS8Uint, Float, Uint, Unorm, Unorm);
+
             TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16B16A16, R16G16B16A16);
 
             TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm);
@@ -121,6 +123,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             TIC_FORMAT_CASE_ST_SRGB(Astc6x6, Astc6x6, Unorm);
             TIC_FORMAT_CASE_ST(Astc8x8, Astc8x8, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc8x8, Astc8x8, Unorm);
+            TIC_FORMAT_CASE_ST(Astc10x8, Astc10x8, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc10x8, Astc10x8, Unorm);
             TIC_FORMAT_CASE_ST(Astc10x10, Astc10x10, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc10x10, Astc10x10, Unorm);
             TIC_FORMAT_CASE_ST(BC2, BC2, Unorm);
