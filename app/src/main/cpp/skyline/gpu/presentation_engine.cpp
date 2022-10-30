@@ -98,7 +98,6 @@ namespace skyline::gpu {
         frame.fence.Wait(state.soc->host1x);
 
         std::scoped_lock textureLock(*frame.textureView);
-       // std::this_thread::sleep_for(std::chrono::milliseconds(64));
 
         auto texture{frame.textureView->texture};
         if (frame.textureView->format != swapchainFormat || texture->dimensions != swapchainExtent)

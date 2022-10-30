@@ -395,7 +395,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
             directState.inputAssembly.SetPrimitiveTopology(topology);
             pipeline.MarkDirty(false);
         }
-        // TODO non-indexed quads
 
         auto updateFunc{[&](auto &stateElem, auto &&... args) { stateElem.Update(ctx, builder, args...); }};
         pipeline.Update(ctx, textures, constantBuffers, builder);
