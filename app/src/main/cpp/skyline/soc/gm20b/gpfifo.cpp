@@ -315,9 +315,14 @@ namespace skyline::soc::gm20b {
                 } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::NonIncMethod) [[unlikely]] {
                     return dispatchCalls.operator()<MethodResumeState::State::NonInc>();
                 } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::EndPbSegment) [[unlikely]] {
-                        return true;
+                    return true;
+                } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::Grp0UseTert) {
+                    if (methodHeader.tertOp == PushBufferMethodHeader::TertOp::Grp0SetSubDevMask)
+                        return false;
+
+                    throw exception("Unsupported pushbuffer method TertOp: {}", static_cast<u8>(methodHeader.tertOp));
                 } else {
-                        throw exception("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
+                    throw exception("Unsupported pushbuffer method SecOp: {}", static_cast<u8>(methodHeader.secOp));
                 }
             }};
 
