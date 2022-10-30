@@ -60,7 +60,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                     struct Usage {
                         u32 binding; //!< Vulkan binding index
                         u32 shaderDescIdx; //!< Index of the descriptor in the appropriate shader info member
-                        u32 storageBufferIdx; //!< Index of the storage buffer in the per-pipeline storage buffer cache
+                        u32 entirePipelineIdx; //!< Index of the image/storage buffer in the entire pipeline
                     };
 
                     boost::container::small_vector<Usage, 2> uniformBuffers;
@@ -78,6 +78,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             std::array<StageDescriptorInfo, 5> stages;
 
             u32 totalStorageBufferCount;
+            u32 totalCombinedImageSamplerCount;
 
             u32 totalWriteDescCount;
             u32 totalBufferDescCount;
@@ -100,6 +101,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       public:
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
+        size_t sampledImageCount{};
 
         PackedPipelineState sourcePackedState;
 
@@ -111,9 +113,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         bool CheckBindingMatch(Pipeline *other);
 
-        DescriptorUpdateInfo *SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures);
+        u32 GetTotalSampledImageCount() const;
 
-        DescriptorUpdateInfo *SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind);
+        /**
+         * @brief Creates a descriptor set update from the current GPU state
+         * @param sampledImages A span of size `GetTotalSampledImageCount()` in which texture view pointers for each sampled image will be written
+         */
+        DescriptorUpdateInfo *SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, span<TextureView *> sampledImages);
+
+        /**
+         * @brief Creates a partial descriptor set update from the current GPU state for only the subset of descriptors changed by the quick bind constant buffer
+         * @param sampledImages A span of size `GetTotalSampledImageCount()` in which texture view pointers for each sampled image will be written
+         */
+        DescriptorUpdateInfo *SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind, span<TextureView *> sampledImages);
     };
 
     class PipelineManager {

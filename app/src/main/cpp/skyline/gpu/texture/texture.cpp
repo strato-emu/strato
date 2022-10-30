@@ -970,4 +970,13 @@ namespace skyline::gpu {
         newCycle->AttachObjects(std::move(source), shared_from_this());
         cycle = newCycle;
     }
+
+    bool Texture::ValidateRenderPassUsage(u32 renderPassIndex, texture::RenderPassUsage renderPassUsage) {
+        return lastRenderPassUsage == renderPassUsage || lastRenderPassIndex != renderPassIndex || lastRenderPassUsage == texture::RenderPassUsage::None;
+    }
+
+    void Texture::UpdateRenderPassUsage(u32 renderPassIndex, texture::RenderPassUsage renderPassUsage) {
+        lastRenderPassUsage = renderPassUsage;
+        lastRenderPassIndex = renderPassIndex;
+    }
 }

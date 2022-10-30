@@ -148,7 +148,8 @@ namespace skyline::gpu::interconnect {
             srcTextureView.get(), dstTextureView.get(),
             [=](auto &&executionCallback) {
                 auto dst{dstTextureView.get()};
-                executor.AddSubpass(std::move(executionCallback), {{static_cast<i32>(dstRectX), static_cast<i32>(dstRectY)}, {dstRectWidth, dstRectHeight} }, {}, {dst});
+                std::array<TextureView *, 1> sampledImages{srcTextureView.get()};
+                executor.AddSubpass(std::move(executionCallback), {{static_cast<i32>(dstRectX), static_cast<i32>(dstRectY)}, {dstRectWidth, dstRectHeight} }, sampledImages, {}, {dst});
             }
         );
 

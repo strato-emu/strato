@@ -197,7 +197,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<TextureView *, 1> colorAttachments{colorView ? &*colorView : nullptr};
         ctx.executor.AddSubpass([clearAttachments, clearRects](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
             commandBuffer.clearAttachments(clearAttachments, span(clearRects).first(clearAttachments.size()));
-        }, renderArea, {}, colorView ? colorAttachments : span<TextureView *>{}, depthStencilView ? &*depthStencilView : nullptr);
+        }, renderArea, {}, {}, colorView ? colorAttachments : span<TextureView *>{}, depthStencilView ? &*depthStencilView : nullptr);
     }
 
     void Maxwell3D::Draw(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance) {
@@ -218,18 +218,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         Pipeline *pipeline{activeState.GetPipeline()};
+        activeDescriptorSetSampledImages.resize(pipeline->GetTotalSampledImageCount());
 
         auto *descUpdateInfo{[&]() -> DescriptorUpdateInfo * {
             if (((oldPipeline == pipeline) || (oldPipeline && oldPipeline->CheckBindingMatch(pipeline))) && constantBuffers.quickBindEnabled) {
                 // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
                 if (constantBuffers.quickBind)
                     // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
-                    return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, samplers, textures, *constantBuffers.quickBind);
+                    return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, samplers, textures, *constantBuffers.quickBind, activeDescriptorSetSampledImages);
                 else
                     return nullptr;
             } else {
                 // If bindings have changed or quick bind is disabled, perform a full descriptor update
-                return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers, samplers, textures);
+                return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers, samplers, textures, activeDescriptorSetSampledImages);
             }
         }()};
 
@@ -295,7 +296,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
             if (drawParams->transformFeedbackEnable)
                 commandBuffer.endTransformFeedbackEXT(0, {}, {});
-        }, scissor, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility);
+        }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility);
 
         constantBuffers.ResetQuickBind();
     }

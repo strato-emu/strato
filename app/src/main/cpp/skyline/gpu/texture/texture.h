@@ -13,6 +13,12 @@
 
 namespace skyline::gpu {
     namespace texture {
+        enum class RenderPassUsage : u8 {
+            None,
+            Sampled,
+            RenderTarget
+        };
+
         struct Dimensions {
             u32 width;
             u32 height;
@@ -400,6 +406,9 @@ namespace skyline::gpu {
 
         std::vector<TextureViewStorage> views;
 
+        u32 lastRenderPassIndex{}; //!< The index of the last render pass that used this texture
+        texture::RenderPassUsage lastRenderPassUsage{texture::RenderPassUsage::None}; //!< The type of usage in the last render pass
+
         friend TextureManager;
         friend TextureView;
 
@@ -583,5 +592,16 @@ namespace skyline::gpu {
         bool FrequentlyLocked() {
             return accumulatedCpuLockCounter >= FrequentlyLockedThreshold;
         }
+
+        /**
+         * @brief Checks if the previous usage in the renderpass is compatible with the current one
+         * @return If the new usage is compatible with the previous usage
+         */
+        bool ValidateRenderPassUsage(u32 renderPassIndex, texture::RenderPassUsage renderPassUsage);
+
+        /**
+         * @brief Updates renderpass usage tracking information
+         */
+        void UpdateRenderPassUsage(u32 renderPassIndex, texture::RenderPassUsage renderPassUsage);
     };
 }
