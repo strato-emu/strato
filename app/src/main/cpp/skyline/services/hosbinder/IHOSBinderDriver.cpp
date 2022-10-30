@@ -117,12 +117,13 @@ namespace skyline::service::hosbinder {
     u64 IHOSBinderDriver::CreateLayer(DisplayId pDisplayId) {
         if (pDisplayId != displayId)
             throw exception("Creating layer on unopened display: '{}'", ToString(pDisplayId));
-        else if (layer)
-            throw exception("Creation of multiple layers is not supported");
+        else if (layer) // Fallback to replacing previous layer
+            Logger::Warn("Creation of multiple layers is not supported");
+
 
         layerStrongReferenceCount = InitialStrongReferenceCount;
         layerWeakReferenceCount = 0;
-        layer.emplace(state, nvMap);
+        layer = std::make_shared<GraphicBufferProducer>(state, nvMap);
 
         return DefaultLayerId;
     }

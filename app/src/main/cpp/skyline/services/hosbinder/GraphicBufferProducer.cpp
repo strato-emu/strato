@@ -264,7 +264,7 @@ namespace skyline::service::hosbinder {
                 return AndroidStatus::BadValue;
         }
 
-        std::scoped_lock lock(mutex);
+        std::unique_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
             Logger::Warn("#{} was out of range", slot);
             return AndroidStatus::BadValue;
@@ -383,15 +383,6 @@ namespace skyline::service::hosbinder {
                 throw exception("Application attempting to perform unknown sticky transformation: {:#b}", static_cast<u32>(stickyTransform));
         }
 
-        state.gpu->presentation.Present(buffer.texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, fence, [this, &buffer] {
-            std::unique_lock lock{mutex};
-
-            buffer.state = BufferState::Free;
-            bufferEvent->Signal();
-
-            freeCondition.notify_all();
-        });
-
         buffer.state = BufferState::Queued;
         buffer.frameNumber = ++frameNumber;
 
@@ -401,6 +392,20 @@ namespace skyline::service::hosbinder {
         pendingBufferCount = GetPendingBufferCount();
 
         Logger::Debug("#{} - {}Timestamp: {}, Crop: ({}-{})x({}-{}), Scale Mode: {}, Transform: {} [Sticky: {}], Swap Interval: {}, Is Async: {}", slot, isAutoTimestamp ? "Auto " : "", timestamp, crop.left, crop.right, crop.top, crop.bottom, ToString(scalingMode), ToString(transform), ToString(stickyTransform), swapInterval, async);
+
+        // We can present with the mutex locked as if the queue ends up waiting for free space then the lock will never be released as the dequeue callback also locks the lock
+        lock.unlock();
+
+        std::weak_ptr<GraphicBufferProducer> weakThis{shared_from_this()};
+        state.gpu->presentation.Present(buffer.texture, isAutoTimestamp ? 0 : timestamp, swapInterval, crop, scalingMode, transform, fence, [weakThis, &buffer] {
+            if (auto gbp{weakThis.lock()}) {
+                std::scoped_lock lock{gbp->mutex};
+                buffer.state = BufferState::Free;
+                gbp->bufferEvent->Signal();
+                gbp->freeCondition.notify_all();
+            }
+        });
+
         return AndroidStatus::Ok;
     }
 

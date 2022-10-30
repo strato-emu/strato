@@ -57,7 +57,7 @@ namespace skyline::service::hosbinder {
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/include/gui/BufferQueueCore.h
      * @url https://cs.android.com/android/platform/superproject/+/android-5.1.1_r38:frameworks/native/libs/gui/BufferQueueCore.cpp
      */
-    class GraphicBufferProducer {
+    class GraphicBufferProducer : public std::enable_shared_from_this<GraphicBufferProducer> {
       private:
         const DeviceState &state;
         std::mutex mutex; //!< Synchronizes access to the buffer queue

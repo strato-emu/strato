@@ -40,7 +40,7 @@ namespace skyline::service::hosbinder {
 
         constexpr static u64 DefaultLayerId{1}; //!< The VI ID of the default (and only) layer in our surface stack
         constexpr static u32 DefaultBinderLayerHandle{1}; //!< The handle as assigned by SurfaceFlinger of the default layer
-        std::optional<GraphicBufferProducer> layer; //!< The IGraphicBufferProducer backing the layer (NativeWindow)
+        std::shared_ptr<GraphicBufferProducer> layer{}; //!< The IGraphicBufferProducer backing the layer (NativeWindow)
 
         nvdrv::core::NvMap &nvMap;
 
