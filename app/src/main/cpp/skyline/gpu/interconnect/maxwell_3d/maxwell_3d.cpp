@@ -152,7 +152,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
                 if (!(view->range.aspectMask & vk::ImageAspectFlagBits::eColor)) {
                     Logger::Warn("Colour RT used in clear lacks colour aspect"); // TODO: Drop this check after texman rework
-                    return;
                 }
 
                 if (needsAttachmentClearCmd(view)) {
