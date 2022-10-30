@@ -9,6 +9,15 @@
 #include "pipeline_manager.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
+    union BindlessHandle {
+        u32 raw;
+
+        struct {
+            u32 textureIndex : 20;
+            u32 samplerIndex : 12;
+        };
+    };
+
     static constexpr Shader::Stage ConvertCompilerShaderStage(engine::Pipeline::Shader::Type stage) {
         switch (stage) {
             case engine::Pipeline::Shader::Type::VertexCullBeforeFetch:
@@ -193,7 +202,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                     size_t shaderStage{i > 0 ? (i - 1) : 0};
                     return constantBuffers[shaderStage][index].Read<int>(ctx.executor, offset);
                 }, [&](u32 index) {
-                    return textures.GetTextureType(ctx, index);
+                    return textures.GetTextureType(ctx, BindlessHandle{ .raw = index }.textureIndex);
                 })};
             if (i == stageIdx(PipelineStage::Vertex) && packedState.shaderHashes[stageIdx(PipelineStage::VertexCullBeforeFetch)]) {
                 ignoreVertexCullBeforeFetch = true;
@@ -656,15 +665,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         return view;
     }
-
-    union BindlessHandle {
-        u32 raw;
-
-        struct {
-            u32 textureIndex : 20;
-            u32 samplerIndex : 12;
-        };
-    };
 
     static BindlessHandle ReadBindlessHandle(InterconnectContext &ctx, std::array<ConstantBuffer, engine::ShaderStageConstantBufferCount> &constantBuffers, const auto &desc, size_t arrayIdx) {
         ConstantBuffer &primaryCbuf{constantBuffers[desc.cbuf_index]};
