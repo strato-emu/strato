@@ -40,6 +40,7 @@ namespace skyline::gpu::interconnect::node {
                 .format = *view->format,
                 .initialLayout = view->texture->layout,
                 .finalLayout = view->texture->layout,
+                .flags = vk::AttachmentDescriptionFlagBits::eMayAlias
             });
             return static_cast<u32>(attachments.size() - 1);
         } else {
@@ -104,8 +105,8 @@ namespace skyline::gpu::interconnect::node {
                 dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead;
             } else if (view->format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil)) {
                 dependency.srcStageMask = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
-                dependency.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead;
-                dependency.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                dependency.srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                dependency.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead;
             }
 
             if (std::find(subpassDependencies.begin(), subpassDependencies.end(), dependency) == subpassDependencies.end())

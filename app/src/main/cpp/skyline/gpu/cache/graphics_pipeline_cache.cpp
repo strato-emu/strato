@@ -360,6 +360,7 @@ namespace skyline::gpu::cache {
                     .stencilStoreOp = vk::AttachmentStoreOp::eStore,
                     .initialLayout = view->texture->layout,
                     .finalLayout = view->texture->layout,
+                    .flags = vk::AttachmentDescriptionFlagBits::eMayAlias
                 });
                 attachmentReferences.push_back(vk::AttachmentReference{
                     .attachment = static_cast<u32>(attachmentDescriptions.size() - 1),
