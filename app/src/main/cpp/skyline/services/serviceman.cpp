@@ -41,6 +41,8 @@
 #include "nifm/IStaticService.h"
 #include "nim/IShopServiceAccessServerInterface.h"
 #include "socket/bsd/IClient.h"
+#include "socket/nsd/IManager.h"
+#include "socket/sfdnsres/IResolver.h"
 #include "spl/IRandomInterface.h"
 #include "ssl/ISslService.h"
 #include "prepo/IPrepoService.h"
@@ -114,6 +116,9 @@ namespace skyline::service {
             SERVICE_CASE(nfp::IUserManager, "nfp:user")
             SERVICE_CASE(nifm::IStaticService, "nifm:u")
             SERVICE_CASE(socket::IClient, "bsd:u")
+            SERVICE_CASE(socket::IManager, "nsd:u")
+            SERVICE_CASE(socket::IManager, "nsd:a")
+            SERVICE_CASE(socket::IResolver, "sfdnsres")
             SERVICE_CASE(spl::IRandomInterface, "csrng")
             SERVICE_CASE(ssl::ISslService, "ssl")
             SERVICE_CASE(prepo::IPrepoService, "prepo:u")
