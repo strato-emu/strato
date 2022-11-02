@@ -10,4 +10,8 @@ namespace skyline::service::account {
         response.Push(false);
         return {};
     }
+
+    Result IManagerForApplication::StoreOpenContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

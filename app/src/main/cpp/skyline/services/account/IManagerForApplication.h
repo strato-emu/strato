@@ -19,8 +19,11 @@ namespace skyline::service::account {
         */
         Result CheckAvailability(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result StoreOpenContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x0, IManagerForApplication, CheckAvailability)
+            SFUNC(0x0, IManagerForApplication, CheckAvailability),
+            SFUNC(0xA0, IManagerForApplication, StoreOpenContext)
         )
     };
 }
