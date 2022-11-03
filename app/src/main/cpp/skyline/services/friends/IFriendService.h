@@ -13,5 +13,11 @@ namespace skyline::service::friends {
     class IFriendService : public BaseService {
       public:
         IFriendService(const DeviceState &state, ServiceManager &manager);
+
+        Result GetFriendList(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x2775, IFriendService, GetFriendList)
+        )
     };
 }
