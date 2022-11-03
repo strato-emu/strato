@@ -39,6 +39,8 @@ namespace skyline::input {
 
         ResetDeviceProperties();
         controllerInfo = nullptr;
+        sixAxisInfoLeft = nullptr;
+        sixAxisInfoRight = nullptr;
 
         connectionState.raw = 0;
         connectionState.connected = true;
@@ -155,6 +157,10 @@ namespace skyline::input {
         type = newType;
         controllerInfo = &GetControllerInfo();
 
+        sixAxisInfoLeft = &GetSixAxisInfo(MotionId::Left);
+        if (type == NpadControllerType::JoyconDual)
+            sixAxisInfoRight = &GetSixAxisInfo(MotionId::Right);
+
         UpdateSharedMemory();
         updateEvent->Signal();
     }
@@ -170,6 +176,8 @@ namespace skyline::input {
 
         type = NpadControllerType::None;
         controllerInfo = nullptr;
+        sixAxisInfoLeft = nullptr;
+        sixAxisInfoRight = nullptr;
 
         updateEvent->Signal();
         WriteEmptyEntries();
@@ -187,6 +195,25 @@ namespace skyline::input {
                 return section.leftController;
             case NpadControllerType::JoyconRight:
                 return section.rightController;
+            default:
+                throw exception("Cannot find corresponding section for ControllerType: {}", type);
+        }
+    }
+
+    NpadSixAxisInfo &NpadDevice::GetSixAxisInfo(MotionId id) {
+        switch (type) {
+            case NpadControllerType::ProController:
+                return section.fullKeySixAxis;
+            case NpadControllerType::Handheld:
+                return section.handheldSixAxis;
+            case NpadControllerType::JoyconDual:
+                if (id == MotionId::Right)
+                    return section.dualRightSixAxis;
+                return section.dualLeftSixAxis;
+            case NpadControllerType::JoyconLeft:
+                return section.leftSixAxis;
+            case NpadControllerType::JoyconRight:
+                return section.rightSixAxis;
             default:
                 throw exception("Cannot find corresponding section for ControllerType: {}", type);
         }
@@ -210,6 +237,26 @@ namespace skyline::input {
         nextEntry.rightX = entry.rightX;
         nextEntry.rightY = entry.rightY;
         nextEntry.status.raw = connectionState.raw;
+    }
+
+    void NpadDevice::WriteNextEntry(NpadSixAxisInfo &info, NpadSixAxisState entry) {
+        auto &lastEntry{info.state.at(info.header.currentEntry)};
+
+        info.header.timestamp = util::GetTimeTicks();
+        info.header.entryCount = std::min(static_cast<u8>(info.header.entryCount + 1), constant::HidEntryCount);
+        info.header.maxEntry = info.header.entryCount - 1;
+        info.header.currentEntry = (info.header.currentEntry < info.header.maxEntry) ? info.header.currentEntry + 1 : 0;
+
+        auto &nextEntry{info.state.at(info.header.currentEntry)};
+
+        nextEntry.globalTimestamp = globalTimestamp;
+        nextEntry.localTimestamp = lastEntry.localTimestamp + 1;
+        nextEntry.deltaTimestamp = entry.deltaTimestamp;
+        nextEntry.accelerometer = entry.accelerometer;
+        nextEntry.gyroscope = entry.gyroscope;
+        nextEntry.rotation = entry.rotation;
+        nextEntry.orientation = entry.orientation;
+        nextEntry.attribute = entry.attribute;
     }
 
     void NpadDevice::WriteEmptyEntries() {
@@ -249,6 +296,12 @@ namespace skyline::input {
         if (controllerInfo)
             WriteNextEntry(*controllerInfo, controllerState);
         WriteNextEntry(section.defaultController, defaultState);
+
+        // TODO: SixAxis should be updated every 5 ms
+        if (sixAxisInfoLeft)
+            WriteNextEntry(*sixAxisInfoLeft, sixAxisStateLeft);
+        if (sixAxisInfoRight)
+            WriteNextEntry(*sixAxisInfoRight, sixAxisStateRight);
 
         globalTimestamp++;
     }
@@ -384,6 +437,39 @@ namespace skyline::input {
                     break;
             }
         }
+    }
+
+    void NpadDevice::SetMotionValue(MotionId sensor, MotionSensorState *value) {
+        if (!connectionState.connected)
+            return;
+
+        NpadSixAxisState *sixAxisState{sensor == MotionId::Right? &sixAxisStateRight : &sixAxisStateLeft};
+
+        sixAxisState->accelerometer.x = value->accelerometer[0];
+        sixAxisState->accelerometer.y = value->accelerometer[1];
+        sixAxisState->accelerometer.z = value->accelerometer[2];
+
+        sixAxisState->gyroscope.x = value->gyroscope[0];
+        sixAxisState->gyroscope.y = value->gyroscope[1];
+        sixAxisState->gyroscope.z = value->gyroscope[2];
+
+        float deltaTime{static_cast<float>(value->deltaTimestamp) / 1000000000.0f};
+        sixAxisState->rotation.x += value->gyroscope[0] * deltaTime;
+        sixAxisState->rotation.y += value->gyroscope[1] * deltaTime;
+        sixAxisState->rotation.z += value->gyroscope[2] * deltaTime;
+
+        sixAxisState->orientation[0].x = value->orientationMatrix[0];
+        sixAxisState->orientation[0].y = value->orientationMatrix[1];
+        sixAxisState->orientation[0].z = value->orientationMatrix[2];
+        sixAxisState->orientation[1].x = value->orientationMatrix[3];
+        sixAxisState->orientation[1].y = value->orientationMatrix[4];
+        sixAxisState->orientation[1].z = value->orientationMatrix[5];
+        sixAxisState->orientation[2].x = value->orientationMatrix[6];
+        sixAxisState->orientation[2].y = value->orientationMatrix[7];
+        sixAxisState->orientation[2].z = value->orientationMatrix[8];
+
+        sixAxisState->deltaTimestamp = value->deltaTimestamp;
+        sixAxisState->attribute.isConnected = true;
     }
 
     constexpr jlong MsInSecond{1000}; //!< The amount of milliseconds in a single second of time

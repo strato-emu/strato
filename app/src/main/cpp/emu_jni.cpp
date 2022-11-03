@@ -217,6 +217,18 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Compa
         device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
 }
 
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setMotionState(JNIEnv *env, jobject, jint index, jint motionId, jobject value) {
+    auto input{InputWeak.lock()};
+    if (!input)
+        return; // We don't mind if we miss motion updates while input hasn't been initialized
+
+    const auto motionValue = reinterpret_cast<skyline::input::MotionSensorState*>(env->GetDirectBufferAddress(value));
+
+    auto device{input->npad.controllers[static_cast<size_t>(index)].device};
+    if (device)
+        device->SetMotionValue(static_cast<skyline::input::MotionId>(motionId), motionValue);
+}
+
 extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setTouchState(JNIEnv *env, jobject, jintArray pointsJni) {
     using Point = skyline::input::TouchScreenPoint;
 

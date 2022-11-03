@@ -7,6 +7,30 @@
 #include "shared_mem.h"
 
 namespace skyline::input {
+
+    /**
+     * @brief Motion sensor location
+     */
+    enum class MotionId {
+        Left,
+        Right,
+        Console,
+    };
+
+    /**
+     * @brief A description of a motion event
+     * @note This structure corresponds to MotionSensorInput, see that for details
+     */
+    struct MotionSensorState {
+        u64 timestamp;
+        u64 deltaTimestamp;
+        std::array<float,3> gyroscope;
+        std::array<float,3> accelerometer;
+        std::array<float,4> quaternion;
+        std::array<float,9> orientationMatrix;
+    };
+    static_assert(sizeof(MotionSensorState) == 0x60);
+
     /**
      * @brief How many joycons must be attached for handheld mode to be triggered
      */
@@ -146,8 +170,11 @@ namespace skyline::input {
         NpadManager &manager; //!< The manager responsible for managing this NpadDevice
         NpadSection &section; //!< The section in HID shared memory for this controller
         NpadControllerInfo *controllerInfo{}; //!< The NpadControllerInfo for this controller's type
+        NpadSixAxisInfo *sixAxisInfoLeft{}; //!< The NpadSixAxisInfo for the main or left side of this controller's type
+        NpadSixAxisInfo *sixAxisInfoRight{}; //!< The NpadSixAxisInfo for the right side of this controller's type
         u64 globalTimestamp{}; //!< An incrementing timestamp that's common across all sections
         NpadControllerState controllerState{}, defaultState{}; //!< The current state of the controller (normal and default)
+        NpadSixAxisState sixAxisStateLeft{}, sixAxisStateRight{}; //!< The current state of the sixaxis (left and right)
 
         /**
          * @brief Updates the headers and writes a new entry in HID Shared Memory
@@ -155,6 +182,13 @@ namespace skyline::input {
          * @param entry An entry with the state of the controller
          */
         void WriteNextEntry(NpadControllerInfo &info, NpadControllerState entry);
+
+        /**
+         * @brief Updates the headers and writes a new entry in HID Shared Memory
+         * @param info The sixaxis controller info of the NPad that needs to be updated
+         * @param entry An entry with the state of the controller
+         */
+        void WriteNextEntry(NpadSixAxisInfo &info, NpadSixAxisState entry);
 
         /**
          * @brief Writes on all ring lifo buffers a new empty entry in HID Shared Memory
@@ -170,6 +204,11 @@ namespace skyline::input {
          * @return The NpadControllerInfo for this controller based on its type
          */
         NpadControllerInfo &GetControllerInfo();
+
+        /**
+         * @return The NpadSixAxisInfo for this controller based on its type
+         */
+        NpadSixAxisInfo &GetSixAxisInfo(MotionId id);
 
       public:
         NpadId id;
@@ -221,6 +260,13 @@ namespace skyline::input {
          * @param value The value to set
          */
         void SetAxisValue(NpadAxisId axis, i32 value);
+
+        /**
+         * @brief Sets the value of a motion sensor to the specified value
+         * @param motion The motion sensor to set the value of
+         * @param value The value to set
+         */
+        void SetMotionValue(MotionId sensor, MotionSensorState *value);
 
         /**
          * @brief Sets the vibration for both the Joy-Cons to the specified vibration values
