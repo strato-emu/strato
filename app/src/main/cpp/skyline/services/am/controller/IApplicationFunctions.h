@@ -107,6 +107,8 @@ namespace skyline::service::am {
          */
         Result GetFriendInvitationStorageChannelEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result TryPopFromFriendInvitationStorageChannel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x1, IApplicationFunctions, PopLaunchParameter),
             SFUNC(0x14, IApplicationFunctions, EnsureSaveData),
@@ -121,7 +123,8 @@ namespace skyline::service::am {
             SFUNC(0x65, IApplicationFunctions, SetApplicationCopyrightImage),
             SFUNC(0x66, IApplicationFunctions, SetApplicationCopyrightVisibility),
             SFUNC(0x82, IApplicationFunctions, GetGpuErrorDetectedSystemEvent),
-            SFUNC(0x8C, IApplicationFunctions, GetFriendInvitationStorageChannelEvent)
+            SFUNC(0x8C, IApplicationFunctions, GetFriendInvitationStorageChannelEvent),
+            SFUNC(0x8D, IApplicationFunctions, TryPopFromFriendInvitationStorageChannel)
         )
 
     };

@@ -159,4 +159,8 @@ namespace skyline::service::am {
         response.copyHandles.push_back(handle);
         return {};
     }
+
+    Result IApplicationFunctions::TryPopFromFriendInvitationStorageChannel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return result::NotAvailable;
+    }
 }
