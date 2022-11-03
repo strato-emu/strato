@@ -291,8 +291,7 @@ namespace skyline::gpu {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
-        std::scoped_lock dstLock{stateMutex};
-        std::scoped_lock srcLock{src->stateMutex}; // Fine even if src and dst are same since recursive mutex
+        std::scoped_lock lock{stateMutex, src->stateMutex}; // Fine even if src and dst are same since recursive mutex
 
         if (dirtyState == DirtyState::CpuDirty && SequencedCpuBackingWritesBlocked())
             // If the buffer is used in sequence directly on the GPU, SynchronizeHost before modifying the mirror contents to ensure proper sequencing. This write will then be sequenced on the GPU instead (the buffer will be kept clean for the rest of the execution due to gpuCopyCallback blocking all writes)
