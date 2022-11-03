@@ -152,7 +152,7 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
             }
 
             val axes = MotionHostEvent.axes
-            val axesHistory = arrayOfNulls<Float>(axes.size) // The last recorded value of an axis, this is used to eliminate any stagnant axes
+            val axesHistory = FloatArray(axes.size) // The last recorded value of an axis, this is used to eliminate any stagnant axes
 
             view.setOnGenericMotionListener { _, event ->
                 // We want all input events from Joysticks and Buttons that are [MotionEvent.ACTION_MOVE] and not from the D-pad
@@ -163,7 +163,7 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
                         val value = event.getAxisValue(axis)
 
                         // This checks the history of the axis so we can ignore any stagnant axis
-                        if ((event.historySize == 0 || value == event.getHistoricalAxisValue(axis, 0)) && (axesHistory[axisItem.index]?.let { it == value } != false)) {
+                        if ((event.historySize == 0 || value == event.getHistoricalAxisValue(axis, 0)) && axesHistory[axisItem.index] == value) {
                             axesHistory[axisItem.index] = value
                             continue
                         }

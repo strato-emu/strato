@@ -117,7 +117,7 @@ class InputHandler(private val inputManager : InputManager, private val preferen
     /**
      * The last value of the axes so the stagnant axes can be eliminated to not wastefully look them up
      */
-    private val axesHistory = arrayOfNulls<Float>(MotionHostEvent.axes.size)
+    private val axesHistory = FloatArray(MotionHostEvent.axes.size)
 
     /**
      * Handles translating any [MotionHostEvent]s to a [GuestEvent] that is passed into libskyline
@@ -128,8 +128,8 @@ class InputHandler(private val inputManager : InputManager, private val preferen
                 val axis = axisItem.value
                 var value = event.getAxisValue(axis)
 
-                if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
-                    var polarity = value > 0 || (value == 0f && axesHistory[axisItem.index]?.let { it >= 0 } == true)
+                if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || axesHistory[axisItem.index] != value) {
+                    var polarity = value > 0 || (value == 0f && axesHistory[axisItem.index] >= 0)
 
                     val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
                         inputManager.eventMap[hostEvent] ?: if (value == 0f) {
