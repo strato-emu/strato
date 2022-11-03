@@ -19,8 +19,14 @@ namespace skyline::service::pctl {
          */
         Result Initialize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result CheckFreeCommunicationPermission(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result IsFreeCommunicationAvailable(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x1, IParentalControlService, Initialize)
+            SFUNC(0x1, IParentalControlService, Initialize),
+            SFUNC(0x3E9, IParentalControlService, CheckFreeCommunicationPermission),
+            SFUNC(0x3FA, IParentalControlService, IsFreeCommunicationAvailable)
         )
     };
 }
