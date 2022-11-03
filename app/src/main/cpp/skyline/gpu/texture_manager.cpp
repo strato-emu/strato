@@ -25,7 +25,19 @@ namespace skyline::gpu {
 
         std::shared_ptr<Texture> match{};
         boost::container::small_vector<std::shared_ptr<Texture>, 4> matches{};
-        auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping)}, hostMapping{mappingEnd};
+        auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping, [](const auto &value, const auto &element) {
+            return value.end() < element.end();
+        })}, hostMapping{mappingEnd};
+
+
+        while (hostMapping != textures.end() && guestMapping.begin() < hostMapping->end())
+            hostMapping++;
+
+        std::shared_ptr<Texture> fullMatch{};
+        std::shared_ptr<Texture> layerMipMatch{};
+        u32 matchLevel{};
+        u32 matchLayer{};
+
         while (hostMapping != textures.begin() && (--hostMapping)->end() > guestMapping.begin()) {
             auto &hostMappings{hostMapping->texture->guest->mappings};
             if (!hostMapping->contains(guestMapping))
@@ -47,34 +59,67 @@ namespace skyline::gpu {
                 auto &matchGuestTexture{*hostMapping->texture->guest};
                 if (matchGuestTexture.format->IsCompatible(*guestTexture.format) &&
                     ((((matchGuestTexture.dimensions.width == guestTexture.dimensions.width &&
-                       matchGuestTexture.dimensions.height == guestTexture.dimensions.height) || matchGuestTexture.CalculateLayerSize() == guestTexture.CalculateLayerSize()) &&
-                       matchGuestTexture.GetViewDepth() <= guestTexture.GetViewDepth())
-                      || matchGuestTexture.viewMipBase > 0)
-                     && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
-                    auto &texture{hostMapping->texture};
-                    ContextLock textureLock{tag, *texture};
-                    return texture->GetView(guestTexture.viewType, vk::ImageSubresourceRange{
-                        .aspectMask = guestTexture.aspect,
-                        .baseMipLevel = guestTexture.viewMipBase,
-                        .levelCount = guestTexture.viewMipCount,
-                        .baseArrayLayer = guestTexture.baseArrayLayer,
-                        .layerCount = guestTexture.GetViewLayerCount(),
-                    }, guestTexture.format, guestTexture.swizzle);
+                        matchGuestTexture.dimensions.height == guestTexture.dimensions.height) || matchGuestTexture.CalculateLayerSize() == guestTexture.CalculateLayerSize()) &&
+                        matchGuestTexture.GetViewDepth() <= guestTexture.GetViewDepth())
+                        || matchGuestTexture.viewMipBase > 0)
+                    && matchGuestTexture.tileConfig == guestTexture.tileConfig) {
+                    fullMatch = hostMapping->texture;
                 } else {
                     matches.push_back(hostMapping->texture);
                 }
-            } /* else if (mappingMatch) {
-                // We've gotten a partial match with a certain subset of contiguous mappings matching, we need to check if this is a meaningful overlap
-                if (MeaningfulOverlap) {
-                    // TODO: Layout Checks + Check match against Base Layer in TIC
-                    auto &texture{hostMapping->texture};
-                    return TextureView(texture, static_cast<vk::ImageViewType>(guestTexture.type), vk::ImageSubresourceRange{
-                        .aspectMask = guestTexture.format->vkAspect,
-                        .levelCount = texture->mipLevels,
-                        .layerCount = texture->layerCount,
-                    }, guestTexture.format);
+            } else {
+                auto &matchGuestTexture{*hostMapping->texture->guest};
+                if (matchGuestTexture.format->IsCompatible(*guestTexture.format) && matchGuestTexture.tileConfig == guestTexture.tileConfig &&
+                        (!layerMipMatch || (matchGuestTexture.GetViewLayerCount() >= layerMipMatch->guest->GetViewLayerCount() && matchGuestTexture.mipLevelCount >= layerMipMatch->guest->mipLevelCount))) {
+                    size_t memOffset{static_cast<size_t>(guestMapping.data() - hostMapping->texture->guest->mappings.front().data())};
+                    size_t layerMemOffset{};
+                    bool matched{};
+                    for (u32 layer{}; layer < hostMapping->texture->layerCount; layer++) {
+                        u32 level{};
+                        size_t levelMemOffset{};
+
+                        for (auto &mipLevel : hostMapping->texture->mipLayouts) {
+                            if (layerMemOffset + levelMemOffset == memOffset) {
+                                if (mipLevel.blockLinearSize == guestTexture.CalculateLayerSize()) {
+                                    matched = true;
+                                    matchLayer = layer;
+                                    matchLevel = level;
+                                    break;
+                                }
+                                level++;
+                                levelMemOffset += mipLevel.blockLinearSize;
+                            }
+                        }
+
+                        if (matched)
+                            break;
+                        layerMemOffset += matchGuestTexture.GetLayerStride();
+                    }
+
+                    if (matched)
+                        layerMipMatch = hostMapping->texture;
                 }
-            } */
+            }
+         }
+
+        if (layerMipMatch) {
+            ContextLock textureLock{tag, *layerMipMatch};
+            return layerMipMatch->GetView(guestTexture.viewType, vk::ImageSubresourceRange{
+                .aspectMask = guestTexture.aspect,
+                .baseMipLevel = guestTexture.viewMipBase + matchLevel,
+                .levelCount = guestTexture.viewMipCount,
+                .baseArrayLayer = guestTexture.baseArrayLayer + matchLayer,
+                .layerCount = guestTexture.GetViewLayerCount(),
+            }, guestTexture.format, guestTexture.swizzle);
+        } else if (fullMatch) {
+            ContextLock textureLock{tag, *fullMatch};
+            return fullMatch->GetView(guestTexture.viewType, vk::ImageSubresourceRange{
+                .aspectMask = guestTexture.aspect,
+                .baseMipLevel = guestTexture.viewMipBase,
+                .levelCount = guestTexture.viewMipCount,
+                .baseArrayLayer = guestTexture.baseArrayLayer,
+                .layerCount = guestTexture.GetViewLayerCount(),
+            }, guestTexture.format, guestTexture.swizzle);
         }
 
         for (auto &texture : matches)
