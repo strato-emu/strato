@@ -101,10 +101,6 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
             var axisRunnable : Runnable? = null // The Runnable that is used for counting down till an axis is selected
             val axisHandler = Handler(Looper.getMainLooper()) // The handler responsible for handling posting [axisRunnable]
 
-            // The last values of the HAT axes so that they can be ignored in [View.OnGenericMotionListener] so they are passed onto [DialogInterface.OnKeyListener] as [KeyEvent]s
-            var oldDpadX = 0.0f
-            var oldDpadY = 0.0f
-
             dialog?.setOnKeyListener { _, _, event ->
                 // We want all input events from Joysticks and Buttons except for [KeyEvent.KEYCODE_BACK] as that will should be processed elsewhere
                 if (((event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON) && event.keyCode != KeyEvent.KEYCODE_BACK) || event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) && event.repeatCount == 0) {
@@ -155,23 +151,18 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
                 }
             }
 
-            val axes = arrayOf(MotionEvent.AXIS_X, MotionEvent.AXIS_Y, MotionEvent.AXIS_Z, MotionEvent.AXIS_RZ, MotionEvent.AXIS_HAT_X, MotionEvent.AXIS_HAT_Y, MotionEvent.AXIS_LTRIGGER, MotionEvent.AXIS_RTRIGGER, MotionEvent.AXIS_THROTTLE, MotionEvent.AXIS_RUDDER, MotionEvent.AXIS_WHEEL, MotionEvent.AXIS_GAS, MotionEvent.AXIS_BRAKE).plus(IntRange(MotionEvent.AXIS_GENERIC_1, MotionEvent.AXIS_GENERIC_16).toList())
-
+            val axes = MotionHostEvent.axes
             val axesHistory = arrayOfNulls<Float>(axes.size) // The last recorded value of an axis, this is used to eliminate any stagnant axes
 
             view.setOnGenericMotionListener { _, event ->
-                // We retrieve the value of the HAT axes so that we can check for change and ignore any input from them so it'll be passed onto the [KeyEvent] handler
-                val dpadX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
-                val dpadY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-
                 // We want all input events from Joysticks and Buttons that are [MotionEvent.ACTION_MOVE] and not from the D-pad
-                if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE && dpadX == oldDpadX && dpadY == oldDpadY) {
+                if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE) {
                     // We iterate over every axis to check if any of them pass the selection threshold and if they do then select them by setting [deviceId], [inputId] and [axisPolarity]
                     for (axisItem in axes.withIndex()) {
                         val axis = axisItem.value
                         val value = event.getAxisValue(axis)
 
-                        // This checks the history of the axis so it we can ignore any stagnant axis
+                        // This checks the history of the axis so we can ignore any stagnant axis
                         if ((event.historySize == 0 || value == event.getHistoricalAxisValue(axis, 0)) && (axesHistory[axisItem.index]?.let { it == value } != false)) {
                             axesHistory[axisItem.index] = value
                             continue
@@ -246,9 +237,6 @@ class ButtonDialog @JvmOverloads constructor(private val item : ControllerButton
 
                     true
                 } else {
-                    oldDpadX = dpadX
-                    oldDpadY = dpadY
-
                     false
                 }
             }

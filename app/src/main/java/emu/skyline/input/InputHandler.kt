@@ -5,7 +5,6 @@
 
 package emu.skyline.input
 
-import android.graphics.PointF
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -121,57 +120,46 @@ class InputHandler(private val inputManager : InputManager, private val preferen
     private val axesHistory = arrayOfNulls<Float>(MotionHostEvent.axes.size)
 
     /**
-     * The last value of the HAT axes so it can be ignored in [onGenericMotionEvent] so they are handled by [dispatchKeyEvent] instead
-     */
-    private var oldHat = PointF()
-
-    /**
      * Handles translating any [MotionHostEvent]s to a [GuestEvent] that is passed into libskyline
      */
     fun handleMotionEvent(event : MotionEvent) : Boolean {
         if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE) {
-            val hat = PointF(event.getAxisValue(MotionEvent.AXIS_HAT_X), event.getAxisValue(MotionEvent.AXIS_HAT_Y))
+            for (axisItem in MotionHostEvent.axes.withIndex()) {
+                val axis = axisItem.value
+                var value = event.getAxisValue(axis)
 
-            if (hat == oldHat) {
-                for (axisItem in MotionHostEvent.axes.withIndex()) {
-                    val axis = axisItem.value
-                    var value = event.getAxisValue(axis)
+                if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
+                    var polarity = value > 0 || (value == 0f && axesHistory[axisItem.index]?.let { it >= 0 } == true)
 
-                    if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
-                        var polarity = value > 0 || (value == 0f && axesHistory[axisItem.index]?.let { it >= 0 } == true)
-
-                        val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
-                            inputManager.eventMap[hostEvent] ?: if (value == 0f) {
-                                polarity = false
-                                inputManager.eventMap[hostEvent.copy(polarity = false)]
-                            } else {
-                                null
-                            }
-                        }
-
-                        when (guestEvent) {
-                            is ButtonGuestEvent -> {
-                                if (guestEvent.button != ButtonId.Menu)
-                                    setButtonState(guestEvent.id, guestEvent.button.value(), if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.state else ButtonState.Released.state)
-                            }
-
-                            is AxisGuestEvent -> {
-                                value = guestEvent.value(value)
-                                value = if (polarity) abs(value) else -abs(value)
-                                value = if (guestEvent.axis == AxisId.LX || guestEvent.axis == AxisId.RX) value else -value
-
-                                setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (value * Short.MAX_VALUE).toInt())
-                            }
+                    val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
+                        inputManager.eventMap[hostEvent] ?: if (value == 0f) {
+                            polarity = false
+                            inputManager.eventMap[hostEvent.copy(polarity = false)]
+                        } else {
+                            null
                         }
                     }
 
-                    axesHistory[axisItem.index] = value
+                    when (guestEvent) {
+                        is ButtonGuestEvent -> {
+                            val action = if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.state else ButtonState.Released.state
+                            if (guestEvent.button != ButtonId.Menu)
+                                setButtonState(guestEvent.id, guestEvent.button.value(), action)
+                        }
+
+                        is AxisGuestEvent -> {
+                            value = guestEvent.value(value)
+                            value = if (polarity) abs(value) else -abs(value)
+                            value = if (guestEvent.axis == AxisId.LX || guestEvent.axis == AxisId.RX) value else -value
+                            setAxisValue(guestEvent.id, guestEvent.axis.ordinal, (value * Short.MAX_VALUE).toInt())
+                        }
+                    }
                 }
 
-                return true
-            } else {
-                oldHat = hat
+                axesHistory[axisItem.index] = value
             }
+
+            return true
         }
 
         return false

@@ -44,6 +44,8 @@ data class MotionHostEvent(override val descriptor : String = "", val axis : Int
                 MotionEvent.AXIS_Y,
                 MotionEvent.AXIS_Z,
                 MotionEvent.AXIS_RZ,
+                MotionEvent.AXIS_HAT_X,
+                MotionEvent.AXIS_HAT_Y,
                 MotionEvent.AXIS_LTRIGGER,
                 MotionEvent.AXIS_RTRIGGER,
                 MotionEvent.AXIS_THROTTLE,
