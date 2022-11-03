@@ -138,7 +138,7 @@ class InputHandler(private val inputManager : InputManager, private val preferen
                     var value = event.getAxisValue(axis)
 
                     if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || (axesHistory[axisItem.index]?.let { it == value } == false)) {
-                        var polarity = value >= 0
+                        var polarity = value > 0 || (value == 0f && axesHistory[axisItem.index]?.let { it >= 0 } == true)
 
                         val guestEvent = MotionHostEvent(event.device.descriptor, axis, polarity).let { hostEvent ->
                             inputManager.eventMap[hostEvent] ?: if (value == 0f) {
