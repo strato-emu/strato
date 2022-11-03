@@ -31,7 +31,7 @@ namespace skyline::gpu::interconnect::node {
                     .usage = view->texture->usage,
                     .width = view->texture->dimensions.width,
                     .height = view->texture->dimensions.height,
-                    .layerCount = view->texture->layerCount,
+                    .layerCount = view->range.layerCount,
                     .viewFormatCount = 1,
                     .pViewFormats = &view->format->vkFormat,
                 });
