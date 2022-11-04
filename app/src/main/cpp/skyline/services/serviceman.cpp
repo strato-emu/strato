@@ -49,6 +49,7 @@
 #include "mmnv/IRequest.h"
 #include "bt/IBluetoothUser.h"
 #include "btm/IBtmUser.h"
+#include "capsrv/IAlbumAccessorService.h"
 #include "ro/IRoInterface.h"
 #include "serviceman.h"
 
@@ -126,6 +127,7 @@ namespace skyline::service {
             SERVICE_CASE(bcat::IServiceCreator, "bcat:u")
             SERVICE_CASE(bt::IBluetoothUser, "bt")
             SERVICE_CASE(btm::IBtmUser, "btm:u")
+            SERVICE_CASE(capsrv::IAlbumAccessorService, "caps:a")
             SERVICE_CASE(nim::IShopServiceAccessServerInterface, "nim:eca")
             SERVICE_CASE(ro::IRoInterface, "ldr:ro")
             default:
