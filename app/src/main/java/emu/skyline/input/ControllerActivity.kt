@@ -11,9 +11,8 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDialogFragment
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.view.marginTop
+import androidx.core.view.*
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -173,6 +172,13 @@ class ControllerActivity : AppCompatActivity() {
         title = "${getString(R.string.config_controller)} #${id + 1}"
 
         setContentView(binding.root)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Apply inset padding to the controller list recycler view to avoid navigation bar overlap
+        ViewCompat.setOnApplyWindowInsetsListener(binding.controllerList) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(bottom = insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

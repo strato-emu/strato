@@ -6,10 +6,10 @@
 package emu.skyline
 
 import android.os.Bundle
-import android.view.KeyEvent
-import android.view.ViewTreeObserver
+import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.*
 import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
@@ -32,6 +32,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(binding.root)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -77,6 +78,18 @@ class SettingsActivity : AppCompatActivity() {
     class PreferenceFragment : PreferenceFragmentCompat() {
         companion object {
             private const val DIALOG_FRAGMENT_TAG = "androidx.preference.PreferenceFragment.DIALOG"
+        }
+
+        override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
+            val recyclerView = view.findViewById<View>(R.id.recycler_view)
+            // Apply inset padding to the settings recycler view to avoid navigation bar overlap
+            ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, windowInsets ->
+                val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+                v.updatePadding(bottom = insets.bottom)
+                WindowInsetsCompat.CONSUMED
+            }
+
+            super.onViewCreated(view, savedInstanceState)
         }
 
         /**
