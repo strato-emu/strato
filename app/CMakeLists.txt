@@ -291,6 +291,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/capsrv/IAlbumAccessorService.cpp
         ${source_DIR}/skyline/services/capsrv/ICaptureControllerService.cpp
         ${source_DIR}/skyline/services/capsrv/IAlbumApplicationService.cpp
+        ${source_DIR}/skyline/services/capsrv/IScreenShotApplicationService.cpp
         ${source_DIR}/skyline/services/ro/IRoInterface.cpp
         ${source_DIR}/skyline/applet/applet_creator.cpp
         ${source_DIR}/skyline/applet/controller_applet.cpp

@@ -52,6 +52,7 @@
 #include "capsrv/IAlbumAccessorService.h"
 #include "capsrv/ICaptureControllerService.h"
 #include "capsrv/IAlbumApplicationService.h"
+#include "capsrv/IScreenShotApplicationService.h"
 #include "ro/IRoInterface.h"
 #include "serviceman.h"
 
@@ -132,6 +133,7 @@ namespace skyline::service {
             SERVICE_CASE(capsrv::IAlbumAccessorService, "caps:a")
             SERVICE_CASE(capsrv::ICaptureControllerService, "caps:c")
             SERVICE_CASE(capsrv::IAlbumApplicationService, "caps:u")
+            SERVICE_CASE(capsrv::IScreenShotApplicationService, "caps:su")
             SERVICE_CASE(nim::IShopServiceAccessServerInterface, "nim:eca")
             SERVICE_CASE(ro::IRoInterface, "ldr:ro")
             default:
