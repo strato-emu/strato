@@ -257,13 +257,11 @@ namespace skyline::nce {
 
             for (auto &instruction : instructions) {
                 auto offsetValue{*(valuePointer + offset)};
-                if (offsetValue) {
-                    if (zeroed) {
-                        instruction = instructions::Movk(destination, offsetValue, offset).raw;
-                    } else {
-                        instruction = instructions::Movz(destination, offsetValue, offset).raw;
-                        zeroed = true;
-                    }
+                if (!zeroed) {
+                    instruction = instructions::Movz(destination, offsetValue, offset).raw;
+                    zeroed = true;
+                } else if (offsetValue && zeroed) {
+                    instruction = instructions::Movk(destination, offsetValue, offset).raw;
                 } else {
                     instruction = 0;
                 }
