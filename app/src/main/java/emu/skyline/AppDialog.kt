@@ -50,26 +50,16 @@ class AppDialog : BottomSheetDialogFragment() {
      */
     override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = AppDialogBinding.inflate(inflater).also { binding = it }.root
 
-    /**
-     * This expands the bottom sheet so that it's fully visible and map the B button to back
-     */
-    override fun onStart() {
-        super.onStart()
-
-        val behavior = BottomSheetBehavior.from(requireView().parent as View)
-        behavior.state = BottomSheetBehavior.STATE_EXPANDED
-
-        dialog?.setOnKeyListener { _, keyCode, event ->
-            if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_UP) {
-                dialog?.onBackPressed()
-                return@setOnKeyListener true
-            }
-            false
-        }
-    }
-
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Set the peek height after the root view has been laid out
+        view.apply {
+            post {
+                val behavior = BottomSheetBehavior.from(parent as View)
+                behavior.peekHeight = height
+            }
+        }
 
         val missingIcon = ContextCompat.getDrawable(requireActivity(), R.drawable.default_icon)!!.toBitmap(256, 256)
 
@@ -99,6 +89,15 @@ class AppDialog : BottomSheetDialogFragment() {
             info.setIntent(intent)
 
             shortcutManager.requestPinShortcut(info.build(), null)
+        }
+
+        dialog?.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BUTTON_B && event.action == KeyEvent.ACTION_UP) {
+                dialog?.onBackPressed()
+                true
+            } else {
+                false
+            }
         }
     }
 }
