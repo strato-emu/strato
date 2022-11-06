@@ -862,6 +862,13 @@ namespace skyline::gpu {
             range.aspectMask = format->Aspect(mapping.r == vk::ComponentSwizzle::eR);
         }
 
+        // Workaround to avoid aliasing when sampling from a BGRA texture with a RGBA view and a mapping to counteract that
+        // TODO: drop this after new texture manager
+        if (pFormat == format::R8G8B8A8Unorm && format == format::B8G8R8A8Unorm && mapping == vk::ComponentMapping{vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eA}) {
+            pFormat = format;
+            mapping = vk::ComponentMapping{};
+        }
+
         return std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping);
     }
 
