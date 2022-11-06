@@ -192,7 +192,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (cached.executionNumber == ctx.executor.executionNumber)
                 return cached.view;
 
-            if (cached.tic == textureHeaders[index]) {
+            if (cached.tic == textureHeaders[index] && !cached.view->texture->replaced) {
                 cached.executionNumber = ctx.executor.executionNumber;
                 return cached.view;
             }
@@ -201,7 +201,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         TextureImageControl &textureHeader{textureHeaders[index]};
         auto &texture{textureHeaderStore[textureHeader]};
 
-        if (!texture) {
+        if (!texture || texture->texture->replaced) {
             // If the entry didn't exist prior then we need to convert the TIC to a GuestTexture
             GuestTexture guest{};
             if (auto format{ConvertTicFormat(textureHeader.formatWord, textureHeader.isSrgb)}) {

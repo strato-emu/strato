@@ -40,7 +40,7 @@ namespace skyline::gpu {
 
         while (hostMapping != textures.begin() && (--hostMapping)->end() > guestMapping.begin()) {
             auto &hostMappings{hostMapping->texture->guest->mappings};
-            if (!hostMapping->contains(guestMapping))
+            if (!hostMapping->contains(guestMapping) || hostMapping->texture->replaced)
                 continue;
 
             // We need to check that all corresponding mappings in the candidate texture and the guest texture match up
@@ -96,8 +96,15 @@ namespace skyline::gpu {
                         layerMemOffset += matchGuestTexture.GetLayerStride();
                     }
 
-                    if (matched)
+                    if (matched) {
+                        if (layerMipMatch)
+                            layerMipMatch->replaced = true;
+
+                        if (fullMatch)
+                            fullMatch->replaced = true;
+
                         layerMipMatch = hostMapping->texture;
+                    }
                 }
             }
          }

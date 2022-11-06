@@ -470,6 +470,7 @@ namespace skyline::gpu {
         size_t deswizzledSurfaceSize{}; //!< The size of the guest surface with linear tiling, calculated with the guest format which may differ from the host format
         size_t surfaceSize{}; //!< The size of the entire surface given linear tiling, this contains all mip levels and layers
         vk::SampleCountFlagBits sampleCount;
+        bool replaced{};
 
         /**
          * @brief Creates a texture object wrapping the supplied backing with the supplied attributes
