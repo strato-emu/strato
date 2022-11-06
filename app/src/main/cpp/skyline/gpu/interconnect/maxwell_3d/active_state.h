@@ -48,14 +48,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         BufferBinding megaBufferBinding{};
         vk::IndexType indexType{};
         u32 usedElementCount{};
+        u32 usedFirstIndex{};
         bool usedQuadConversion{};
 
       public:
         IndexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 elementCount);
+        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 firstIndex, u32 elementCount);
 
-        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 elementCount);
+        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 firstIndex, u32 elementCount);
 
         void PurgeCaches();
     };
@@ -256,7 +257,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         /**
          * @brief Updates the active state for a given draw operation, removing the dirtiness of all member states
          */
-        void Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawElementCount);
+        void Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount);
 
         Pipeline *GetPipeline();
 

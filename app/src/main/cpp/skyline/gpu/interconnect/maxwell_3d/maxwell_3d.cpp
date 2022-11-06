@@ -204,7 +204,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         StateUpdateBuilder builder{*ctx.executor.allocator};
 
         Pipeline *oldPipeline{activeState.GetPipeline()};
-        activeState.Update(ctx, textures, constantBuffers.boundConstantBuffers, builder, indexed, topology, count);
+        activeState.Update(ctx, textures, constantBuffers.boundConstantBuffers, builder, indexed, topology, first, count);
         if (directState.inputAssembly.NeedsQuadConversion()) {
             count = conversion::quads::GetIndexCount(count);
             first = 0;
