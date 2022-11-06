@@ -340,8 +340,10 @@ namespace skyline::gpu {
             return {};
 
         // If the active execution has changed all previous allocations are now invalid
-        if (executionNumber != lastExecutionNumber) [[unlikely]]
+        if (executionNumber != lastExecutionNumber) [[unlikely]] {
             ResetMegabufferState();
+            lastExecutionNumber = executionNumber;
+        }
 
         // If more than half the buffer has been megabuffered in chunks within the same execution assume this will generally be the case for this buffer and just megabuffer the whole thing without chunking
         if (unifiedMegaBufferEnabled || megaBufferViewAccumulatedSize > (backing.size() / 2)) {
