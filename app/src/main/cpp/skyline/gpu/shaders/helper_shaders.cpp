@@ -23,7 +23,7 @@ namespace skyline::gpu {
         );
     }
 
-    SimpleColourRTShader::SimpleColourRTShader(GPU &gpu, std::shared_ptr<vfs::Backing> vertexShader, std::shared_ptr<vfs::Backing> fragmentShader)
+    SimpleSingleRtShader::SimpleSingleRtShader(GPU &gpu, std::shared_ptr<vfs::Backing> vertexShader, std::shared_ptr<vfs::Backing> fragmentShader)
         : vertexShaderModule{CreateShaderModule(gpu, *vertexShader)},
           fragmentShaderModule{CreateShaderModule(gpu, *fragmentShader)},
           shaderStages{{
@@ -39,8 +39,10 @@ namespace skyline::gpu {
                            }}
           } {}
 
-    cache::GraphicsPipelineCache::CompiledPipeline SimpleColourRTShader::GetPipeline(GPU &gpu,
-                                                                                     TextureView *colorAttachment,
+    cache::GraphicsPipelineCache::CompiledPipeline SimpleSingleRtShader::GetPipeline(GPU &gpu,
+                                                                                     TextureView *colorAttachment, TextureView *depthStencilAttachment,
+                                                                                     bool depthWrite, bool stencilWrite, u32 stencilValue,
+                                                                                     vk::ColorComponentFlags colorWriteMask,
                                                                                      span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges) {
         constexpr static vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState{
             .topology = vk::PrimitiveTopology::eTriangleList,
@@ -73,19 +75,31 @@ namespace skyline::gpu {
             .alphaToOneEnable = false
         };
 
-        constexpr static vk::PipelineDepthStencilStateCreateInfo depthStencilState{
-            .depthTestEnable = false,
-            .depthWriteEnable = false,
+        vk::PipelineDepthStencilStateCreateInfo depthStencilState{
+            .depthTestEnable = depthWrite,
+            .depthWriteEnable = depthWrite,
+            .depthCompareOp = vk::CompareOp::eAlways,
             .depthBoundsTestEnable = false,
-            .stencilTestEnable = false,
+            .stencilTestEnable = stencilWrite,
         };
 
-        constexpr static vk::PipelineColorBlendAttachmentState attachmentState{
+        if (stencilWrite) {
+            depthStencilState.front = depthStencilState.back = {
+                .depthFailOp = vk::StencilOp::eReplace,
+                .passOp = vk::StencilOp::eReplace,
+                .compareOp = vk::CompareOp::eAlways,
+                .compareMask = 0xFF,
+                .writeMask = 0xFF,
+                .reference = stencilValue
+            };
+        }
+
+        vk::PipelineColorBlendAttachmentState attachmentState{
             .blendEnable = false,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+            .colorWriteMask = colorWriteMask
         };
 
-        constexpr static vk::PipelineColorBlendStateCreateInfo blendState{
+        vk::PipelineColorBlendStateCreateInfo blendState{
             .logicOpEnable = false,
             .attachmentCount = 1,
             .pAttachments = &attachmentState
@@ -100,11 +114,11 @@ namespace skyline::gpu {
 
         vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
 
-        auto colourAttachmentDimensions{colorAttachment->texture->dimensions};
+        auto attachmentDimensions{colorAttachment ? colorAttachment->texture->dimensions : depthStencilAttachment->texture->dimensions};
 
         vk::Viewport viewport{
-            .height = static_cast<float>(colourAttachmentDimensions.height),
-            .width = static_cast<float>(colourAttachmentDimensions.width),
+            .height = static_cast<float>(attachmentDimensions.height),
+            .width = static_cast<float>(attachmentDimensions.width),
             .x = 0.0f,
             .y = 0.0f,
             .minDepth = 0.0f,
@@ -112,7 +126,7 @@ namespace skyline::gpu {
         };
 
         vk::Rect2D scissor{
-            .extent = colourAttachmentDimensions
+            .extent = attachmentDimensions
         };
 
         vk::PipelineViewportStateCreateInfo viewportState{
@@ -134,7 +148,7 @@ namespace skyline::gpu {
             .colorBlendState = blendState,
             .dynamicState = {},
             .colorAttachments = span<TextureView *>{colorAttachment},
-            .depthStencilAttachment = nullptr,
+            .depthStencilAttachment = depthStencilAttachment,
         }, layoutBindings, pushConstantRanges, true);
     }
 
@@ -142,6 +156,12 @@ namespace skyline::gpu {
         struct Vec2 {
             float x, y;
         };
+
+        struct Vec4 {
+            float x, y, z, w;
+        };
+
+        using Bool = u32;
     }
 
     namespace blit {
@@ -177,7 +197,7 @@ namespace skyline::gpu {
     };
 
     BlitHelperShader::BlitHelperShader(GPU &gpu, std::shared_ptr<vfs::FileSystem> shaderFileSystem)
-        : SimpleColourRTShader{gpu, shaderFileSystem->OpenFile("shaders/blit.vert.spv"), shaderFileSystem->OpenFile("shaders/blit.frag.spv")},
+        : SimpleSingleRtShader{gpu, shaderFileSystem->OpenFile("shaders/blit.vert.spv"), shaderFileSystem->OpenFile("shaders/blit.frag.spv")},
           bilinearSampler{gpu.vkDevice.createSampler(
               vk::SamplerCreateInfo{
                   .addressModeU = vk::SamplerAddressMode::eRepeat,
@@ -231,7 +251,10 @@ namespace skyline::gpu {
                 .dstSrcScaleFactor = {dstSrcScaleFactorX * (srcRect.width / srcImageDimensions.width), dstSrcScaleFactorY * (srcRect.height / srcImageDimensions.height)},
                 .srcHeightRecip = 1.0f / srcImageDimensions.height
             },
-            GetPipeline(gpu, dstImageView, {blit::SamplerLayoutBinding}, blit::PushConstantRanges))
+            GetPipeline(gpu, dstImageView,
+                        nullptr, false, false, 0,
+                        vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+                        {blit::SamplerLayoutBinding}, blit::PushConstantRanges))
         };
 
         vk::DescriptorImageInfo imageInfo{
@@ -263,7 +286,63 @@ namespace skyline::gpu {
 
     }
 
+    namespace clear {
+        struct FragmentPushConstantLayout {
+            glsl::Vec4 color;
+            glsl::Bool clearDepth;
+            float depth;
+        };
+
+        constexpr static std::array<vk::PushConstantRange, 1> PushConstantRanges{
+            vk::PushConstantRange{
+                .stageFlags = vk::ShaderStageFlagBits::eFragment,
+                .size = sizeof(FragmentPushConstantLayout),
+                .offset = 0
+            }
+        };
+    }
+
+    ClearHelperShader::ClearHelperShader(GPU &gpu, std::shared_ptr<vfs::FileSystem> shaderFileSystem)
+        : SimpleSingleRtShader{gpu, shaderFileSystem->OpenFile("shaders/clear.vert.spv"), shaderFileSystem->OpenFile("shaders/clear.frag.spv")} {}
+
+    void ClearHelperShader::Clear(GPU &gpu, vk::ImageAspectFlags mask, vk::ColorComponentFlags components, vk::ClearValue value, TextureView *dstImageView,
+                                 std::function<void(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&)> &&recordCb) {
+        struct DrawState {
+            clear::FragmentPushConstantLayout fragmentPushConstants;
+            cache::GraphicsPipelineCache::CompiledPipeline pipeline;
+
+            DrawState(GPU &gpu,
+                      clear::FragmentPushConstantLayout fragmentPushConstants,
+                      cache::GraphicsPipelineCache::CompiledPipeline pipeline)
+                : fragmentPushConstants{fragmentPushConstants},
+                  pipeline{pipeline} {}
+        };
+
+        bool writeColor{mask & vk::ImageAspectFlagBits::eColor};
+        bool writeDepth{mask & vk::ImageAspectFlagBits::eDepth};
+        bool writeStencil{mask & vk::ImageAspectFlagBits::eStencil};
+
+        auto drawState{std::make_shared<DrawState>(
+            gpu,
+            clear::FragmentPushConstantLayout{
+                .color = {value.color.float32[0], value.color.float32[1], value.color.float32[2], value.color.float32[3]},
+                .clearDepth = (mask & vk::ImageAspectFlagBits::eDepth) != vk::ImageAspectFlags{},
+                .depth = value.depthStencil.depth
+            },
+            GetPipeline(gpu, writeColor ? dstImageView : nullptr, (writeDepth || writeStencil) ? dstImageView : nullptr, writeDepth, writeStencil, value.depthStencil.stencil, components, {}, clear::PushConstantRanges))
+        };
+
+        recordCb([drawState = std::move(drawState)](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &cycle, GPU &gpu, vk::RenderPass, u32) {
+            cycle->AttachObject(drawState);
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, drawState->pipeline.pipeline);
+            commandBuffer.pushConstants(drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0,
+                                        vk::ArrayProxy<const clear::FragmentPushConstantLayout>{drawState->fragmentPushConstants});
+            commandBuffer.draw(6, 1, 0, 0);
+        });
+    }
+
     HelperShaders::HelperShaders(GPU &gpu, std::shared_ptr<vfs::FileSystem> shaderFileSystem)
-        : blitHelperShader(gpu, std::move(shaderFileSystem)) {}
+        : blitHelperShader(gpu, shaderFileSystem),
+          clearHelperShader(gpu, shaderFileSystem) {}
 
 }

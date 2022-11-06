@@ -16,29 +16,31 @@ namespace skyline::gpu {
     class GPU;
 
     /**
-     * @brief A base class that can be inherited by helper shaders that render to a single color rendertarget to simplify pipeline creation
+     * @brief A base class that can be inherited by helper shaders that render to a single color/depth rendertarget to simplify pipeline creation
      */
-    class SimpleColourRTShader {
+    class SimpleSingleRtShader {
       protected:
         vk::raii::ShaderModule vertexShaderModule;
         vk::raii::ShaderModule fragmentShaderModule;
 
         std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages; //!< Shader stages for the vertex and fragment shader modules
 
-        SimpleColourRTShader(GPU &gpu, std::shared_ptr<vfs::Backing> vertexShader, std::shared_ptr<vfs::Backing> fragmentShader);
+        SimpleSingleRtShader(GPU &gpu, std::shared_ptr<vfs::Backing> vertexShader, std::shared_ptr<vfs::Backing> fragmentShader);
 
         /**
          * @brief Returns a potentially cached pipeline built according to the supplied input state
          */
         cache::GraphicsPipelineCache::CompiledPipeline GetPipeline(GPU &gpu,
-                                                                   TextureView *colorAttachment,
+                                                                   TextureView *colorAttachment, TextureView *depthStenilAttachment,
+                                                                   bool depthWrite, bool stencilWrite, u32 stencilValue,
+                                                                   vk::ColorComponentFlags colorWriteMask,
                                                                    span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges);
     };
 
     /**
      * @brief Simple helper shader for blitting a texture to a rendertarget with subpixel-precision
      */
-    class BlitHelperShader : SimpleColourRTShader {
+    class BlitHelperShader : SimpleSingleRtShader {
       private:
         vk::raii::Sampler bilinearSampler;
         vk::raii::Sampler nearestSampler;
@@ -74,10 +76,29 @@ namespace skyline::gpu {
     };
 
     /**
+     * @brief Simple helper shader for clearing a texture to a given color
+     */
+    class ClearHelperShader : SimpleSingleRtShader {
+      public:
+        ClearHelperShader(GPU &gpu, std::shared_ptr<vfs::FileSystem> shaderFileSystem);
+
+        /**
+         * @brief Records a sequenced GPU clear operation using a shader
+         * @param mask Mask of which aspects to clear
+         * @param components Mask of which components to clear
+         * @param value The value to clear to
+         * @param recordCb Callback used to record the blit commands for sequenced execution on the GPU
+         */
+        void Clear(GPU &gpu, vk::ImageAspectFlags mask, vk::ColorComponentFlags components, vk::ClearValue value, TextureView *dstImageView,
+                  std::function<void(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&)> &&recordCb);
+    };
+
+    /**
      * @brief Holds all helper shaders to avoid redundantly recreating them on each usage
      */
     struct HelperShaders {
         BlitHelperShader blitHelperShader;
+        ClearHelperShader clearHelperShader;
 
         HelperShaders(GPU &gpu, std::shared_ptr<vfs::FileSystem> shaderFileSystem);
     };
