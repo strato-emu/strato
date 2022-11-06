@@ -865,7 +865,7 @@ namespace skyline::gpu {
         return std::make_shared<TextureView>(shared_from_this(), type, range, pFormat, mapping);
     }
 
-    void Texture::CopyFrom(std::shared_ptr<Texture> source, vk::Semaphore waitSemaphore, vk::Semaphore signalSemaphore, const vk::ImageSubresourceRange &subresource) {
+    void Texture::CopyFrom(std::shared_ptr<Texture> source, vk::Semaphore waitSemaphore, vk::Semaphore signalSemaphore, texture::Format srcFormat, const vk::ImageSubresourceRange &subresource) {
         if (cycle)
             cycle->WaitSubmit();
         if (source->cycle)
@@ -928,12 +928,32 @@ namespace skyline::gpu {
                     .baseArrayLayer = subresource.baseArrayLayer,
                     .layerCount = subresource.layerCount == VK_REMAINING_ARRAY_LAYERS ? layerCount - subresource.baseArrayLayer : subresource.layerCount,
                     };
-                for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? levelCount - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++)
-                    commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
-                        .srcSubresource = subresourceLayers,
-                        .dstSubresource = subresourceLayers,
-                        .extent = dimensions,
+                for (; subresourceLayers.mipLevel < (subresource.levelCount == VK_REMAINING_MIP_LEVELS ? levelCount - subresource.baseMipLevel : subresource.levelCount); subresourceLayers.mipLevel++) {
+                    if (srcFormat != format) {
+                        commandBuffer.blitImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageBlit{
+                                .srcSubresource = subresourceLayers,
+                                .srcOffsets = std::array<vk::Offset3D, 2>{
+                                    vk::Offset3D{0, 0, 0},
+                                    vk::Offset3D{static_cast<i32>(dimensions.width),
+                                                 static_cast<i32>(dimensions.height),
+                                                 static_cast<i32>(subresourceLayers.layerCount)}
+                                },
+                                .dstSubresource = subresourceLayers,
+                                .dstOffsets = std::array<vk::Offset3D, 2>{
+                                    vk::Offset3D{0, 0, 0},
+                                    vk::Offset3D{static_cast<i32>(dimensions.width),
+                                                 static_cast<i32>(dimensions.height),
+                                                 static_cast<i32>(subresourceLayers.layerCount)}
+                                }
+                            }, vk::Filter::eLinear);
+                    } else {
+                        commandBuffer.copyImage(sourceBacking, vk::ImageLayout::eTransferSrcOptimal, destinationBacking, vk::ImageLayout::eTransferDstOptimal, vk::ImageCopy{
+                            .srcSubresource = subresourceLayers,
+                            .dstSubresource = subresourceLayers,
+                            .extent = dimensions,
                         });
+                    }
+                }
 
                 if (layout != vk::ImageLayout::eTransferDstOptimal)
                     commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, {}, {}, vk::ImageMemoryBarrier{
