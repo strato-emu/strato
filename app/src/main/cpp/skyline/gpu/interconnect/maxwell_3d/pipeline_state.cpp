@@ -213,7 +213,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         bool thirdDimensionDefinesArraySize{engine->ztSize.control == engine::ZtSize::Control::ThirdDimensionDefinesArraySize};
         if (engine->ztSize.control == engine::ZtSize::Control::ThirdDimensionDefinesArraySize) {
             guest.layerCount = engine->ztSize.thirdDimension;
-            guest.viewType = vk::ImageViewType::e2DArray;
+            guest.viewType = engine->ztSize.thirdDimension > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
         } else if (engine->ztSize.control == engine::ZtSize::Control::ArraySizeIsOne) {
             guest.layerCount = 1;
             guest.viewType = vk::ImageViewType::e2D;
