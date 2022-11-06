@@ -288,10 +288,13 @@ namespace skyline::gpu {
             throw exception("Cannot update swapchain to accomodate image extent: {}x{} ({}x{}-{}x{})", extent.width, extent.height, capabilities.minImageExtent.width, capabilities.minImageExtent.height, capabilities.maxImageExtent.width, capabilities.maxImageExtent.height);
 
         vk::Format vkFormat{*format};
+        texture::Format underlyingFormat{format};
         if (swapchainFormat != format) {
             auto formats{gpu.vkPhysicalDevice.getSurfaceFormatsKHR(**vkSurface)};
-            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{vkFormat, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end())
-                Logger::Warn("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(vkFormat), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
+            if (std::find(formats.begin(), formats.end(), vk::SurfaceFormatKHR{vkFormat, vk::ColorSpaceKHR::eSrgbNonlinear}) == formats.end()) {
+                Logger::Debug("Surface doesn't support requested image format '{}' with colorspace '{}'", vk::to_string(vkFormat), vk::to_string(vk::ColorSpaceKHR::eSrgbNonlinear));
+                underlyingFormat = format::R8G8B8A8Unorm;
+            }
         }
 
         constexpr vk::ImageUsageFlags presentUsage{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst};
@@ -306,7 +309,7 @@ namespace skyline::gpu {
         vkSwapchain.emplace(gpu.vkDevice, vk::SwapchainCreateInfoKHR{
             .surface = **vkSurface,
             .minImageCount = minImageCount,
-            .imageFormat = vkFormat,
+            .imageFormat = *underlyingFormat,
             .imageColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear,
             .imageExtent = extent,
             .imageArrayLayers = 1,
@@ -323,7 +326,7 @@ namespace skyline::gpu {
 
         for (size_t index{}; index < vkImages.size(); index++) {
             auto &slot{images[index]};
-            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, format, vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal, vk::ImageCreateFlags{}, presentUsage);
+            slot = std::make_shared<Texture>(*state.gpu, vkImages[index], extent, underlyingFormat, vk::ImageLayout::eUndefined, vk::ImageTiling::eOptimal, vk::ImageCreateFlags{}, presentUsage);
             slot->TransitionLayout(vk::ImageLayout::ePresentSrcKHR);
         }
         for (size_t index{vkImages.size()}; index < MaxSwapchainImageCount; index++)
