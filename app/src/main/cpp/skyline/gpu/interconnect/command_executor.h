@@ -19,6 +19,17 @@ namespace skyline::gpu::interconnect {
          * @brief Single execution slot, buffered back and forth between the GPFIFO thread and the record thread
          */
         struct Slot {
+            /**
+             * @brief Helper to begin the slot command buffer on the cycle waiter thread
+             */
+            struct ScopedBegin {
+                Slot &slot;
+
+                ScopedBegin(Slot &slot);
+
+                ~ScopedBegin();
+            };
+
             vk::raii::CommandPool commandPool; //!< Use one command pool per slot since command buffers from different slots may be recorded into on multiple threads at the same time
             vk::raii::CommandBuffer commandBuffer;
             vk::raii::Fence fence;
@@ -26,7 +37,10 @@ namespace skyline::gpu::interconnect {
             std::shared_ptr<FenceCycle> cycle;
             boost::container::stable_vector<node::NodeVariant> nodes;
             LinearAllocatorState<> allocator;
+            std::mutex beginLock;
+            std::condition_variable beginCondition;
             u32 executionNumber;
+            bool ready{}; //!< If this slot's command buffer has had 'beginCommandBuffer' called and is ready to have commands recorded into it
             bool capture{}; //!< If this slot's Vulkan commands should be captured using the renderdoc API
 
             Slot(GPU &gpu);
@@ -38,6 +52,13 @@ namespace skyline::gpu::interconnect {
              * @note A new fence cycle for the reset command buffer
              */
             std::shared_ptr<FenceCycle> Reset(GPU &gpu);
+
+            /**
+             * @brief Waits for the command buffer to be began so it can be recorded into
+             */
+            void WaitReady();
+
+            void Begin();
         };
 
       private:

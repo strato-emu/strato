@@ -15,6 +15,12 @@ namespace skyline::gpu::interconnect {
           outgoing{*state.settings->executorSlotCount},
           thread{&CommandRecordThread::Run, this} {}
 
+    CommandRecordThread::Slot::ScopedBegin::ScopedBegin(CommandRecordThread::Slot &slot) : slot{slot} {}
+
+    CommandRecordThread::Slot::ScopedBegin::~ScopedBegin() {
+        slot.Begin();
+    }
+
     static vk::raii::CommandBuffer AllocateRaiiCommandBuffer(GPU &gpu, vk::raii::CommandPool &pool) {
         return {gpu.vkDevice, (*gpu.vkDevice).allocateCommandBuffers(
                     {
@@ -35,20 +41,38 @@ namespace skyline::gpu::interconnect {
           commandBuffer{AllocateRaiiCommandBuffer(gpu, commandPool)},
           fence{gpu.vkDevice, vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }},
           semaphore{gpu.vkDevice, vk::SemaphoreCreateInfo{}},
-          cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)} {}
+          cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)} {
+        Begin();
+    }
 
     CommandRecordThread::Slot::Slot(Slot &&other)
         : commandPool{std::move(other.commandPool)},
           commandBuffer{std::move(other.commandBuffer)},
           fence{std::move(other.fence)},
           semaphore{std::move(other.semaphore)},
-          cycle{std::move(other.cycle)} {}
+          cycle{std::move(other.cycle)},
+          ready{other.ready} {}
 
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
         cycle->Wait();
         cycle = std::make_shared<FenceCycle>(*cycle);
         // Command buffer doesn't need to be reset since that's done implicitly by begin
         return cycle;
+    }
+
+    void CommandRecordThread::Slot::WaitReady() {
+        std::unique_lock lock{beginLock};
+        beginCondition.wait(lock, [this] { return ready; });
+        cycle->AttachObject(std::make_shared<ScopedBegin>(*this));
+    }
+
+    void CommandRecordThread::Slot::Begin() {
+        std::unique_lock lock{beginLock};
+        commandBuffer.begin(vk::CommandBufferBeginInfo{
+            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+        });
+        ready = true;
+        beginCondition.notify_all();
     }
 
     void CommandRecordThread::ProcessSlot(Slot *slot) {
@@ -83,6 +107,7 @@ namespace skyline::gpu::interconnect {
         }
 
         slot->commandBuffer.end();
+        slot->ready = false;
 
         gpu.scheduler.SubmitCommandBuffer(slot->commandBuffer, slot->cycle);
 
@@ -404,9 +429,7 @@ namespace skyline::gpu::interconnect {
             FinishRenderPass();
 
         {
-            slot->commandBuffer.begin(vk::CommandBufferBeginInfo{
-                .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
-            });
+            slot->WaitReady();
 
             // We need this barrier here to ensure that resources are in the state we expect them to be in, we shouldn't overwrite resources while prior commands might still be using them or read from them while they might be modified by prior commands
             slot->commandBuffer.pipelineBarrier(
