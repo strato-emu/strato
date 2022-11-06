@@ -148,7 +148,7 @@ namespace skyline::kernel::type {
             // If we were the highest priority thread then we need to inherit priorities for all threads we're waiting on recursively
             state.thread->UpdatePriorityInheritance();
 
-        state.scheduler->WaitSchedule(false);
+        state.scheduler->WaitSchedule();
 
         return {};
     }
@@ -243,7 +243,7 @@ namespace skyline::kernel::type {
 
             return result::TimedOut;
         } else {
-            state.scheduler->WaitSchedule(false);
+            state.scheduler->WaitSchedule();
         }
 
         KHandle value{};
