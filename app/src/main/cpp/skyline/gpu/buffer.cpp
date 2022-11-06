@@ -330,7 +330,7 @@ namespace skyline::gpu {
 
     BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber,
                                             vk::DeviceSize offset, vk::DeviceSize size) {
-        if (!everHadInlineUpdate && sequenceNumber < FrequentlySyncedThreshold)
+        if ((!everHadInlineUpdate && sequenceNumber < FrequentlySyncedThreshold) || size >= MegaBufferChunkSize)
             // Don't megabuffer buffers that have never had inline updates and are not frequently synced since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
             return {};
 
@@ -346,7 +346,7 @@ namespace skyline::gpu {
         }
 
         // If more than half the buffer has been megabuffered in chunks within the same execution assume this will generally be the case for this buffer and just megabuffer the whole thing without chunking
-        if (unifiedMegaBufferEnabled || megaBufferViewAccumulatedSize > (backing.size() / 2)) {
+        if (unifiedMegaBufferEnabled || (megaBufferViewAccumulatedSize > (backing.size() / 2) && backing.size() < MegaBufferChunkSize)) {
             if (!unifiedMegaBuffer) {
                 unifiedMegaBuffer = allocator.Push(pCycle, mirror, true);
                 unifiedMegaBufferEnabled = true;

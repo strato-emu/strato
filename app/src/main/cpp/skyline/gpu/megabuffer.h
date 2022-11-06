@@ -6,6 +6,8 @@
 #include "memory_manager.h"
 
 namespace skyline::gpu {
+    constexpr static vk::DeviceSize MegaBufferChunkSize{25 * 1024 * 1024}; //!< Size in bytes of a single megabuffer chunk (25MiB)
+
     /**
       * @brief A simple linearly allocated GPU-side buffer used to temporarily store buffer modifications allowing them to be replayed in-sequence on the GPU
       * @note This class is **not** thread-safe and any calls must be externally synchronized

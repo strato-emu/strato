@@ -5,8 +5,6 @@
 #include "megabuffer.h"
 
 namespace skyline::gpu {
-    constexpr static vk::DeviceSize MegaBufferChunkSize{25 * 1024 * 1024}; //!< Size in bytes of a single megabuffer chunk (25MiB)
-
     MegaBufferChunk::MegaBufferChunk(GPU &gpu) : backing{gpu.memory.AllocateBuffer(MegaBufferChunkSize)}, freeRegion{backing.subspan(PAGE_SIZE)} {}
 
     bool MegaBufferChunk::TryReset() {
