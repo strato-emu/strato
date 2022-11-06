@@ -25,13 +25,11 @@ namespace skyline::gpu {
 
         std::shared_ptr<Texture> match{};
         boost::container::small_vector<std::shared_ptr<Texture>, 4> matches{};
-        auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping, [](const auto &value, const auto &element) {
-            return value.end() < element.end();
-        })}, hostMapping{mappingEnd};
-
-
-        while (hostMapping != textures.end() && guestMapping.begin() < hostMapping->end())
-            hostMapping++;
+        auto mappingEnd{std::upper_bound(textures.begin(), textures.end(), guestMapping, [guestMapping](const auto &value, const auto &element) {
+            return guestMapping.end() < element.end();
+        })}, hostMapping{std::lower_bound(mappingEnd, textures.end(), guestMapping, [guestMapping](const auto &value, const auto &element) {
+            return guestMapping.begin() < element.end();
+        })};
 
         std::shared_ptr<Texture> fullMatch{};
         std::shared_ptr<Texture> layerMipMatch{};
