@@ -54,12 +54,14 @@ namespace skyline::loader {
          */
         struct ExecutableSymbolicInfo {
             void *patchStart; //!< A pointer to the start of this executable's patch section
+            void *hookStart; //!< A pointer to the start of this executable's hook section
             void *programStart; //!< A pointer to the start of the executable
             void *programEnd; //!< A pointer to the end of the executable
             std::string name; //!< The name of the executable
             std::string patchName; //!< The name of the patch section
-            span<Elf64_Sym> symbols; //!< A span over the .dynsym section
-            span<char> symbolStrings; //!< A span over the .dynstr section
+            std::string hookName; //!< The name of the hook section
+            std::vector<Elf64_Sym> symbols; //!< A span over the .dynsym section
+            std::vector<char> symbolStrings; //!< A span over the .dynstr section
         };
 
         std::vector<ExecutableSymbolicInfo> executables;
@@ -80,7 +82,7 @@ namespace skyline::loader {
          * @param name An optional name for the executable, used for symbol resolution
          * @return An ExecutableLoadInfo struct containing the load base and size
          */
-        ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset = 0, const std::string &name = {});
+        ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset = 0, const std::string &name = {}, bool dynamicallyLinked = false);
 
         std::optional<vfs::NACP> nacp;
         std::shared_ptr<vfs::Backing> romFs;

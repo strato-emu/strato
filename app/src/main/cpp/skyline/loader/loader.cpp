@@ -7,55 +7,111 @@
 #include <os.h>
 #include <kernel/types/KProcess.h>
 #include <kernel/memory.h>
+#include <hle/symbol_hook_table.h>
 #include "loader.h"
 
 namespace skyline::loader {
-    Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name) {
+    Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name, bool dynamicallyLinked) {
         u8 *base{reinterpret_cast<u8 *>(process->memory.base.data() + offset)};
 
-        u64 textSize{executable.text.contents.size()};
-        u64 roSize{executable.ro.contents.size()};
-        u64 dataSize{executable.data.contents.size() + executable.bssSize};
+        size_t textSize{executable.text.contents.size()};
+        size_t roSize{executable.ro.contents.size()};
+        size_t dataSize{executable.data.contents.size() + executable.bssSize};
 
         if (!util::IsPageAligned(textSize) || !util::IsPageAligned(roSize) || !util::IsPageAligned(dataSize))
-            throw exception("LoadProcessData: Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, roSize, dataSize);
+            throw exception("Sections are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", textSize, roSize, dataSize);
+
+        if (executable.text.offset != 0)
+            throw exception("Executable's .text offset is not 0: 0x{:X}", executable.text.offset);
 
         if (!util::IsPageAligned(executable.text.offset) || !util::IsPageAligned(executable.ro.offset) || !util::IsPageAligned(executable.data.offset))
-            throw exception("LoadProcessData: Section offsets are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", executable.text.offset, executable.ro.offset, executable.data.offset);
+            throw exception("Section offsets are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", executable.text.offset, executable.ro.offset, executable.data.offset);
 
         auto patch{state.nce->GetPatchData(executable.text.contents)};
-        auto size{patch.size + textSize + roSize + dataSize};
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base, patch.size}, memory::Permission{false, false, false}, memory::states::Reserved); // ---
-        Logger::Debug("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
+        span dynsym{reinterpret_cast<Elf64_Sym *>(executable.ro.contents.data() + executable.dynsym.offset), executable.dynsym.size / sizeof(Elf64_Sym)};
+        span dynstr{reinterpret_cast<char *>(executable.ro.contents.data() + executable.dynstr.offset), executable.dynstr.size};
+        std::vector<nce::NCE::HookedSymbolEntry> executableSymbols;
+        size_t hookSize{};
+        if (dynamicallyLinked) {
+            for (auto &symbol : dynsym) {
+                if (symbol.st_name == 0 || symbol.st_value == 0)
+                    continue;
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base + patch.size + executable.text.offset, textSize}, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
-        Logger::Debug("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.text.offset, textSize);
+                if (ELF64_ST_TYPE(symbol.st_info) != STT_FUNC || ELF64_ST_BIND(symbol.st_info) != STB_GLOBAL || symbol.st_shndx == SHN_UNDEF)
+                    continue;
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base + patch.size + executable.ro.offset, roSize}, memory::Permission{true, false, false}, memory::states::CodeStatic); // R--
-        Logger::Debug("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.ro.offset, roSize);
+                std::string_view symbolName{dynstr.data() + symbol.st_name};
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base + patch.size + executable.data.offset, dataSize}, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
-        Logger::Debug("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", base + patch.size + executable.data.offset, dataSize);
+                auto item{std::find_if(hle::HookedSymbols.begin(), hle::HookedSymbols.end(), [&symbolName](const auto &item) {
+                    return item.name == symbolName;
+                })};
+                if (item != hle::HookedSymbols.end()) {
+                    executableSymbols.emplace_back(std::string{symbolName}, item->hook, &symbol.st_value);
+                    continue;
+                }
 
-        state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32 *>(base), patch.size, patch.offsets);
-        std::memcpy(base + patch.size + executable.text.offset, executable.text.contents.data(), textSize);
-        std::memcpy(base + patch.size + executable.ro.offset, executable.ro.contents.data(), roSize);
-        std::memcpy(base + patch.size + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
+                #ifdef PRINT_HOOK_ALL
+                if (symbolName == "memcpy" || symbolName == "memcmp" || symbolName == "memset" || symbolName == "strcmp" ||  symbolName == "strlen")
+                    // If symbol is from libc (such as memcpy, strcmp, strlen, etc), we don't need to hook it
+                    continue;
 
-        auto rodataOffset{base + patch.size + executable.ro.offset};
-        ExecutableSymbolicInfo symbolicInfo{
-            .patchStart = base,
-            .programStart = base + patch.size,
-            .programEnd = base + size,
-            .name = name,
-            .patchName = name + ".patch",
-            .symbols = span(reinterpret_cast<Elf64_Sym *>(rodataOffset + executable.dynsym.offset), executable.dynsym.size / sizeof(Elf64_Sym)),
-            .symbolStrings = span(reinterpret_cast<char *>(rodataOffset + executable.dynstr.offset), executable.dynstr.size),
-        };
-        executables.insert(std::upper_bound(executables.begin(), executables.end(), base, [](void *ptr, const ExecutableSymbolicInfo &it) { return ptr < it.patchStart; }), symbolicInfo);
+                executableSymbols.emplace_back(std::string{symbolName}, hle::EntryExitHook{
+                    .entry = [](const DeviceState &, const hle::HookedSymbol &symbol) {
+                        Logger::Error("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
+                    },
+                    .exit = [](const DeviceState &, const hle::HookedSymbol &symbol) {
+                        Logger::Error("Exiting \"{}\"", symbol.prettyName);
+                    },
+                }, &symbol.st_value);
+                #endif
+            }
 
-        return {base, size, base + patch.size};
+            hookSize = util::AlignUp(state.nce->GetHookSectionSize(executableSymbols), PAGE_SIZE);
+        }
+
+        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false}, memory::states::Reserved); // ---
+        Logger::Error("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
+        if (hookSize > 0)
+            Logger::Error("Successfully mapped section .hook @ 0x{:X}, Size = 0x{:X}", base + patch.size, hookSize);
+
+        u8 *executableBase{base + patch.size + hookSize};
+        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.text.offset, textSize}, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
+        Logger::Error("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", executableBase, textSize);
+
+        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.ro.offset, roSize}, memory::Permission{true, false, false}, memory::states::CodeStatic); // R--
+        Logger::Error("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", executableBase + executable.ro.offset, roSize);
+
+        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.data.offset, dataSize}, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
+        Logger::Error("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", executableBase + executable.data.offset, dataSize);
+
+        size_t size{patch.size + hookSize + textSize + roSize + dataSize};
+        {
+            // Note: We need to copy out the symbols here as it'll be overwritten by any hooks
+            ExecutableSymbolicInfo symbolicInfo{
+                .patchStart = base,
+                .hookStart = base + patch.size,
+                .programStart = executableBase,
+                .programEnd = base + size,
+                .name = name,
+                .patchName = name + ".patch",
+                .hookName = name + ".hook",
+                .symbols = {dynsym.begin(), dynsym.end()},
+                .symbolStrings = {dynstr.begin(), dynstr.end()},
+            };
+            executables.insert(std::upper_bound(executables.begin(), executables.end(), base, [](void *ptr, const ExecutableSymbolicInfo &it) { return ptr < it.patchStart; }), std::move(symbolicInfo));
+        }
+
+        state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32 *>(base), patch.size, patch.offsets, hookSize);
+        if (hookSize)
+            state.nce->WriteHookSection(executableSymbols, span<u8>{base + patch.size, hookSize}.cast<u32>());
+
+        std::memcpy(executableBase, executable.text.contents.data(), executable.text.contents.size());
+        std::memcpy(executableBase + executable.ro.offset, executable.ro.contents.data(), roSize);
+        std::memcpy(executableBase + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
+
+        Logger::EmulationContext.Flush();
+        return {base, size, executableBase + executable.text.offset};
     }
 
     Loader::SymbolInfo Loader::ResolveSymbol(void *ptr) {
@@ -69,6 +125,8 @@ namespace skyline::loader {
                 } else {
                     return {.executableName = executable->name};
                 }
+            } else if (ptr >= executable->hookStart) {
+                return {.executableName = executable->hookName};
             } else {
                 return {.executableName = executable->patchName};
             }

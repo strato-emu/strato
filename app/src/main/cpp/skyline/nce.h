@@ -4,7 +4,9 @@
 #pragma once
 
 #include <sys/wait.h>
+#include <linux/elf.h>
 #include "common.h"
+#include "hle/symbol_hooks.h"
 #include "common/interval_map.h"
 
 namespace skyline::nce {
@@ -14,6 +16,8 @@ namespace skyline::nce {
     class NCE {
       private:
         const DeviceState &state;
+
+        std::vector<hle::HookedSymbol> hookedSymbols; //!< The list of symbols that are hooked, these have a specific ordering that is hardcoded into the hooked functions
 
         /**
          * @brief The level of protection that is required for a callback entry
@@ -47,6 +51,23 @@ namespace skyline::nce {
         bool TrapHandler(u8* address, bool write);
 
         static void SvcHandler(u16 svcId, ThreadContext *ctx);
+
+        /**
+         * @brief A parameter packed into a 64-bit register denoting the hook which is being called
+         */
+        struct HookId {
+            union {
+                struct {
+                    u64 index : 63;
+                    u64 isExit : 1;
+                };
+                u64 raw;
+            };
+
+            constexpr HookId(u64 index, bool isExit) : index{index}, isExit{isExit} {}
+        };
+
+        static void HookHandler(HookId hookId, ThreadContext *ctx);
 
       public:
         /**
@@ -89,8 +110,19 @@ namespace skyline::nce {
         /**
          * @brief Writes the .patch section and mutates the code accordingly
          * @param patch A pointer to the .patch section which should be exactly patchSize in size and located before the .text section
+         * @param textOffset The offset of the .text section, this must be page-aligned
          */
-        static void PatchCode(std::vector<u8> &text, u32 *patch, size_t patchSize, const std::vector<size_t> &offsets);
+        static void PatchCode(std::vector<u8> &text, u32 *patch, size_t patchSize, const std::vector<size_t> &offsets, size_t textOffset = 0);
+
+        struct HookedSymbolEntry : hle::HookedSymbol {
+            Elf64_Addr* offset{}; //!< A pointer to the hooked function's offset (st_value) in the ELF's dynsym, this is set by the loader and is used to resolve/update the address of the function
+
+            HookedSymbolEntry(std::string name, const hle::HookType &hook, Elf64_Addr* offset) : HookedSymbol{std::move(name), hook}, offset{offset} {}
+        };
+
+        static size_t GetHookSectionSize(span<HookedSymbolEntry> entries);
+
+        void WriteHookSection(span<HookedSymbolEntry> entries, span<u32> hookSection);
 
         /**
          * @brief An opaque handle to a group of trapped region

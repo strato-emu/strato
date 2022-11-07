@@ -7,6 +7,27 @@
 
 namespace skyline::loader {
     /**
+     * @brief The MOD header embeds metadata about an executable into it
+     * @url https://switchbrew.org/wiki/NSO#MOD
+     */
+    struct MOD {
+        u32 reserved;
+        u32 magicOffset;
+        u32 magic;
+        u32 dynamicOffset;
+        u32 bssStart;
+        u32 bssEnd;
+        u32 ehFrameHdrStart;
+        u32 ehFrameHdrEnd;
+        u32 moduleOffset;
+
+        bool IsValid() {
+            constexpr u32 MODMagic{util::MakeMagic<u32>("MOD0")};
+            return magic == MODMagic;
+        }
+    };
+
+    /**
      * @brief The contents of an executable binary abstracted away from the derivatives of Loader
      */
     struct Executable {
