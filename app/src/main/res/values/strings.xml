@@ -38,7 +38,7 @@
     <string name="log_level">Log Level</string>
     <string name="gpu_driver_config">GPU Driver Configuration</string>
     <string name="gpu_driver_config_desc">Active driver: %1$s</string>
-    <string name="gpu_driver_config_desc_unsupported">Your GPU is not supported</string>
+    <string name="gpu_driver_config_desc_unsupported">Your device doesn\'t support custom drivers</string>
     <!-- Settings - System -->
     <string name="system">System</string>
     <string name="use_docked">Use Docked Mode</string>
