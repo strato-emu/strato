@@ -5,6 +5,8 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     app:backgroundTint="?attr/colorPrimary"
+    app:ensureMinTouchTargetSize="false"
+    android:layout_margin="4dp"
     app:fabSize="mini"
     app:tint="@android:color/white"
     tools:ignore="ContentDescription" />
