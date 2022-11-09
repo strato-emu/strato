@@ -59,7 +59,7 @@ class GpuDriverActivity : AppCompatActivity() {
                     val result = GpuDriverHelper.installDriver(this@GpuDriverActivity, fileStream)
                     runOnUiThread {
                         Snackbar.make(binding.root, resolveInstallResultString(result), Snackbar.LENGTH_LONG).show()
-                        if (result == GpuDriverInstallResult.SUCCESS)
+                        if (result == GpuDriverInstallResult.Success)
                             populateAdapter()
                     }
                 }
@@ -185,11 +185,11 @@ class GpuDriverActivity : AppCompatActivity() {
     }
 
     private fun resolveInstallResultString(result : GpuDriverInstallResult) = when (result) {
-        GpuDriverInstallResult.SUCCESS -> getString(R.string.gpu_driver_install_success)
-        GpuDriverInstallResult.INVALID_ARCHIVE -> getString(R.string.gpu_driver_install_invalid_archive)
-        GpuDriverInstallResult.MISSING_METADATA -> getString(R.string.gpu_driver_install_missing_metadata)
-        GpuDriverInstallResult.INVALID_METADATA -> getString(R.string.gpu_driver_install_invalid_metadata)
-        GpuDriverInstallResult.UNSUPPORTED_ANDROID_VERSION -> getString(R.string.gpu_driver_install_unsupported_android_version)
-        GpuDriverInstallResult.ALREADY_INSTALLED -> getString(R.string.gpu_driver_install_already_installed)
+        GpuDriverInstallResult.Success -> getString(R.string.gpu_driver_install_success)
+        GpuDriverInstallResult.InvalidArchive -> getString(R.string.gpu_driver_install_invalid_archive)
+        GpuDriverInstallResult.MissingMetadata -> getString(R.string.gpu_driver_install_missing_metadata)
+        GpuDriverInstallResult.InvalidMetadata -> getString(R.string.gpu_driver_install_invalid_metadata)
+        GpuDriverInstallResult.UnsupportedAndroidVersion -> getString(R.string.gpu_driver_install_unsupported_android_version)
+        GpuDriverInstallResult.AlreadyInstalled -> getString(R.string.gpu_driver_install_already_installed)
     }
 }

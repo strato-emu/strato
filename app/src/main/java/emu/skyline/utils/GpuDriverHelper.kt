@@ -104,7 +104,7 @@ interface GpuDriverHelper {
             } catch (e : Exception) {
                 e.printStackTrace()
                 installTempDir.deleteRecursively()
-                return GpuDriverInstallResult.INVALID_ARCHIVE
+                return GpuDriverInstallResult.InvalidArchive
             }
 
             return installUnpackedDriver(context, installTempDir)
@@ -125,7 +125,7 @@ interface GpuDriverHelper {
             } catch (e : Exception) {
                 e.printStackTrace()
                 installTempDir.deleteRecursively()
-                return GpuDriverInstallResult.INVALID_ARCHIVE
+                return GpuDriverInstallResult.InvalidArchive
             }
 
             return installUnpackedDriver(context, installTempDir)
@@ -145,7 +145,7 @@ interface GpuDriverHelper {
             val metadataFile = File(unpackDir, GPU_DRIVER_META_FILE)
             if (!metadataFile.isFile) {
                 cleanup()
-                return GpuDriverInstallResult.MISSING_METADATA
+                return GpuDriverInstallResult.MissingMetadata
             }
 
             // Check that the driver metadata is valid
@@ -153,13 +153,13 @@ interface GpuDriverHelper {
                 GpuDriverMetadata.deserialize(metadataFile)
             } catch (e : SerializationException) {
                 cleanup()
-                return GpuDriverInstallResult.INVALID_METADATA
+                return GpuDriverInstallResult.InvalidMetadata
             }
 
             // Check that the device satisfies the driver's minimum Android version requirements
             if (Build.VERSION.SDK_INT < driverMetadata.minApi) {
                 cleanup()
-                return GpuDriverInstallResult.UNSUPPORTED_ANDROID_VERSION
+                return GpuDriverInstallResult.UnsupportedAndroidVersion
             }
 
             // Check that the driver is not already installed
@@ -167,7 +167,7 @@ interface GpuDriverHelper {
             val finalInstallDir = File(getDriversDirectory(context), driverMetadata.label)
             if (installedDrivers[finalInstallDir] != null) {
                 cleanup()
-                return GpuDriverInstallResult.ALREADY_INSTALLED
+                return GpuDriverInstallResult.AlreadyInstalled
             }
 
             // Move the driver files to the final location
@@ -176,7 +176,7 @@ interface GpuDriverHelper {
                 throw IOException("Failed to create directory ${finalInstallDir.name}")
             }
 
-            return GpuDriverInstallResult.SUCCESS
+            return GpuDriverInstallResult.Success
         }
 
         /**
@@ -216,10 +216,10 @@ interface GpuDriverHelper {
 }
 
 enum class GpuDriverInstallResult {
-    SUCCESS,
-    INVALID_ARCHIVE,
-    MISSING_METADATA,
-    INVALID_METADATA,
-    UNSUPPORTED_ANDROID_VERSION,
-    ALREADY_INSTALLED,
+    Success,
+    InvalidArchive,
+    MissingMetadata,
+    InvalidMetadata,
+    UnsupportedAndroidVersion,
+    AlreadyInstalled,
 }
