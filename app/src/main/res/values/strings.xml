@@ -53,7 +53,10 @@
     <string name="prod_keys">Production Keys</string>
     <string name="title_keys">Title Keys</string>
     <string name="import_keys_success">Successfully imported keys</string>
-    <string name="import_keys_failed">Failed to import keys</string>
+    <string name="import_keys_invalid_input_path">The path to the provided keys is invalid</string>
+    <string name="import_keys_invalid_keys">The keys you tried to import are invalid</string>
+    <string name="import_keys_delete_previous_failed">Failed to delete the currently installed keys</string>
+    <string name="import_keys_move_failed">Failed to move the keys to the internal directory</string>
     <!-- Settings - Display -->
     <string name="display">Display</string>
     <string name="screen_orientation">Screen orientation</string>

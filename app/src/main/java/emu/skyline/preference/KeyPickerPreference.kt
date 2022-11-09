@@ -24,10 +24,18 @@ class KeyPickerPreference @JvmOverloads constructor(context : Context, attrs : A
 
             context.getSettings().refreshRequired = true
 
-            val success = KeyReader.import(context, uri, KeyReader.KeyType.parse(key))
-            Snackbar.make((context as SettingsActivity).binding.root, if (success) R.string.import_keys_success else R.string.import_keys_failed, Snackbar.LENGTH_LONG).show()
+            val result = KeyReader.import(context, uri, KeyReader.KeyType.parse(key))
+            Snackbar.make((context as SettingsActivity).binding.root, resolveImportResultString(result), Snackbar.LENGTH_LONG).show()
         }
     }
 
     override fun onClick() = documentPicker.launch(arrayOf("*/*"))
+
+    private fun resolveImportResultString(result : KeyReader.ImportResult) = when (result) {
+        KeyReader.ImportResult.Success -> R.string.import_keys_success
+        KeyReader.ImportResult.InvalidInputPath -> R.string.import_keys_invalid_input_path
+        KeyReader.ImportResult.InvalidKeys -> R.string.import_keys_invalid_keys
+        KeyReader.ImportResult.DeletePreviousFailed -> R.string.import_keys_delete_previous_failed
+        KeyReader.ImportResult.MoveFailed -> R.string.import_keys_move_failed
+    }
 }

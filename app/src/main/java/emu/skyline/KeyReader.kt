@@ -14,6 +14,14 @@ import java.io.File
 object KeyReader {
     private val Tag = KeyReader::class.java.simpleName
 
+    enum class ImportResult {
+        Success,
+        InvalidInputPath,
+        InvalidKeys,
+        DeletePreviousFailed,
+        MoveFailed,
+    }
+
     enum class KeyType(val keyName : String, val fileName : String) {
         Title("title_keys", "title.keys"), Prod("prod_keys", "prod.keys");
 
@@ -39,20 +47,23 @@ object KeyReader {
     /**
      * Reads keys file, trims and writes to internal app data storage, it makes sure file is properly formatted
      */
-    fun import(context : Context, uri : Uri, keyType : KeyType) : Boolean {
+    fun import(context : Context, uri : Uri, keyType : KeyType) : ImportResult {
         Log.i(Tag, "Parsing ${keyType.name} $uri")
 
         if (!DocumentFile.isDocumentUri(context, uri))
-            return false
+            return ImportResult.InvalidInputPath
 
         val outputDirectory = File("${context.filesDir.canonicalFile}/keys/")
         if (!outputDirectory.exists())
             outputDirectory.mkdirs()
-        val tmpOutputFile = File(outputDirectory, "${keyType.fileName}.tmp")
+
+        val outputFile = File(outputDirectory, keyType.fileName)
+        val tmpOutputFile = File("${outputFile}.tmp")
+        var valid = false
 
         context.contentResolver.openInputStream(uri).use { inputStream ->
             tmpOutputFile.bufferedWriter().use { writer ->
-                val valid = inputStream!!.bufferedReader().useLines {
+                valid = inputStream!!.bufferedReader().useLines {
                     for (line in it) {
                         if (line.startsWith(";") || line.isBlank()) continue
 
@@ -81,11 +92,32 @@ object KeyReader {
                     }
                     true
                 }
-
-                if (valid) tmpOutputFile.renameTo(File("${tmpOutputFile.parent}/${keyType.fileName}"))
-                return valid
             }
         }
+
+        val cleanup = {
+            try {
+                tmpOutputFile.delete()
+            } catch (_ : Exception) {
+            }
+        }
+
+        if (!valid) {
+            cleanup()
+            return ImportResult.InvalidKeys
+        }
+
+        if (outputFile.exists() && !outputFile.delete()) {
+            cleanup()
+            return ImportResult.DeletePreviousFailed
+        }
+
+        if (!tmpOutputFile.renameTo(outputFile)) {
+            cleanup()
+            return ImportResult.MoveFailed
+        }
+
+        return ImportResult.Success
     }
 
     private fun isHexString(str : String) : Boolean {
