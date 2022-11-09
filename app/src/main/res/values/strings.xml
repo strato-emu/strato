@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">Skyline</string>
+    <string name="app_name" translatable="false">Skyline</string>
     <!-- Common -->
     <string name="search">Search</string>
     <string name="error">An error has occurred</string>
@@ -45,7 +45,7 @@
     <string name="handheld_enabled">The system will emulate being in handheld mode</string>
     <string name="docked_enabled">The system will emulate being in docked mode</string>
     <string name="username">Username</string>
-    <string name="username_default">@string/app_name</string>
+    <string name="username_default" translatable="false">@string/app_name</string>
     <string name="system_language">System language</string>
     <string name="system_region">System region</string>
     <!-- Settings - Keys -->
@@ -158,7 +158,7 @@
     <string name="left_stick">Left Stick</string>
     <string name="right_stick">Right Stick</string>
     <string name="face_buttons">Face Buttons</string>
-    <string name="shoulder_trigger"><![CDATA[Shoulder & Trigger Buttons]]></string>
+    <string name="shoulder_trigger">Shoulder &amp; Trigger Buttons</string>
     <string name="shoulder_rail">Shoulder Buttons on Joy-Con Rail</string>
     <string name="misc_buttons">Miscellaneous Buttons</string>
     <!-- Credits -->
