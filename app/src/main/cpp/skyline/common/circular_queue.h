@@ -57,7 +57,7 @@ namespace skyline {
 
             while (true) {
                 if (start == end) {
-                    std::unique_lock lock(productionMutex);
+                    std::unique_lock lock{consumptionMutex};
 
                     TRACE_EVENT_END("containers");
                     preWait();
