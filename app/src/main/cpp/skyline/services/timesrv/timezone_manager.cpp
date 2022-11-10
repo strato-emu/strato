@@ -96,7 +96,7 @@ namespace skyline::service::timesrv::core {
 
         FullCalendarTime out{
             .calendarTime{
-                .year = static_cast<u16>(posixCalendarTime->tm_year),
+                .year = static_cast<u16>(posixCalendarTime->tm_year + 1900),
                 .month = static_cast<u8>(posixCalendarTime->tm_mon + 1),
                 .day = static_cast<u8>(posixCalendarTime->tm_mday),
                 .hour =  static_cast<u8>(posixCalendarTime->tm_hour),
@@ -118,7 +118,7 @@ namespace skyline::service::timesrv::core {
 
     ResultValue<PosixTime> TimeZoneManager::ToPosixTime(tz_timezone_t pRule, CalendarTime calendarTime) {
         struct tm posixCalendarTime{
-            .tm_year = calendarTime.year,
+            .tm_year = calendarTime.year - 1900,
             .tm_mon = calendarTime.month - 1,
             .tm_mday = calendarTime.day,
             .tm_min = calendarTime.minute,
