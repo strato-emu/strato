@@ -38,6 +38,11 @@ namespace skyline::vfs {
         return true;
     }
 
+    void OsFileSystem::DeleteFileImpl(const std::string &path) {
+        auto fullPath{basePath + path};
+        remove(fullPath.c_str());
+    }
+
     bool OsFileSystem::CreateDirectoryImpl(const std::string &path, bool parents) {
         auto fullPath{basePath + path + "/"};
 

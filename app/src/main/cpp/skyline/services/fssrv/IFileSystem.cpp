@@ -53,6 +53,13 @@ namespace skyline::service::fssrv {
         return {};
     }
 
+    Result IFileSystem::DeleteFile(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        std::string path(request.inputBuf.at(0).as_string(true));
+
+        backing->DeleteFile(path);
+        return {};
+    }
+
     Result IFileSystem::OpenDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         std::string path(request.inputBuf.at(0).as_string(true));
 

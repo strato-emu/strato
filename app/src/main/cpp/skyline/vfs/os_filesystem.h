@@ -16,6 +16,8 @@ namespace skyline::vfs {
       protected:
         bool CreateFileImpl(const std::string &path, size_t size) override;
 
+        void DeleteFileImpl(const std::string &path) override;
+
         bool CreateDirectoryImpl(const std::string &path, bool parents) override;
 
         std::shared_ptr<Backing> OpenFileImpl(const std::string &path, Backing::Mode mode) override;
