@@ -12,7 +12,8 @@ import android.view.KeyEvent
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.view.*
+import androidx.core.view.WindowCompat
+import androidx.core.view.marginTop
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -29,6 +30,7 @@ import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
 import emu.skyline.input.onscreen.OnScreenEditActivity
 import emu.skyline.utils.PreferenceSettings
+import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
 
 /**
@@ -173,12 +175,7 @@ class ControllerActivity : AppCompatActivity() {
 
         setContentView(binding.root)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        // Apply inset padding to the controller list recycler view to avoid navigation bar overlap
-        ViewCompat.setOnApplyWindowInsetsListener(binding.controllerList) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.updatePadding(bottom = insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        WindowInsetsHelper.applyToActivity(binding.root, binding.controllerList)
 
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)

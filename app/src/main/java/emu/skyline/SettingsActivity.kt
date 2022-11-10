@@ -16,6 +16,7 @@ import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
 import emu.skyline.preference.IntegerListPreference
+import emu.skyline.utils.WindowInsetsHelper
 
 class SettingsActivity : AppCompatActivity() {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
@@ -33,6 +34,7 @@ class SettingsActivity : AppCompatActivity() {
 
         setContentView(binding.root)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsHelper.applyToActivity(binding.root)
 
         setSupportActionBar(binding.titlebar.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -81,15 +83,9 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
-            val recyclerView = view.findViewById<View>(R.id.recycler_view)
-            // Apply inset padding to the settings recycler view to avoid navigation bar overlap
-            ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, windowInsets ->
-                val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-                v.updatePadding(bottom = insets.bottom)
-                WindowInsetsCompat.CONSUMED
-            }
-
             super.onViewCreated(view, savedInstanceState)
+            val recyclerView = view.findViewById<View>(R.id.recycler_view)
+            WindowInsetsHelper.setPadding(recyclerView, bottom = true)
         }
 
         /**
