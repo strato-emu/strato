@@ -29,7 +29,7 @@ namespace skyline::service::fssrv {
         auto type{backing->GetEntryType(path)};
 
         if (type) {
-            response.Push(*type);
+            response.Push(static_cast<u32>(*type));
             return {};
         } else {
             response.Push<u32>(0);
