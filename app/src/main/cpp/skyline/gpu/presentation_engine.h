@@ -38,7 +38,7 @@ namespace skyline::gpu {
         texture::Format swapchainFormat{}; //!< The image format of the textures in the current swapchain
         texture::Dimensions swapchainExtent{}; //!< The extent of images in the current swapchain
 
-        static constexpr size_t MaxSwapchainImageCount{6}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
+        static constexpr size_t MaxSwapchainImageCount{10}; //!< The maximum amount of swapchain textures, this affects the amount of images that can be in the swapchain
         std::array<std::shared_ptr<Texture>, MaxSwapchainImageCount> images; //!< All the swapchain textures in the same order as supplied by the host swapchain
         std::array<vk::raii::Semaphore, MaxSwapchainImageCount> presentSemaphores; //!< Array of semaphores used to signal that swapchain images are ready to be completed, indexed by Vulkan swapchain index
         std::array<vk::raii::Semaphore, MaxSwapchainImageCount> acquireSemaphores; //!< Array of semaphores used to wait on the GPU for swapchain images to be acquired, indexed by `frameIndex`
