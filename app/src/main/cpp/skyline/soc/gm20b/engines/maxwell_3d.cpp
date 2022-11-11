@@ -40,7 +40,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             .lineWidthRegisters = {*registers.lineWidth, *registers.lineWidthAliased, *registers.aliasedLineWidthEnable},
             .depthBiasRegisters = {*registers.depthBias, *registers.depthBiasClamp, *registers.slopeScaleDepthBias},
             .blendConstantsRegisters = {*registers.blendConsts},
-            .depthBoundsRegisters = {*registers.depthBoundsMin, *registers.depthBoundsMin},
+            .depthBoundsRegisters = {*registers.depthBoundsMin, *registers.depthBoundsMax},
             .stencilValuesRegisters = {*registers.stencilValues, *registers.backStencilValues, *registers.twoSidedStencilTestEnable},
         };
     }
