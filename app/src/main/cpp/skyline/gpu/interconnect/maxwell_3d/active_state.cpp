@@ -346,7 +346,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     DepthBoundsState::DepthBoundsState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
     void DepthBoundsState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
-        builder.SetDepthBounds(engine->depthBoundsMin, engine->depthBoundsMax);
+        builder.SetDepthBounds(std::clamp(engine->depthBoundsMin, 0.0f, 1.0f), std::clamp(engine->depthBoundsMax, 0.0f, 1.0f));
     }
 
     /* Stencil Values */
