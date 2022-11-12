@@ -13,5 +13,9 @@ namespace skyline::soc::gm20b {
           keplerCompute{state, *this},
           inline2Memory{state, *this},
           gpfifo{state, *this, numEntries},
-          globalChannelLock{state.gpu->channelLock} {}
+          globalChannelLock{state.gpu->channelLock} {
+        executor.AddFlushCallback([this] {
+            channelSequenceNumber++;
+        });
+    }
 }

@@ -26,6 +26,7 @@ namespace skyline::soc::gm20b::engine {
 
                     // Wait forever for another channel to increment
 
+                    channelCtx.executor.Submit();
                     channelCtx.Unlock();
                     syncpoints.at(action.index).Wait(registers.syncpoint->payload, std::chrono::steady_clock::duration::max());
                     channelCtx.Lock();
@@ -44,6 +45,7 @@ namespace skyline::soc::gm20b::engine {
                 switch (action.operation) {
                     case Registers::Semaphore::Operation::Acquire:
                         Logger::Debug("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
+                        channelCtx.executor.Submit();
                         channelCtx.Unlock();
 
                         while (channelCtx.asCtx->gmmu.Read<u32>(address) != registers.semaphore->payload)
@@ -57,6 +59,7 @@ namespace skyline::soc::gm20b::engine {
                         break;
                     case Registers::Semaphore::Operation::AcqGeq    :
                         Logger::Debug("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
+                        channelCtx.executor.Submit();
                         channelCtx.Unlock();
 
                         while (channelCtx.asCtx->gmmu.Read<u32>(address) < registers.semaphore->payload)

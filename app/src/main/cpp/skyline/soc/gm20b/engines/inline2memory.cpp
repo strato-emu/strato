@@ -21,6 +21,7 @@ namespace skyline::soc::gm20b::engine {
 
         if (state.launchDma.layout == RegisterState::DmaDstMemoryLayout::Pitch && state.lineCount == 1) {
             Logger::Debug("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
+            channelCtx.channelSequenceNumber++;
             interconnect.Upload(u64{state.offsetOut}, span{buffer});
         } else {
             channelCtx.executor.Submit();

@@ -31,6 +31,7 @@ namespace skyline::soc::gm20b {
         engine::Inline2Memory inline2Memory;
         ChannelGpfifo gpfifo;
         std::mutex &globalChannelLock;
+        size_t channelSequenceNumber{};
 
         ChannelContext(const DeviceState &state, std::shared_ptr<AddressSpaceContext> asCtx, size_t numEntries);
 
