@@ -21,6 +21,7 @@ namespace skyline::service::am {
       private:
         std::shared_ptr<type::KEvent> gpuErrorEvent; //!< The event signalled on GPU errors
         std::shared_ptr<type::KEvent> friendInvitationStorageChannelEvent; //!< The event signalled on friend invitations
+        i32 previousProgramIndex{-1}; //!< There was no previous title
 
       public:
         IApplicationFunctions(const DeviceState &state, ServiceManager &manager);
@@ -97,6 +98,12 @@ namespace skyline::service::am {
         Result SetApplicationCopyrightVisibility(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Gets the ProgramIndex of the Application which launched this title
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetPreviousProgramIndex
+         */
+        Result GetPreviousProgramIndex(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Obtains a handle to the system GPU error KEvent
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetGpuErrorDetectedSystemEvent
          */
@@ -122,6 +129,7 @@ namespace skyline::service::am {
             SFUNC(0x64, IApplicationFunctions, InitializeApplicationCopyrightFrameBuffer),
             SFUNC(0x65, IApplicationFunctions, SetApplicationCopyrightImage),
             SFUNC(0x66, IApplicationFunctions, SetApplicationCopyrightVisibility),
+            SFUNC(0x7B, IApplicationFunctions, GetPreviousProgramIndex),
             SFUNC(0x82, IApplicationFunctions, GetGpuErrorDetectedSystemEvent),
             SFUNC(0x8C, IApplicationFunctions, GetFriendInvitationStorageChannelEvent),
             SFUNC(0x8D, IApplicationFunctions, TryPopFromFriendInvitationStorageChannel)

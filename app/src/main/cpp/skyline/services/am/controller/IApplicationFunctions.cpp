@@ -146,6 +146,11 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result IApplicationFunctions::GetPreviousProgramIndex(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<i32>(previousProgramIndex);
+        return {};
+    }
+
     Result IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(gpuErrorEvent)};
         Logger::Debug("GPU Error Event Handle: 0x{:X}", handle);
