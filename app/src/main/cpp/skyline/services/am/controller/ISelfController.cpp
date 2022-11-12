@@ -70,6 +70,12 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result ISelfController::SetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto idleTimeDetectionExtension{request.Pop<u32>()};
+        Logger::Debug("Setting Idle Time Detection Extension: 0x{:X}", idleTimeDetectionExtension);
+        return {};
+    }
+
     Result ISelfController::GetAccumulatedSuspendedTickValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         // TODO: Properly handle this after we implement game suspending
         response.Push<u64>(0);
@@ -81,6 +87,12 @@ namespace skyline::service::am {
         Logger::Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
+        return {};
+    }
+
+    Result ISelfController::SetAlbumImageTakenNotificationEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto albumImageTakenNotificationEnabled{request.Pop<u8>()};;
+        Logger::Debug("Setting Album Image Taken Notification Enabled: {}", albumImageTakenNotificationEnabled);
         return {};
     }
 }

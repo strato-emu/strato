@@ -94,6 +94,11 @@ namespace skyline::service::am {
         Result CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetIdleTimeDetectionExtension
+         */
+        Result SetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns how long the process was suspended for in ticks
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickValue
          */
@@ -104,6 +109,11 @@ namespace skyline::service::am {
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickChangedEvent
          */
         Result GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetAlbumImageTakenNotificationEnabled
+         */
+        Result SetAlbumImageTakenNotificationEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         SERVICE_DECL(
             SFUNC(0x0, ISelfController, Exit),
@@ -118,8 +128,10 @@ namespace skyline::service::am {
             SFUNC(0x10, ISelfController, SetOutOfFocusSuspendingEnabled),
             SFUNC(0x13, ISelfController, SetAlbumImageOrientation),
             SFUNC(0x28, ISelfController, CreateManagedDisplayLayer),
+            SFUNC(0x3E, ISelfController, SetIdleTimeDetectionExtension),
             SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
-            SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent)
+            SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent),
+            SFUNC(0x64, ISelfController, SetAlbumImageTakenNotificationEnabled)
         )
     };
 }
