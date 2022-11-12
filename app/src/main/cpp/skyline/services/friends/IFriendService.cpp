@@ -10,4 +10,13 @@ namespace skyline::service::friends {
         response.Push<u32>(0); // Count of friends
         return {};
     }
+
+    Result IFriendService::GetBlockedUserListIds(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(0); // No blocked users
+        return {};
+    }
+
+    Result IFriendService::UpdateUserPresence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }
