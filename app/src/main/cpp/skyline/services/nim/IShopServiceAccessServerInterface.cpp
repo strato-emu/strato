@@ -11,4 +11,9 @@ namespace skyline::service::nim {
         manager.RegisterService(SRVREG(IShopServiceAccessServer), session, response);
         return {};
     }
+
+    Result IShopServiceAccessServerInterface::IsLargeResourceAvailable(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(false);
+        return {};
+    }
 }
