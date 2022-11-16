@@ -5,6 +5,8 @@
 
 namespace skyline::audio {
     Audio::Audio(const DeviceState &state) : oboe::AudioStreamCallback() {
+        settings = std::shared_ptr<Settings>{state.settings};
+
         builder.setChannelCount(constant::StereoChannelCount);
         builder.setSampleRate(constant::SampleRate);
         builder.setFormat(constant::PcmFormat);
@@ -50,13 +52,17 @@ namespace skyline::audio {
 
                 std::scoped_lock bufferGuard{track->bufferLock};
 
-                auto trackSamples{track->samples.Read(span(destBuffer, streamSamples), [](i16 *source, i16 *destination) {
-                    *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
-                }, static_cast<ssize_t>(writtenSamples))};
+                if (!*settings->isAudioOutputDisabled) {
+                    auto trackSamples{track->samples.Read(span(destBuffer, streamSamples), [](i16 *source, i16 *destination) {
+                        *destination = Saturate<i16, i32>(static_cast<u32>(*destination) + static_cast<u32>(*source));
+                    }, static_cast<ssize_t>(writtenSamples))};
 
-                writtenSamples = std::max(trackSamples, writtenSamples);
+                    writtenSamples = std::max(trackSamples, writtenSamples);
 
-                track->sampleCounter += trackSamples;
+                    track->sampleCounter += trackSamples;
+                } else {
+                    track->sampleCounter += streamSamples;
+                }
                 track->CheckReleasedBuffers();
             }
         }

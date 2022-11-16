@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/settings.h>
 #include <audio/track.h>
 
 namespace skyline::audio {
@@ -15,6 +16,7 @@ namespace skyline::audio {
         oboe::ManagedStream outputStream;
         std::vector<std::shared_ptr<AudioTrack>> audioTracks;
         std::mutex trackLock; //!< Synchronizes modifications to the audio tracks
+        std::shared_ptr<Settings> settings;
 
       public:
         Audio(const DeviceState &state);

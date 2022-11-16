@@ -74,6 +74,9 @@ namespace skyline {
         Setting<u32> executorSlotCount; //!< Number of GPU executor slots that can be used concurrently
         Setting<bool> enableTextureReadbackHack; //!< If the CPU texture readback skipping hack should be used
 
+        // Audio
+        Setting<bool> isAudioOutputDisabled; //!< Disables audio output
+
         // Debug
         Setting<bool> validationLayer; //!< If the vulkan validation layer is enabled
 

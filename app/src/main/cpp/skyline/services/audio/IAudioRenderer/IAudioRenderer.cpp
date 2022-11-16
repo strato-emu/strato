@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/settings.h>
 #include <kernel/types/KProcess.h>
 #include "IAudioRenderer.h"
 
@@ -68,7 +69,8 @@ namespace skyline::service::audio::IAudioRenderer {
         for (u32 i{}; i < effectsIn.size(); i++)
             effects[i].ProcessInput(effectsIn[i]);
 
-        UpdateAudio();
+        if (!*state.settings->isAudioOutputDisabled)
+            UpdateAudio();
 
         UpdateDataHeader outputHeader{
             .revision = constant::RevMagic,

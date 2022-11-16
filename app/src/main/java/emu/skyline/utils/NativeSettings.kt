@@ -28,6 +28,9 @@ class NativeSettings(context : Context, pref : PreferenceSettings) {
     var executorSlotCount : Int = pref.executorSlotCount
     var enableTextureReadbackHack : Boolean = pref.enableTextureReadbackHack
 
+    // Audio
+    var isAudioOutputDisabled : Boolean = pref.isAudioOutputDisabled
+
     // Debug
     var validationLayer : Boolean = BuildConfig.BUILD_TYPE != "release" && pref.validationLayer
 

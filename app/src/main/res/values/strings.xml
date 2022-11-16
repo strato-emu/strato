@@ -78,6 +78,11 @@
     <string name="enable_texture_readback_hack">Enable Texture Readback Hack</string>
     <string name="enable_texture_readback_hack_enabled">Texture readback hack is enabled (Will break some games but others will have higher performance)</string>
     <string name="enable_texture_readback_hack_disabled">Texture readback hack is disabled (Ensures highest accuracy)</string>
+    <!-- Settings - Audio -->
+    <string name="audio">Audio</string>
+    <string name="disable_audio_output">Disable Audio Output</string>
+    <string name="disable_audio_output_enabled">Audio output is disabled</string>
+    <string name="disable_audio_output_disabled">Audio output is enabled</string>
     <!-- Settings - Debug -->
     <string name="debug">Debug</string>
     <string name="validation_layer">Enable validation layer</string>

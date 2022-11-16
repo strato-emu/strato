@@ -41,6 +41,9 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     var executorSlotCount by sharedPreferences(context, 6)
     var enableTextureReadbackHack by sharedPreferences(context, false)
 
+    // Audio
+    var isAudioOutputDisabled by sharedPreferences(context, false)
+
     // Debug
     var validationLayer by sharedPreferences(context, false)
 
