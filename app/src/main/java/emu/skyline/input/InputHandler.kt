@@ -126,7 +126,17 @@ class InputHandler(private val inputManager : InputManager, private val preferen
         if ((event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_CLASS_BUTTON)) && event.action == MotionEvent.ACTION_MOVE) {
             for (axisItem in MotionHostEvent.axes.withIndex()) {
                 val axis = axisItem.value
+                val range : InputDevice.MotionRange? = event.device.getMotionRange(axis, event.source)
                 var value = event.getAxisValue(axis)
+                range?.let {
+                    value = if (abs(value) > it.flat)
+                        if (value > 0)
+                            (value - it.flat) / (it.max - it.flat)
+                        else
+                            -((abs(value) - it.flat) / (abs(it.min) - it.flat))
+                    else
+                        0f
+                }
 
                 if ((event.historySize != 0 && value != event.getHistoricalAxisValue(axis, 0)) || axesHistory[axisItem.index] != value) {
                     var polarity = value > 0 || (value == 0f && axesHistory[axisItem.index] >= 0)
