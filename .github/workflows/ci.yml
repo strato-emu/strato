@@ -1,22 +1,29 @@
 name: CI
 
-on: [ push, pull_request ]
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 jobs:
   build:
-    if: github.event.type != 'PullRequestEvent' || contains(github.event.pull_request.labels.*.name, 'ci')
+    # Skip 'labeled' events that didn't add the 'ci' label
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.action != 'labeled' ||
+      github.event.label.name == 'ci'
     runs-on: ubuntu-latest
     env:
       JVM_OPTS: -Xmx6G
       IS_SKYLINE_SIGNED: ${{ secrets.KEYSTORE != '' }}
+      UPLOAD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci') }}
 
     steps:
       - name: Git Checkout
         uses: actions/checkout@v2
         with:
           submodules: recursive
-          
-                      
+
       - name: Restore CCache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -41,7 +48,7 @@ jobs:
         run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.22.1" "ndk;25.0.8775105" --channel=3 | grep -v = || true
 
       - name: Decode Keystore
-        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
+        if: env.IS_SKYLINE_SIGNED == 'true'
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
         run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
@@ -52,46 +59,46 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          CMAKE_C_COMPILER_LAUNCHER: "ccache"          
+          CMAKE_C_COMPILER_LAUNCHER: "ccache"
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_NOCOMPRESS: "true"
         run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFull
 
       - name: Rename APKs (Signed)
-        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
+        if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
           mv app/build/outputs/apk/full/debug/app-full-debug.apk skyline-$GITHUB_RUN_NUMBER-debug.apk
           mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
 
       - name: Upload Signed Debug APK
-        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
+        if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: skyline-${{ github.run_number }}-debug.apk
           path: skyline-${{ github.run_number }}-debug.apk
 
       - name: Upload Signed Release APK
-        if: ${{ env.IS_SKYLINE_SIGNED == 'true' }}
+        if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: skyline-${{ github.run_number }}-release.apk
           path: skyline-${{ github.run_number }}-release.apk
 
       - name: Rename APKs (Unsigned)
-        if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
+        if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
           mv app/build/outputs/apk/full/debug/app-full-debug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-debug.apk
           mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-unsigned-release.apk
 
       - name: Upload Unsigned Debug APK
-        if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
+        if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: skyline-${{ github.run_number }}-unsigned-debug.apk
           path: skyline-${{ github.run_number }}-unsigned-debug.apk
 
       - name: Upload Unsigned Release APK
-        if: ${{ env.IS_SKYLINE_SIGNED == 'false' }}
+        if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: skyline-${{ github.run_number }}-unsigned-release.apk
