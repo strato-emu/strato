@@ -105,7 +105,6 @@ namespace skyline {
         namespace guest {
             constexpr size_t SaveCtxSize{34}; //!< The size of the SaveCtx function in 32-bit ARMv8 instructions
             constexpr size_t LoadCtxSize{34}; //!< The size of the LoadCtx function in 32-bit ARMv8 instructions
-            constexpr size_t RescaleClockSize{16}; //!< The size of the RescaleClock function in 32-bit ARMv8 instructions
 
             /**
              * @brief Saves the context from CPU registers into TLS
@@ -118,12 +117,6 @@ namespace skyline {
              * @note Assumes that 8B is reserved at an offset of 8B from SP
              */
             extern "C" void LoadCtx(void);
-
-            /**
-             * @brief Rescales the host clock to Tegra X1 levels
-             * @note Output is on stack with the stack pointer offset 32B from the initial point
-             */
-            extern "C" __noreturn void RescaleClock(void);
         }
     }
 }

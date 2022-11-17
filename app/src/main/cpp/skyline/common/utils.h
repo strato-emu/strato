@@ -8,6 +8,7 @@
 #include <span>
 #include <frozen/unordered_map.h>
 #include <frozen/string.h>
+#include <sys/system_properties.h>
 #include <type_traits>
 #include <xxhash.h>
 #include "base.h"
@@ -20,13 +21,38 @@ namespace skyline::util {
     template<typename T>
     concept TrivialObject = std::is_trivially_copyable_v<T> && !requires(T v) { v.data(); };
 
+    namespace detail {
+        /**
+         * @brief Retrieves the system counter clock frequency
+         * @note Some devices report an incorrect value so they need special handling
+         */
+        inline u64 InitFrequency() {
+            char buffer[PROP_VALUE_MAX];
+            int len{__system_property_get("ro.product.board", buffer)};
+            std::string_view board{buffer, static_cast<size_t>(len)};
+
+            u64 frequency;
+            if (board == "s5e9925")             // Exynos 2200
+                frequency = 25600000;
+            else if (board == "exynos2100")     // Exynos 2100
+                frequency = 26000000;
+            else if (board == "exynos9810")     // Exynos 9810
+                frequency = 26000000;
+            else
+                asm volatile("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
+
+            return frequency;
+        }
+    }
+
+    inline const u64 ClockFrequency{detail::InitFrequency()}; //!< The system counter clock frequency in Hz
+
     /**
      * @brief Returns the current time in nanoseconds
      * @return The current time in nanoseconds
      */
     inline i64 GetTimeNs() {
-        u64 frequency;
-        asm("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
+        u64 frequency{ClockFrequency};
         u64 ticks;
         asm volatile("MRS %0, CNTVCT_EL0" : "=r"(ticks));
         return static_cast<i64>(((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency));
@@ -245,7 +271,7 @@ namespace skyline::util {
     };
 
     namespace detail {
-        static thread_local std::mt19937_64 generator{GetTimeTicks()};
+        inline thread_local std::mt19937_64 generator{GetTimeTicks()};
     }
 
     /**
@@ -325,7 +351,6 @@ namespace skyline::util {
     struct IncrementingT {
         using Type = T;
     };
-
 
     template<typename T>
     struct IsIncrementingT : std::false_type {};
