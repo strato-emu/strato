@@ -144,7 +144,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (target.memory.layout == engine::TargetMemory::Layout::Pitch) {
             guest.dimensions = texture::Dimensions{target.width / guest.format->bpb, target.height, depth};
             guest.tileConfig = texture::TileConfig{
-                .mode = gpu::texture::TileMode::Linear,
+                .mode = gpu::texture::TileMode::Pitch,
+                .pitch = target.width,
             };
         } else {
             guest.dimensions = gpu::texture::Dimensions{target.width, target.height, depth};
