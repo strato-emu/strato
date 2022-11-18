@@ -7,8 +7,20 @@
 #include "kepler_compute.h"
 
 namespace skyline::soc::gm20b::engine {
+    static gpu::interconnect::kepler_compute::KeplerCompute::EngineRegisterBundle MakeEngineRegisters(const KeplerCompute::Registers &registers) {
+        return {
+            .pipelineStateRegisters = {*registers.programRegion, *registers.bindlessTexture},
+            .samplerPoolRegisters = {*registers.texSamplerPool, *registers.texHeaderPool},
+            .texturePoolRegisters = {*registers.texHeaderPool}
+        };
+    }
+
     KeplerCompute::KeplerCompute(const DeviceState &state, ChannelContext &channelCtx)
-        : syncpoints{state.soc->host1x.syncpoints}, i2m{state, channelCtx} {}
+        : syncpoints{state.soc->host1x.syncpoints},
+          channelCtx{channelCtx},
+          i2m{state, channelCtx},
+          dirtyManager{registers},
+          interconnect{*state.gpu, channelCtx, *state.nce, state.process->memory, dirtyManager, MakeEngineRegisters(registers)} {}
 
     __attribute__((always_inline)) void KeplerCompute::CallMethod(u32 method, u32 argument) {
         Logger::Verbose("Called method in Kepler compute: 0x{:X} args: 0x{:X}", method, argument);
@@ -27,7 +39,7 @@ namespace skyline::soc::gm20b::engine {
                 i2m.LoadInlineData(*registers.i2m, argument);
             })
             ENGINE_CASE(sendSignalingPcasB, {
-                Logger::Warn("Attempted to execute compute kernel!");
+                interconnect.Dispatch(channelCtx.asCtx->gmmu.Read<kepler_compute::QMD>(registers.sendPcas->QmdAddress()));
             })
             ENGINE_STRUCT_CASE(reportSemaphore, action, {
                 throw exception("Compute semaphores are unimplemented!");

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <tsl/robin_map.h>
 #include "common.h"
 
 namespace skyline::gpu::interconnect {

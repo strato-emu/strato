@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <gpu/interconnect/kepler_compute/kepler_compute.h>
 #include "engine.h"
 #include "inline2memory.h"
 
@@ -18,7 +19,10 @@ namespace skyline::soc::gm20b::engine {
     class KeplerCompute {
       private:
         host1x::SyncpointSet &syncpoints;
+        ChannelContext &channelCtx;
         Inline2MemoryBackend i2m;
+        gpu::interconnect::DirtyManager dirtyManager;
+        gpu::interconnect::kepler_compute::KeplerCompute interconnect;
 
         void HandleMethod(u32 method, u32 argument);
 
