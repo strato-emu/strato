@@ -55,6 +55,10 @@ namespace skyline::soc::gm20b::engine {
                 u32 qmdAddressShifted8;
                 u32 from : 24;
                 u8 delta;
+
+                u64 QmdAddress() const {
+                    return static_cast<u64>(qmdAddressShifted8) << 8;
+                }
             };
             static_assert(sizeof(SendPcas) == 0x8);
 

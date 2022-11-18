@@ -14,6 +14,8 @@ namespace skyline::soc::gm20b::engine::kepler_compute {
      * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/compute_qmd.h
      */
     struct QMD {
+        static constexpr size_t ConstantBufferCount{8};
+
         enum class DependentQmdType : u32 {
             Queue = 0,
             Grid = 1
@@ -229,7 +231,11 @@ namespace skyline::soc::gm20b::engine::kepler_compute {
             u32 reservedAddr : 6;
             u32 invalidate : 1;
             u32 size : 17;
-        } constantBuffer[8];
+
+            u64 Address() const {
+                return (static_cast<u64>(addrUpper) << 32) | addrLower;
+            }
+        } constantBuffer[ConstantBufferCount];
 
         u32 shaderLocalMemoryLowSize : 24;
 
