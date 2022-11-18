@@ -58,6 +58,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u8 alphaFunc : 3; //!< Use {Set,Get}AlphaFunc
             bool alphaTestEnable : 1;
             bool depthClampEnable : 1; // Use SetDepthClampEnable
+            bool dynamicStateActive : 1;
         };
 
         u32 patchSize;
@@ -69,10 +70,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<u32, 8> postVtgShaderAttributeSkipMask;
 
         struct VertexBinding {
-            u16 stride : 12;
             u8 inputRate : 1;
             bool enable : 1;
-            u8 _pad_ : 2;
             u32 divisor;
 
             vk::VertexInputRate GetInputRate() const {
@@ -94,6 +93,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
         std::array<AttachmentBlendState, engine::ColorTargetCount> attachmentBlendStates;
+
+        std::array<u16, engine::VertexStreamCount> vertexStrides; //!< Use {Set, Get}VertexBinding
 
         struct TransformFeedbackVarying {
             u16 stride;
@@ -149,6 +150,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             // Only hash transform feedback state if it's enabled
             if (other.transformFeedbackEnable && transformFeedbackEnable)
                 return std::memcmp(this, &other, sizeof(PackedPipelineState)) == 0;
+            else if (dynamicStateActive)
+                return std::memcmp(this, &other, offsetof(PackedPipelineState, vertexStrides)) == 0;
             else
                 return std::memcmp(this, &other, offsetof(PackedPipelineState, transformFeedbackVaryings)) == 0;
         }
@@ -159,6 +162,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
             // Only hash transform feedback state if it's enabled
             if (state.transformFeedbackEnable)
                 return XXH64(&state, sizeof(PackedPipelineState), 0);
+            else if (state.dynamicStateActive)
+                return XXH64(&state, offsetof(PackedPipelineState, vertexStrides), 0);
+
 
             return XXH64(&state, offsetof(PackedPipelineState, transformFeedbackVaryings), 0);
         }

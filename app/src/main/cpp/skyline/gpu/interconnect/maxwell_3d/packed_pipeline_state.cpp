@@ -19,7 +19,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void PackedPipelineState::SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance) {
-        vertexBindings[index].stride = stream.format.stride;
+        if (!dynamicStateActive)
+            vertexStrides[index] = stream.format.stride;
         vertexBindings[index].inputRate = static_cast<u8>(instance.isInstanced ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex);
         vertexBindings[index].enable = stream.format.enable;
         vertexBindings[index].divisor = stream.frequency;

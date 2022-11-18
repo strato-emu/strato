@@ -442,7 +442,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const auto &binding{packedState.vertexBindings[i]};
             bindingDescs.push_back({
                                        .binding = i,
-                                       .stride = binding.stride,
+                                       .stride = packedState.vertexStrides[i],
                                        .inputRate = binding.GetInputRate(),
                                    });
 
@@ -535,7 +535,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .pAttachments = attachmentBlendStates.data()
         };
 
-        constexpr std::array<vk::DynamicState, 9> dynamicStates{
+        constexpr std::array<vk::DynamicState, 10> dynamicStates{
             vk::DynamicState::eViewport,
             vk::DynamicState::eScissor,
             vk::DynamicState::eLineWidth,
@@ -544,11 +544,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
             vk::DynamicState::eDepthBounds,
             vk::DynamicState::eStencilCompareMask,
             vk::DynamicState::eStencilWriteMask,
-            vk::DynamicState::eStencilReference
+            vk::DynamicState::eStencilReference,
+            // VK_EXT_dynamic_state starts here
+            vk::DynamicState::eVertexInputBindingStrideEXT
         };
 
+        static constexpr u32 BaseDynamicStateCount{9};
+        static constexpr u32 ExtendedDynamicStateCount{BaseDynamicStateCount + 1};
+
         vk::PipelineDynamicStateCreateInfo dynamicState{
-            .dynamicStateCount = static_cast<u32>(dynamicStates.size()),
+            .dynamicStateCount = ctx.gpu.traits.supportsExtendedDynamicState ? ExtendedDynamicStateCount : BaseDynamicStateCount,
             .pDynamicStates = dynamicStates.data()
         };
 

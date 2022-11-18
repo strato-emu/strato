@@ -31,9 +31,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
                 if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber);
                     megaBufferBinding)
-                    builder.SetVertexBuffer(index, megaBufferBinding);
+                    builder.SetVertexBuffer(index, megaBufferBinding, ctx.gpu.traits.supportsExtendedDynamicState, engine->vertexStream.format.stride);
                 else
-                    builder.SetVertexBuffer(index, *view);
+                    builder.SetVertexBuffer(index, *view, ctx.gpu.traits.supportsExtendedDynamicState, engine->vertexStream.format.stride);
 
                 return;
             } else {
@@ -41,9 +41,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }
 
-        // TODO: null descriptor
         megaBufferBinding = {};
-        builder.SetVertexBuffer(index, {ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer});
+        if (ctx.gpu.traits.supportsNullDescriptor)
+            builder.SetVertexBuffer(index, BufferBinding{});
+        else
+            builder.SetVertexBuffer(index, {ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer});
     }
 
     bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {

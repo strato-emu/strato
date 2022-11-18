@@ -488,6 +488,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
           ctSelect{engine.ctSelect} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder) {
+        packedState.dynamicStateActive = ctx.gpu.traits.supportsExtendedDynamicState;
+
         std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
         for (size_t i{}; i < engine::PipelineCount; i++) {
             const auto &stage{pipelineStages[i].UpdateGet(ctx)};

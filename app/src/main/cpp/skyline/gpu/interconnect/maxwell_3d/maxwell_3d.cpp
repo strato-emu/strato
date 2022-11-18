@@ -247,7 +247,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         if (oldPipeline != pipeline)
             // If the pipeline has changed, we need to update the pipeline state
-            builder.SetPipeline(pipeline->compiledPipeline.pipeline);
+            builder.SetPipeline(pipeline->compiledPipeline.pipeline, vk::PipelineBindPoint::eGraphics);
 
         if (descUpdateInfo) {
             if (ctx.gpu.traits.supportsPushDescriptors) {
