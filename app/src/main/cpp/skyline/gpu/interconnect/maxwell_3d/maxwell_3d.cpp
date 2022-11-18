@@ -4,11 +4,11 @@
 
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/interconnect/conversion/quads.h>
+#include <gpu/interconnect/common/state_updater.h>
 #include <soc/gm20b/channel.h>
 #include "common/utils.h"
 #include "maxwell_3d.h"
 #include "common.h"
-#include "state_updater.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     Maxwell3D::Maxwell3D(GPU &gpu,

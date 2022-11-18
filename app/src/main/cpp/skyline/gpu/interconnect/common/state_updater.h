@@ -6,7 +6,7 @@
 #include <gpu/interconnect/command_executor.h>
 #include "common.h"
 
-namespace skyline::gpu::interconnect::maxwell3d {
+namespace skyline::gpu::interconnect {
     /**
      * @brief Header for a singly-linked state update command
      */
@@ -35,17 +35,30 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     };
 
+    static constexpr size_t MaxVertexBufferCount{16};
+
     struct SetVertexBuffersCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
-            commandBuffer.bindVertexBuffers(firstBinding,
-                                            span(buffers).subspan(firstBinding, bindingCount),
-                                            span(offsets).subspan(firstBinding, bindingCount));
+            if (ext) {
+                commandBuffer.bindVertexBuffers2EXT(firstBinding,
+                                                    span(buffers).subspan(firstBinding, bindingCount),
+                                                    span(offsets).subspan(firstBinding, bindingCount),
+                                                    span(sizes).subspan(firstBinding, bindingCount),
+                                                    span(strides).subspan(firstBinding, bindingCount));
+            } else {
+                commandBuffer.bindVertexBuffers(firstBinding,
+                                                span(buffers).subspan(firstBinding, bindingCount),
+                                                span(offsets).subspan(firstBinding, bindingCount));
+            }
         }
 
+        bool ext{};
         u32 firstBinding{};
         u32 bindingCount{};
-        std::array<vk::Buffer, engine::VertexStreamCount> buffers;
-        std::array<vk::DeviceSize, engine::VertexStreamCount> offsets;
+        std::array<vk::Buffer, MaxVertexBufferCount> buffers;
+        std::array<vk::DeviceSize, MaxVertexBufferCount> offsets;
+        std::array<vk::DeviceSize, MaxVertexBufferCount> strides;
+        std::array<vk::DeviceSize, MaxVertexBufferCount> sizes;
     };
     using SetVertexBuffersCmd = CmdHolder<SetVertexBuffersCmdImpl>;
 
@@ -54,13 +67,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
             for (u32 i{base.firstBinding}; i < base.firstBinding + base.bindingCount; i++) {
                 base.buffers[i] = views[i].GetBuffer()->GetBacking();
                 base.offsets[i] = views[i].GetOffset();
+                base.sizes[i] = views[i].size;
             }
 
             base.Record(gpu, commandBuffer);
         }
 
         SetVertexBuffersCmdImpl base{};
-        std::array<BufferView, engine::VertexStreamCount> views;
+        std::array<BufferView, MaxVertexBufferCount> views;
     };
     using SetVertexBuffersDynamicCmd = CmdHolder<SetVertexBuffersDynamicCmdImpl>;
 
@@ -239,10 +253,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     struct SetPipelineCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
-            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+            commandBuffer.bindPipeline(bindPoint, pipeline);
         }
 
         vk::Pipeline pipeline;
+        vk::PipelineBindPoint bindPoint;
     };
     using SetPipelineCmd = CmdHolder<SetPipelineCmdImpl>;
 
@@ -309,10 +324,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return {head};
         }
 
-        void SetVertexBuffer(u32 index, const BufferBinding &binding) {
-            if (index != vertexBatchBindNextBinding || vertexBatchBind->header.record != &SetVertexBuffersCmd::Record) {
+        void SetVertexBuffer(u32 index, const BufferBinding &binding, bool ext = false, vk::DeviceSize stride = 0) {
+            if (index != vertexBatchBindNextBinding || vertexBatchBind->header.record != &SetVertexBuffersCmd::Record || vertexBatchBind->cmd.base.ext != ext) {
                 FlushVertexBatchBind();
                 vertexBatchBind->header.record = &SetVertexBuffersCmd::Record;
+                vertexBatchBind->cmd.base.ext = ext;
                 vertexBatchBind->cmd.base.firstBinding = index;
                 vertexBatchBindNextBinding = index;
             }
@@ -320,21 +336,25 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 bindingIdx{vertexBatchBindNextBinding++};
             vertexBatchBind->cmd.base.buffers[bindingIdx] = binding.buffer;
             vertexBatchBind->cmd.base.offsets[bindingIdx] = binding.offset;
+            vertexBatchBind->cmd.base.sizes[bindingIdx] = binding.size;
+            vertexBatchBind->cmd.base.strides[bindingIdx] = stride;
             vertexBatchBind->cmd.base.bindingCount++;
         }
 
-        void SetVertexBuffer(u32 index, BufferView view) {
+        void SetVertexBuffer(u32 index, BufferView view, bool ext = false, vk::DeviceSize stride = 0) {
             view.GetBuffer()->BlockSequencedCpuBackingWrites();
 
-            if (index != vertexBatchBindNextBinding || vertexBatchBind->header.record != &SetVertexBuffersDynamicCmd::Record) {
+            if (index != vertexBatchBindNextBinding || vertexBatchBind->header.record != &SetVertexBuffersDynamicCmd::Record || vertexBatchBind->cmd.base.ext != ext) {
                 FlushVertexBatchBind();
                 vertexBatchBind->header.record = &SetVertexBuffersDynamicCmd::Record;
+                vertexBatchBind->cmd.base.ext = ext;
                 vertexBatchBind->cmd.base.firstBinding = index;
                 vertexBatchBindNextBinding = index;
             }
 
             u32 bindingIdx{vertexBatchBindNextBinding++};
             vertexBatchBind->cmd.views[bindingIdx] = view;
+            vertexBatchBind->cmd.base.strides[bindingIdx] = stride;
             vertexBatchBind->cmd.base.bindingCount++;
         }
 
@@ -409,7 +429,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 });
         }
 
-        void SetBlendConstants(const std::array<float, engine::BlendColorChannelCount> &blendConstants) {
+        void SetBlendConstants(const std::array<float, 4> &blendConstants) {
             AppendCmd<SetBlendConstantsCmd>(
                 {
                     .blendConstants = blendConstants,
@@ -443,10 +463,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 });
         }
 
-        void SetPipeline(vk::Pipeline pipeline) {
+        void SetPipeline(vk::Pipeline pipeline, vk::PipelineBindPoint bindPoint) {
             AppendCmd<SetPipelineCmd>(
                 {
                     .pipeline = pipeline,
+                    .bindPoint = bindPoint,
                 });
         }
 

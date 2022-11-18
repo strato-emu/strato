@@ -9,8 +9,8 @@
 #include <gpu/buffer_manager.h>
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/interconnect/conversion/quads.h>
+#include <gpu/interconnect/common/state_updater.h>
 #include "common.h"
-#include "state_updater.h"
 #include "active_state.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
