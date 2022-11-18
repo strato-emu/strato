@@ -143,6 +143,82 @@ namespace skyline::gpu {
     };
 
     /**
+     * @brief A shader environment for all compute pipeline stages
+     */
+    class ComputeEnvironment : public Shader::Environment {
+      private:
+        span<u8> binary;
+        u32 baseOffset;
+        u32 textureBufferIndex;
+        u32 localMemorySize;
+        u32 sharedMemorySize;
+        std::array<u32, 3> workgroupDimensions;
+        ShaderManager::ConstantBufferRead constantBufferRead;
+        ShaderManager::GetTextureType getTextureType;
+
+
+      public:
+        std::vector<ShaderManager::ConstantBufferWord> constantBufferWords;
+        std::vector<ShaderManager::CachedTextureType> textureTypes;
+
+        ComputeEnvironment(span<u8> pBinary,
+                           u32 baseOffset,
+                           u32 textureBufferIndex,
+                           u32 localMemorySize, u32 sharedMemorySize,
+                           std::array<u32, 3> workgroupDimensions,
+                           ShaderManager::ConstantBufferRead constantBufferRead, ShaderManager::GetTextureType getTextureType)
+            : binary{pBinary},
+              baseOffset{baseOffset},
+              textureBufferIndex{textureBufferIndex},
+              localMemorySize{localMemorySize},
+              sharedMemorySize{sharedMemorySize},
+              workgroupDimensions{workgroupDimensions},
+              constantBufferRead{std::move(constantBufferRead)},
+              getTextureType{std::move(getTextureType)} {
+            stage = Shader::Stage::Compute;
+            start_address = baseOffset;
+        }
+
+        [[nodiscard]] u64 ReadInstruction(u32 address) final {
+            address -= baseOffset;
+            if (binary.size() < (address + sizeof(u64)))
+                throw exception("Out of bounds instruction read: 0x{:X}", address);
+            return *reinterpret_cast<u64 *>(binary.data() + address);
+        }
+
+        [[nodiscard]] u32 ReadCbufValue(u32 index, u32 offset) final {
+            auto value{constantBufferRead(index, offset)};
+            constantBufferWords.emplace_back(index, offset, value);
+            return value;
+        }
+
+        [[nodiscard]] Shader::TextureType ReadTextureType(u32 handle) final {
+            auto type{getTextureType(handle)};
+            textureTypes.emplace_back(handle, type);
+            return type;
+        }
+
+        [[nodiscard]] u32 TextureBoundBuffer() const final {
+            return textureBufferIndex;
+        }
+
+        [[nodiscard]] u32 LocalMemorySize() const final {
+            return localMemorySize;
+        }
+
+        [[nodiscard]] u32 SharedMemorySize() const final {
+            return sharedMemorySize;
+        }
+
+        [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
+            return workgroupDimensions;
+        }
+
+        void Dump(u64 hash) final {}
+    };
+
+
+    /**
      * @brief A shader environment for VertexB during combination as it only requires the shader header and no higher level context
      */
     class VertexBEnvironment : public Shader::Environment {
@@ -202,7 +278,16 @@ namespace skyline::gpu {
         return Shader::Maxwell::MergeDualVertexPrograms(vertexA, vertexB, env);
     }
 
-    vk::ShaderModule ShaderManager::CompileShader(Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
+    Shader::IR::Program ShaderManager::ParseComputeShader(span<u8> binary, u32 baseOffset, u32 textureConstantBufferIndex, u32 localMemorySize, u32 sharedMemorySize, std::array<u32, 3> workgroupDimensions, const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
+        std::scoped_lock lock{poolMutex};
+
+        ComputeEnvironment environment{binary, baseOffset, textureConstantBufferIndex, localMemorySize, sharedMemorySize, workgroupDimensions, constantBufferRead, getTextureType};
+        Shader::Maxwell::Flow::CFG cfg{environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset)}};
+        return  Shader::Maxwell::TranslateProgram(instructionPool, blockPool, environment, cfg, hostTranslateInfo);
+    }
+
+
+    vk::ShaderModule ShaderManager::CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
         std::scoped_lock lock{poolMutex};
 
         if (program.info.loads.Legacy() || program.info.stores.Legacy())
