@@ -609,8 +609,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 return false;
         })};
 
-        if (it != transitionCache.end())
-            return *it;
+        if (it != transitionCache.end()) {
+            std::swap(*it, *transitionCache.begin());
+            return *transitionCache.begin();
+        }
 
         return nullptr;
     }
