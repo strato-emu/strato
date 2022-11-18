@@ -556,12 +556,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SamplerBinding) == sizeof(u32));
 
-    struct TexHeaderPool {
-        Address offset;
-        u32 maximumIndex;
-    };
-    static_assert(sizeof(TexHeaderPool) == sizeof(u32) * 3);
-
     enum class CompareFunc : u32 {
         D3DNever = 1,
         D3DLess = 2,
@@ -873,12 +867,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
         u32 _pad2_[3];
     };
     static_assert(sizeof(BindGroup) == (sizeof(u32) * 8));
-
-    struct BindlessTexture {
-        u8 constantBufferSlotSelect : 5;
-        u32 _pad0_ : 27;
-    };
-    static_assert(sizeof(BindlessTexture) == sizeof(u32));
 
     constexpr static size_t ShaderStageConstantBufferCount{18}; //!< Maximum amount of constant buffers that can be bound to a single pipeline stage
 

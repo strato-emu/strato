@@ -53,6 +53,18 @@ namespace skyline::soc::gm20b::engine {
     };
     static_assert(sizeof(TexSamplerPool) == sizeof(u32) * 3);
 
+    struct TexHeaderPool {
+        Address offset;
+        u32 maximumIndex;
+    };
+    static_assert(sizeof(TexHeaderPool) == sizeof(u32) * 3);
+
+    struct BindlessTexture {
+        u8 constantBufferSlotSelect : 5;
+        u32 _pad0_ : 27;
+    };
+    static_assert(sizeof(BindlessTexture) == sizeof(u32));
+
     constexpr u32 EngineMethodsEnd{0xE00}; //!< All methods above this are passed to the MME on supported engines
 
     /**

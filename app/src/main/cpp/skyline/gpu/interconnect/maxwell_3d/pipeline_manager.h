@@ -7,10 +7,10 @@
 #include <shader_compiler/frontend/ir/program.h>
 #include <gpu/cache/graphics_pipeline_cache.h>
 #include <gpu/interconnect/common/samplers.h>
+#include <gpu/interconnect/common/textures.h>
 #include "common.h"
 #include "packed_pipeline_state.h"
 #include "constant_buffers.h"
-#include "textures.h"
 
 namespace skyline::gpu {
     class TextureView;

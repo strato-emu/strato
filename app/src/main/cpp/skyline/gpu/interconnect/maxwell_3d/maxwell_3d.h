@@ -5,10 +5,10 @@
 
 #include <gpu/descriptor_allocator.h>
 #include <gpu/interconnect/common/samplers.h>
+#include <gpu/interconnect/common/textures.h>
 #include "common.h"
 #include "active_state.h"
 #include "constant_buffers.h"
-#include "textures.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /**

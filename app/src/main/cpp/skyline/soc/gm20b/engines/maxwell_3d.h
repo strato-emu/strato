@@ -271,7 +271,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x55B, float> slopeScaleDepthBias;
             Register<0x55C, u32> aliasedLineWidthEnable;
 
-            Register<0x55D, type::TexHeaderPool> texHeaderPool;
+            Register<0x55D, TexHeaderPool> texHeaderPool;
 
             Register<0x565, u32> twoSidedStencilTestEnable; //!< Determines if the back-facing stencil state uses the front facing stencil state or independent stencil state
 
@@ -414,7 +414,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x900, std::array<type::BindGroup, type::ShaderStageCount>> bindGroups; //!< Binds constant buffers to pipeline stages
 
-            Register<0x982, type::BindlessTexture> bindlessTexture; //!< The index of the constant buffer containing bindless texture descriptors
+            Register<0x982, BindlessTexture> bindlessTexture; //!< The index of the constant buffer containing bindless texture descriptors
 
             Register<0xA00, std::array<std::array<u8, type::StreamOutLayoutSelectAttributeCount>, type::StreamOutBufferCount>> streamOutLayoutSelect;
         };

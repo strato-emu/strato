@@ -285,7 +285,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         struct EngineRegisters {
             const std::array<u32, 8> &postVtgShaderAttributeSkipMask;
-            const engine::BindlessTexture &bindlessTexture;
+            const engine_common::BindlessTexture &bindlessTexture;
             const u32 &apiMandatedEarlyZ;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;

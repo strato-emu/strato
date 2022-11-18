@@ -7,7 +7,7 @@
 #include <gpu/texture/format.h>
 #include "textures.h"
 
-namespace skyline::gpu::interconnect::maxwell3d {
+namespace skyline::gpu::interconnect {
     void TexturePoolState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
         manager.Bind(handle, texHeaderPool);
     }

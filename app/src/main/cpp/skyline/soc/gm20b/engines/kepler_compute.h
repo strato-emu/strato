@@ -96,8 +96,7 @@ namespace skyline::soc::gm20b::engine {
             Register<0x54A, u32> shaderExceptions;
 
             Register<0x557, TexSamplerPool> texSamplerPool;
-            Register<0x55D, Address> texHeaderPool;
-            Register<0x55F, u32> texHeaderPoolMaximumIndex;
+            Register<0x55D, TexHeaderPool> texHeaderPool;
 
             Register<0x582, Address> programRegion;
 
@@ -148,12 +147,6 @@ namespace skyline::soc::gm20b::engine {
             static_assert(sizeof(ReportSemaphore) == 0x10);
 
             Register<0x6C0, ReportSemaphore> reportSemaphore;
-
-            struct BindlessTexture {
-                u8 constantBufferSlotSelect : 3;
-                u32 _pad_ : 29;
-            };
-            static_assert(sizeof(BindlessTexture) == 0x4);
 
             Register<0x982, BindlessTexture> bindlessTexture;
         } registers{};
