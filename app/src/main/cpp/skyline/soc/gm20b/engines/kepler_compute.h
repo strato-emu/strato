@@ -95,8 +95,7 @@ namespace skyline::soc::gm20b::engine {
 
             Register<0x54A, u32> shaderExceptions;
 
-            Register<0x557, Address> texSamplerPool;
-            Register<0x559, u32> texSamplerPoolMaximumIndex;
+            Register<0x557, TexSamplerPool> texSamplerPool;
             Register<0x55D, Address> texHeaderPool;
             Register<0x55F, u32> texHeaderPoolMaximumIndex;
 

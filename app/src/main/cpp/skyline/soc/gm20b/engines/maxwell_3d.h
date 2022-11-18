@@ -6,9 +6,8 @@
 #pragma once
 
 #include <gpu/interconnect/maxwell_3d/maxwell_3d.h>
-#include "engine.h"
 #include <soc/host1x/syncpoint.h>
-#include "gpu/interconnect/maxwell_3d/common.h"
+#include "engine.h"
 #include "inline2memory.h"
 #include "maxwell/types.h"
 
@@ -24,7 +23,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
       private:
         host1x::SyncpointSet &syncpoints;
         Inline2MemoryBackend i2m;
-        gpu::interconnect::maxwell3d::DirtyManager dirtyManager;
+        gpu::interconnect::DirtyManager dirtyManager;
         gpu::interconnect::maxwell3d::Maxwell3D interconnect;
 
         union BatchEnableState {
@@ -267,7 +266,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x54F, type::MultisampleControl> multisampleControl;
 
-            Register<0x557, type::TexSamplerPool> texSamplerPool;
+            Register<0x557, TexSamplerPool> texSamplerPool;
 
             Register<0x55B, float> slopeScaleDepthBias;
             Register<0x55C, u32> aliasedLineWidthEnable;

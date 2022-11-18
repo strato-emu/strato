@@ -6,10 +6,10 @@
 #include <tsl/robin_map.h>
 #include <shader_compiler/frontend/ir/program.h>
 #include <gpu/cache/graphics_pipeline_cache.h>
+#include <gpu/interconnect/common/samplers.h>
 #include "common.h"
 #include "packed_pipeline_state.h"
 #include "constant_buffers.h"
-#include "samplers.h"
 #include "textures.h"
 
 namespace skyline::gpu {

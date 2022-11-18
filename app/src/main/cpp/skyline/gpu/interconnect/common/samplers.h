@@ -7,13 +7,12 @@
 #include "common.h"
 #include "tsc.h"
 
-namespace skyline::gpu::interconnect::maxwell3d {
-    class SamplerPoolState : dirty::CachedManualDirty {
+namespace skyline::gpu::interconnect {
+    class SamplerPoolState : dirty::CachedManualDirty, dirty::RefreshableManualDirty {
       public:
         struct EngineRegisters {
-            const engine::SamplerBinding &samplerBinding;
-            const engine::TexSamplerPool &texSamplerPool;
-            const engine::TexHeaderPool &texHeaderPool;
+            const engine_common::TexSamplerPool &texSamplerPool;
+            const engine_common::TexHeaderPool &texHeaderPool;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };
@@ -23,11 +22,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       public:
         span<TextureSamplerControl> texSamplers;
-        bool useTexHeaderBinding;
+        bool didUseTexHeaderBinding;
 
         SamplerPoolState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush(InterconnectContext &ctx);
+        void Flush(InterconnectContext &ctx, bool useTexHeaderBinding);
+
+        bool Refresh(InterconnectContext &ctx, bool useTexHeaderBinding);
 
         void PurgeCaches();
     };
@@ -41,6 +42,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       public:
         Samplers(DirtyManager &manager, const SamplerPoolState::EngineRegisters &engine);
+
+        void Update(InterconnectContext &ctx, bool useTexHeaderBinding);
 
         void MarkAllDirty();
 

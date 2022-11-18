@@ -22,6 +22,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
           clearEngineRegisters{registerBundle.clearRegisters},
           constantBuffers{manager, registerBundle.constantBufferSelectorRegisters},
           samplers{manager, registerBundle.samplerPoolRegisters},
+          samplerBinding{registerBundle.samplerBinding},
           textures{manager, registerBundle.texturePoolRegisters},
           directState{activeState.directState} {
         ctx.executor.AddFlushCallback([this] {
@@ -213,6 +214,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         StateUpdateBuilder builder{*ctx.executor.allocator};
 
         Pipeline *oldPipeline{activeState.GetPipeline()};
+        samplers.Update(ctx, samplerBinding.value == engine::SamplerBinding::Value::ViaHeaderBinding);
         activeState.Update(ctx, textures, constantBuffers.boundConstantBuffers, builder, indexed, topology, first, count);
         if (directState.inputAssembly.NeedsQuadConversion()) {
             count = conversion::quads::GetIndexCount(count);

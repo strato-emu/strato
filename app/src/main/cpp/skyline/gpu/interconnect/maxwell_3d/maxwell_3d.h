@@ -4,10 +4,10 @@
 #pragma once
 
 #include <gpu/descriptor_allocator.h>
+#include <gpu/interconnect/common/samplers.h>
 #include "common.h"
 #include "active_state.h"
 #include "constant_buffers.h"
-#include "samplers.h"
 #include "textures.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
@@ -35,6 +35,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             ClearEngineRegisters clearRegisters;
             ConstantBufferSelectorState::EngineRegisters constantBufferSelectorRegisters;
             SamplerPoolState::EngineRegisters samplerPoolRegisters;
+            const engine::SamplerBinding &samplerBinding;
             TexturePoolState::EngineRegisters texturePoolRegisters;
         };
 
@@ -44,6 +45,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ClearEngineRegisters clearEngineRegisters;
         ConstantBuffers constantBuffers;
         Samplers samplers;
+        const engine::SamplerBinding &samplerBinding;
         Textures textures;
         std::shared_ptr<memory::Buffer> quadConversionBuffer{};
         bool quadConversionBufferAttached{};

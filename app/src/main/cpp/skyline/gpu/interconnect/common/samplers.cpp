@@ -5,19 +5,24 @@
 #include <soc/gm20b/gmmu.h>
 #include "samplers.h"
 
-namespace skyline::gpu::interconnect::maxwell3d {
+namespace skyline::gpu::interconnect {
     void SamplerPoolState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, samplerBinding, texSamplerPool, texHeaderPool);
+        manager.Bind(handle, texSamplerPool, texHeaderPool);
     }
 
     SamplerPoolState::SamplerPoolState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    void SamplerPoolState::Flush(InterconnectContext &ctx) {
-        useTexHeaderBinding = engine->samplerBinding.value == engine::SamplerBinding::Value::ViaHeaderBinding;
+    void SamplerPoolState::Flush(InterconnectContext &ctx, bool useTexHeaderBinding) {
         u32 maximumIndex{useTexHeaderBinding ? engine->texHeaderPool.maximumIndex : engine->texSamplerPool.maximumIndex};
         auto mapping{ctx.channelCtx.asCtx->gmmu.LookupBlock(engine->texSamplerPool.offset)};
 
         texSamplers = mapping.first.subspan(mapping.second).cast<TextureSamplerControl>().first(maximumIndex + 1);
+
+        didUseTexHeaderBinding = useTexHeaderBinding;
+    }
+
+    bool SamplerPoolState::Refresh(InterconnectContext &ctx, bool useTexHeaderBinding) {
+        return didUseTexHeaderBinding != useTexHeaderBinding;
     }
 
     void SamplerPoolState::PurgeCaches() {
@@ -25,6 +30,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     Samplers::Samplers(DirtyManager &manager, const SamplerPoolState::EngineRegisters &engine) : samplerPool{manager, engine} {}
+
+    void Samplers::Update(InterconnectContext &ctx, bool useTexHeaderBinding) {
+        samplerPool.Update(ctx, useTexHeaderBinding);
+    }
 
     void Samplers::MarkAllDirty() {
         samplerPool.MarkDirty(true);
@@ -140,8 +149,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     vk::raii::Sampler *Samplers::GetSampler(InterconnectContext &ctx, u32 samplerIndex, u32 textureIndex) {
-        const auto &samplerPoolObj{samplerPool.UpdateGet(ctx)};
-        u32 index{samplerPoolObj.useTexHeaderBinding ? textureIndex : samplerIndex};
+        const auto &samplerPoolObj{samplerPool.Get()};
+        u32 index{samplerPoolObj.didUseTexHeaderBinding ? textureIndex : samplerIndex};
         auto texSamplers{samplerPoolObj.texSamplers};
         if (texSamplers.size() != texSamplerCache.size()) {
             texSamplerCache.resize(texSamplers.size());

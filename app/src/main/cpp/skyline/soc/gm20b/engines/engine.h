@@ -47,6 +47,12 @@ namespace skyline::soc::gm20b::engine {
     };
     static_assert(sizeof(Address) == sizeof(u64));
 
+    struct TexSamplerPool {
+        Address offset;
+        u32 maximumIndex;
+    };
+    static_assert(sizeof(TexSamplerPool) == sizeof(u32) * 3);
+
     constexpr u32 EngineMethodsEnd{0xE00}; //!< All methods above this are passed to the MME on supported engines
 
     /**

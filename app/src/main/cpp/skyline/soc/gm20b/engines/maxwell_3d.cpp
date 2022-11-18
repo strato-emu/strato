@@ -50,7 +50,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             .activeStateRegisters = MakeActiveStateRegisters(registers),
             .clearRegisters = {registers.scissors[0], registers.viewportClips[0], *registers.clearRect, *registers.colorClearValue, *registers.zClearValue, *registers.stencilClearValue, *registers.surfaceClip, *registers.clearSurfaceControl},
             .constantBufferSelectorRegisters = {*registers.constantBufferSelector},
-            .samplerPoolRegisters = {*registers.samplerBinding, *registers.texSamplerPool, *registers.texHeaderPool},
+            .samplerPoolRegisters = {*registers.texSamplerPool, *registers.texHeaderPool},
+            .samplerBinding = *registers.samplerBinding,
             .texturePoolRegisters = {*registers.texHeaderPool}
         };
     }

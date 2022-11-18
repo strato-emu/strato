@@ -556,12 +556,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(SamplerBinding) == sizeof(u32));
 
-    struct TexSamplerPool {
-        Address offset;
-        u32 maximumIndex;
-    };
-    static_assert(sizeof(TexSamplerPool) == sizeof(u32) * 3);
-
     struct TexHeaderPool {
         Address offset;
         u32 maximumIndex;
