@@ -6,7 +6,7 @@
 #include <soc/gm20b/gmmu.h>
 #include "common.h"
 
-namespace skyline::gpu::interconnect::maxwell3d {
+namespace skyline::gpu::interconnect {
     void CachedMappedBufferView::Update(InterconnectContext &ctx, u64 address, u64 size, bool splitMappingWarn) {
         // Ignore size for the mapping end check here as we don't support buffers split across multiple mappings so only the first one would be used anyway. It's also impossible for the mapping to have been remapped with a larger one since the original lookup because the we force the mapping to be reset after semaphores
         if (address < blockMappingStartAddr || address >= blockMappingEndAddr) {
@@ -45,5 +45,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void CachedMappedBufferView::PurgeCaches() {
         view = {};
         blockMappingEndAddr = 0; // Will force a retranslate of `blockMapping` on the next `Update()` call
+    }
+
+    static void FlushHostCallback() {
+        // TODO: here we should trigger `Execute()`, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
+        Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
+    }
+
+    void ConstantBuffer::Read(CommandExecutor &executor, span<u8> dstBuffer, size_t srcOffset) {
+        ContextLock lock{executor.tag, view};
+        view.Read(lock.IsFirstUsage(), FlushHostCallback, dstBuffer, srcOffset);
     }
 }
