@@ -29,19 +29,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void PurgeCaches();
     };
 
-    struct ConstantBuffer {
-        BufferView view;
-
-        void Read(CommandExecutor &executor, span <u8> dstBuffer, size_t srcOffset);
-
-        template<typename T>
-        T Read(CommandExecutor &executor, size_t srcOffset) {
-            T object;
-            Read(executor, span<T>{object}.template cast<u8>(), srcOffset);
-            return object;
-        }
-    };
-
     using ConstantBufferSet = std::array<std::array<ConstantBuffer, engine::ShaderStageConstantBufferCount>, engine::ShaderStageCount>;
 
     /**

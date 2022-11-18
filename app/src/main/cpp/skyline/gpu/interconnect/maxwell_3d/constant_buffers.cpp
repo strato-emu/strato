@@ -33,16 +33,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         view.PurgeCaches();
     }
 
-    static void FlushHostCallback() {
-        // TODO: here we should trigger `Execute()`, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
-        Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
-    }
-
-    void ConstantBuffer::Read(CommandExecutor &executor, span<u8> dstBuffer, size_t srcOffset) {
-        ContextLock lock{executor.tag, view};
-        view.Read(lock.IsFirstUsage(), FlushHostCallback, dstBuffer, srcOffset);
-    }
-
     ConstantBuffers::ConstantBuffers(DirtyManager &manager, const ConstantBufferSelectorState::EngineRegisters &constantBufferSelectorRegisters) : selectorState{manager, constantBufferSelectorRegisters} {}
 
     void ConstantBuffers::MarkAllDirty() {
