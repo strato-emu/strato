@@ -225,7 +225,7 @@ namespace skyline::gpu {
                 return true; // If the texture is already CPU dirty or we can transition it to being CPU dirty then we don't need to do anything
             }
 
-            if (texture->accumulatedGuestWaitTime > SkipReadbackHackWaitTimeThreshold && *texture->gpu.state.settings->enableTextureReadbackHack) {
+            if (texture->accumulatedGuestWaitTime > SkipReadbackHackWaitTimeThreshold && *texture->gpu.state.settings->enableFastGpuReadbackHack) {
                 texture->dirtyState = DirtyState::Clean;
                 return true;
             }

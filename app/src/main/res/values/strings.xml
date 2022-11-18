@@ -75,9 +75,11 @@
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
     <string name="executor_slot_count">Executor Slot Count</string>
     <string name="executor_slot_count_desc">Maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
-    <string name="enable_texture_readback_hack">Enable Texture Readback Hack</string>
-    <string name="enable_texture_readback_hack_enabled">Texture readback hack is enabled (Will break some games but others will have higher performance)</string>
-    <string name="enable_texture_readback_hack_disabled">Texture readback hack is disabled (Ensures highest accuracy)</string>
+    <!-- Settings - Hacks -->
+    <string name="hacks">Hacks</string>
+    <string name="enable_fast_gpu_readback">Enable fast GPU readback</string>
+    <string name="enable_fast_gpu_readback_enabled">Fast GPU readback is enabled (Will break some games but others will have higher performance)</string>
+    <string name="enable_fast_gpu_readback_disabled">Fast GPU readback is disabled (Ensures highest accuracy)</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Disable Audio Output</string>

@@ -26,7 +26,9 @@ class NativeSettings(context : Context, pref : PreferenceSettings) {
     var gpuDriver : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver
     var gpuDriverLibraryName : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else GpuDriverHelper.getLibraryName(context, pref.gpuDriver)
     var executorSlotCount : Int = pref.executorSlotCount
-    var enableTextureReadbackHack : Boolean = pref.enableTextureReadbackHack
+
+    // Hacks
+    var enableFastGpuReadbackHack : Boolean = pref.enableFastGpuReadbackHack
 
     // Audio
     var isAudioOutputDisabled : Boolean = pref.isAudioOutputDisabled

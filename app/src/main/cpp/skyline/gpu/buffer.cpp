@@ -5,6 +5,7 @@
 #include <kernel/memory.h>
 #include <kernel/types/KProcess.h>
 #include <common/trace.h>
+#include <common/settings.h>
 #include "buffer.h"
 
 namespace skyline::gpu {
@@ -38,8 +39,14 @@ namespace skyline::gpu {
                 // If this mutex would cause other callbacks to be blocked then we should block on this mutex in advance
                 std::shared_ptr<FenceCycle> waitCycle{};
                 do {
-                    if (waitCycle)
+                    if (waitCycle) {
+                        i64 startNs{buffer->accumulatedGuestWaitCounter > FastReadbackHackWaitCountThreshold ? util::GetTimeNs() : 0};
                         waitCycle->Wait();
+                        if (startNs)
+                            buffer->accumulatedGuestWaitTime += std::chrono::nanoseconds(util::GetTimeNs() - startNs);
+
+                        buffer->accumulatedGuestWaitCounter++;
+                    }
 
                     std::scoped_lock lock{*buffer};
                     if (waitCycle && buffer->cycle == waitCycle) {
@@ -86,6 +93,14 @@ namespace skyline::gpu {
 
             if (!buffer->AllCpuBackingWritesBlocked() && buffer->dirtyState != DirtyState::GpuDirty) {
                 buffer->dirtyState = DirtyState::CpuDirty;
+                return true;
+            }
+
+            if (buffer->accumulatedGuestWaitTime > FastReadbackHackWaitTimeThreshold && *buffer->gpu.state.settings->enableFastGpuReadbackHack) {
+                // As opposed to skipping readback as we do for textures, with buffers we can still perform the readback but just without syncinc the GPU
+                // While the read data may be invalid it's still better than nothing and works in most cases
+                memcpy(buffer->mirror.data(), buffer->backing.data(), buffer->mirror.size());
+                buffer->dirtyState = DirtyState::Clean;
                 return true;
             }
 

@@ -90,6 +90,11 @@ namespace skyline::gpu {
         static constexpr size_t FrequentlyLockedThreshold{2}; //!< Threshold for the number of times a buffer can be locked (not from context locks, only normal) before it should be considered frequently locked
         size_t accumulatedCpuLockCounter{}; //!< Number of times buffer has been locked through non-ContextLocks
 
+        static constexpr size_t FastReadbackHackWaitCountThreshold{8}; //!< Threshold for the number of times a buffer can be waited on before it should be considered for the readback hack
+        static constexpr std::chrono::nanoseconds FastReadbackHackWaitTimeThreshold{constant::NsInSecond / 2}; //!< Threshold for the amount of time buffer texture can be waited on before it should be considered for the readback hack, `SkipReadbackHackWaitCountThreshold` needs to be hit before this
+        size_t accumulatedGuestWaitCounter{}; //!< Total number of times the buffer has been waited on
+        std::chrono::nanoseconds accumulatedGuestWaitTime{}; //!< Amount of time the buffer has been waited on for since the `FastReadbackHackWaitTimeThreshold`th wait on it by the guest
+
         /**
          * @brief Resets all megabuffer tracking state
          */

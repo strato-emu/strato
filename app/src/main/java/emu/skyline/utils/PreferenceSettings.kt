@@ -39,7 +39,9 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER)
     var executorSlotCount by sharedPreferences(context, 6)
-    var enableTextureReadbackHack by sharedPreferences(context, false)
+
+    // Hacks
+    var enableFastGpuReadbackHack by sharedPreferences(context, false)
 
     // Audio
     var isAudioOutputDisabled by sharedPreferences(context, false)
