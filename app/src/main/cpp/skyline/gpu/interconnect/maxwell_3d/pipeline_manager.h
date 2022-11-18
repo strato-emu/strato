@@ -17,11 +17,6 @@ namespace skyline::gpu {
 }
 
 namespace skyline::gpu::interconnect::maxwell3d {
-    struct ShaderBinary {
-        span<u8> binary;
-        u32 baseOffset;
-    };
-
     class Pipeline {
       public:
         struct ShaderStage {

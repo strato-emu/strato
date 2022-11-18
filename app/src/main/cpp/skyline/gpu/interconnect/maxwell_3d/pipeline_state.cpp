@@ -255,112 +255,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
             throw exception("Shader type mismatch: {} != {}!", engine->pipeline.shader.type, static_cast<u8>(shaderType));
 
         if (!engine->pipeline.shader.enable && shaderType != engine::Pipeline::Shader::Type::Vertex) {
-            hash = 0;
+            binary.hash = 0;
             return;
         }
 
-        auto[blockMapping, blockOffset]{ctx.channelCtx.asCtx->gmmu.LookupBlock(engine->programRegion + engine->pipeline.programOffset)};
-
-        if (!trapExecutionLock)
-            trapExecutionLock.emplace(trapMutex);
-
-        // Skip looking up the mirror if it is the same as the one used for the previous update
-        if (!mirrorBlock.valid() || !mirrorBlock.contains(blockMapping)) {
-            auto mirrorIt{mirrorMap.find(blockMapping.data())};
-            if (mirrorIt == mirrorMap.end()) {
-                // Allocate a host mirror for the mapping and trap the guest region
-                auto newIt{mirrorMap.emplace(blockMapping.data(), std::make_unique<MirrorEntry>(ctx.memory.CreateMirror(blockMapping)))};
-
-                // We need to create the trap after allocating the entry so that we have an `invalid` pointer we can pass in
-                auto trapHandle{ctx.nce.CreateTrap(blockMapping, [mutex = &trapMutex]() {
-                    std::scoped_lock lock{*mutex};
-                    return;
-                }, []() { return true; }, [entry = newIt.first->second.get(), mutex = &trapMutex]() {
-                    std::unique_lock lock{*mutex, std::try_to_lock};
-                    if (!lock)
-                        return false;
-
-                    if (++entry->trapCount <= MirrorEntry::SkipTrapThreshold)
-                        entry->dirty = true;
-                    return true;
-                })};
-
-                // Write only trap
-                ctx.nce.TrapRegions(trapHandle, true);
-
-                entry = newIt.first->second.get();
-                entry->trap = trapHandle;
-            } else {
-                entry = mirrorIt->second.get();
-            }
-
-            mirrorBlock = blockMapping;
-        }
-
-        if (entry->trapCount > MirrorEntry::SkipTrapThreshold && entry->channelSequenceNumber != ctx.channelCtx.channelSequenceNumber) {
-            entry->channelSequenceNumber = ctx.channelCtx.channelSequenceNumber;
-            entry->dirty = true;
-        }
-
-        // If the mirror entry has been written to, clear its shader binary cache and retrap to catch any future writes
-        if (entry->dirty) {
-            entry->cache.clear();
-            entry->dirty = false;
-
-            if (entry->trapCount <= MirrorEntry::SkipTrapThreshold)
-                ctx.nce.TrapRegions(*entry->trap, true);
-        } else if (auto it{entry->cache.find(blockMapping.data() + blockOffset)}; it != entry->cache.end()) {
-            binary = it->second.binary;
-            hash = it->second.hash;
-            return;
-        }
-
-        // entry->mirror may not be a direct mirror of blockMapping and may just contain it as a subregion, so we need to explicitly calculate the offset
-        span<u8> blockMappingMirror{blockMapping.data() - mirrorBlock.data() + entry->mirror.data(), blockMapping.size()};
-
-        // If nothing was in the cache then do a full shader parse
-        binary.binary = [](span<u8> mapping) {
-            // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
-            // UAM Shader Compiler Reference: https://github.com/devkitPro/uam/blob/5a5afc2bae8b55409ab36ba45be63fcb73f68993/source/compiler_iface.cpp#L319-L351
-            constexpr u64 BraSelf1{0xE2400FFFFF87000F}, BraSelf2{0xE2400FFFFF07000F};
-
-            span<u64> shaderInstructions{mapping.cast<u64, std::dynamic_extent, true>()};
-            for (auto it{shaderInstructions.begin()}; it != shaderInstructions.end(); it++) {
-                auto instruction{*it};
-                if (instruction == BraSelf1 || instruction == BraSelf2) [[unlikely]]
-                    // It is far more likely that the instruction doesn't match so this is an unlikely case
-                    return span{shaderInstructions.begin(), it}.cast<u8>();
-            }
-
-            return span<u8>{};
-        }(blockMappingMirror.subspan(blockOffset));
-
-        binary.baseOffset = engine->pipeline.programOffset;
-        hash = XXH64(binary.binary.data(), binary.binary.size_bytes(), 0);
-
-        entry->cache.insert({blockMapping.data() + blockOffset, CacheEntry{binary, hash}});
+        binary = cache.Lookup(ctx, engine->programRegion, engine->pipeline.programOffset);
     }
 
     bool PipelineStageState::Refresh(InterconnectContext &ctx) {
-        if (!trapExecutionLock)
-            trapExecutionLock.emplace(trapMutex);
-
-        if (entry && entry->trapCount > MirrorEntry::SkipTrapThreshold && entry->channelSequenceNumber != ctx.channelCtx.channelSequenceNumber)
-            return true;
-        else if (entry && entry->dirty)
-            return true;
-
-        return false;
+        return cache.Refresh(ctx, engine->programRegion, engine->pipeline.programOffset);
     }
 
     void PipelineStageState::PurgeCaches() {
-        trapExecutionLock.reset();
-    }
-
-    PipelineStageState::~PipelineStageState() {
-        std::scoped_lock lock{trapMutex};
-        //for (const auto &mirror : mirrorMap)
-        //    ctx.nce.DestroyTrap(*mirror.second->trap);
+        cache.PurgeCaches();
     }
 
     /* Vertex Input State */
@@ -584,7 +491,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
         for (size_t i{}; i < engine::PipelineCount; i++) {
             const auto &stage{pipelineStages[i].UpdateGet(ctx)};
-            packedState.shaderHashes[i] = stage.hash;
+            packedState.shaderHashes[i] = stage.binary.hash;
             shaderBinaries[i] = stage.binary;
         }
 

@@ -5,6 +5,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <gpu/texture/texture.h>
+#include <gpu/interconnect/common/shader_cache.h>
 #include "common.h"
 #include "packed_pipeline_state.h"
 #include "pipeline_manager.h"
@@ -67,45 +68,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
-        struct CacheEntry {
-            ShaderBinary binary;
-            u64 hash;
-
-            CacheEntry(ShaderBinary binary, u64 hash) : binary{binary}, hash{hash} {}
-        };
-
-        /**
-         * @brief Holds mirror state for a single GPU mapped block
-         */
-        struct MirrorEntry {
-            span<u8> mirror;
-            tsl::robin_map<u8 *, CacheEntry> cache;
-            std::optional<nce::NCE::TrapHandle> trap;
-
-            static constexpr u32 SkipTrapThreshold{20}; //!< Threshold for the number of times a mirror trap needs to be hit before we fallback to always hashing
-            u32 trapCount{}; //!< The number of times the trap has been hit, used to avoid trapping in cases where the constant retraps would harm performance
-            size_t channelSequenceNumber{}; //!< For the case where `trapCount > SkipTrapThreshold`, the memory sequence number number used to clear the cache after every access
-            bool dirty{}; //!< If the trap has been hit and the cache needs to be cleared
-
-            MirrorEntry(span<u8> alignedMirror) : mirror{alignedMirror} {}
-        };
-
         dirty::BoundSubresource<EngineRegisters> engine;
         engine::Pipeline::Shader::Type shaderType;
 
-        tsl::robin_map<u8 *, std::unique_ptr<MirrorEntry>> mirrorMap;
-        std::mutex trapMutex; //!< Protects accesses from trap handlers to the mirror map
-        std::optional<std::scoped_lock<std::mutex>> trapExecutionLock;
-        MirrorEntry *entry{};
-        span<u8> mirrorBlock{}; //!< Guest mapped memory block corresponding to `entry`
+        ShaderCache cache;
 
       public:
         ShaderBinary binary;
-        u64 hash;
 
         PipelineStageState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u8 shaderType);
-
-        ~PipelineStageState();
 
         void Flush(InterconnectContext &ctx);
 
