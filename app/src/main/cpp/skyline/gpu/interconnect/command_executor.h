@@ -42,6 +42,7 @@ namespace skyline::gpu::interconnect {
             u32 executionNumber;
             bool ready{}; //!< If this slot's command buffer has had 'beginCommandBuffer' called and is ready to have commands recorded into it
             bool capture{}; //!< If this slot's Vulkan commands should be captured using the renderdoc API
+            bool didWait{}; //!< If a wait of time longer than GrowThresholdNs occured when this slot was acquired
 
             Slot(GPU &gpu);
 
@@ -62,9 +63,11 @@ namespace skyline::gpu::interconnect {
         };
 
       private:
+        static constexpr size_t GrowThresholdNs{constant::NsInMillisecond / 4}; //!< The wait time threshold at which the slot count will be increased
         const DeviceState &state;
         CircularQueue<Slot *> incoming; //!< Slots pending recording
         CircularQueue<Slot *> outgoing; //!< Slots that have been submitted, may still be active on the GPU
+        std::list<Slot> slots;
 
         std::thread thread;
 

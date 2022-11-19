@@ -3,6 +3,7 @@
 
 #include <soc.h>
 #include <services/nvdrv/devices/deserialisation/deserialisation.h>
+#include <gpu.h>
 #include "host1x_channel.h"
 
 namespace skyline::service::nvdrv::device::nvhost {
@@ -38,6 +39,9 @@ namespace skyline::service::nvdrv::device::nvhost {
         for (size_t i{}; i < syncpointIncrs.size(); i++) {
             const auto &incr{syncpointIncrs[i]};
 
+            for (size_t j{}; j < incr.numIncrs; j++)
+                state.soc->host1x.syncpoints[incr.syncpointId].Increment();
+
             u32 max{core.syncpointManager.IncrementSyncpointMaxExt(incr.syncpointId, incr.numIncrs)};
             if (i < fenceThresholds.size())
                 fenceThresholds[i] = max;
@@ -52,7 +56,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             Logger::Debug("Submit gather, CPU address: 0x{:X}, words: 0x{:X}", gatherAddress, cmdBuf.words);
 
             span gather(reinterpret_cast<u32 *>(gatherAddress), cmdBuf.words);
-            state.soc->host1x.channels[static_cast<size_t>(channelType)].Push(gather);
+       //     state.soc->host1x.channels[static_cast<size_t>(channelType)].Push(gather);
         }
 
         return PosixResult::Success;

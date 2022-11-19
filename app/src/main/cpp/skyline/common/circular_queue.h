@@ -124,9 +124,9 @@ namespace skyline {
          * @param tranformation A function that takes in an item of TransformedType as input and returns an item of Type
          */
         template<typename TransformedType, typename Transformation>
-        void AppendTranform(span <TransformedType> buffer, Transformation transformation) {
+        void AppendTranform(TransformedType &container, Transformation transformation) {
             std::unique_lock lock(productionMutex);
-            for (auto &item : buffer) {
+            for (auto &item : container) {
                 auto next{end + 1};
                 next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
                 if (next == start) {
