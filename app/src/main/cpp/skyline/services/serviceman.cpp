@@ -126,6 +126,7 @@ namespace skyline::service {
             SERVICE_CASE(spl::IRandomInterface, "csrng")
             SERVICE_CASE(ssl::ISslService, "ssl")
             SERVICE_CASE(prepo::IPrepoService, "prepo:u")
+            SERVICE_CASE(prepo::IPrepoService, "prepo:a")
             SERVICE_CASE(mmnv::IRequest, "mm:u")
             SERVICE_CASE(bcat::IServiceCreator, "bcat:u")
             SERVICE_CASE(bt::IBluetoothUser, "bt")
