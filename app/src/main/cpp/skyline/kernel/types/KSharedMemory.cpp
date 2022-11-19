@@ -23,7 +23,7 @@ namespace skyline::kernel::type {
     }
 
     u8 *KSharedMemory::Map(span<u8> map, memory::Permission permission) {
-        if (!state.process->memory.base.contains(map))
+        if (!state.process->memory.AddressSpaceContains(map))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
         if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size()))
             throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size());
@@ -51,7 +51,7 @@ namespace skyline::kernel::type {
 
     void KSharedMemory::Unmap(span<u8> map) {
         auto &memoryManager{state.process->memory};
-        if (!memoryManager.base.contains(map))
+        if (!memoryManager.AddressSpaceContains(map))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
         if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size()))
             throw exception("KSharedMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size());

@@ -13,7 +13,7 @@ namespace skyline::kernel::type {
           memoryState(memState),
           handle(handle),
           KMemory(state, KType::KPrivateMemory, guest) {
-        if (!state.process->memory.base.contains(guest))
+        if (!state.process->memory.AddressSpaceContains(guest))
             throw exception("KPrivateMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", guest.data(), guest.data() + guest.size());
         if (!util::IsPageAligned(guest.data()) || !util::IsPageAligned(guest.size()))
             throw exception("KPrivateMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", guest.data(), guest.data() + guest.size(), guest.size());
@@ -53,7 +53,7 @@ namespace skyline::kernel::type {
     }
 
     void KPrivateMemory::Remap(span<u8> map) {
-        if (!state.process->memory.base.contains(map))
+        if (!state.process->memory.AddressSpaceContains(map))
             throw exception("KPrivateMemory remapping isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
         if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size()))
             throw exception("KPrivateMemory remapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size());

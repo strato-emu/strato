@@ -12,7 +12,7 @@
 
 namespace skyline::loader {
     Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name, bool dynamicallyLinked) {
-        u8 *base{reinterpret_cast<u8 *>(process->memory.base.data() + offset)};
+        u8 *base{reinterpret_cast<u8 *>(process->memory.code.data() + offset)};
 
         size_t textSize{executable.text.contents.size()};
         size_t roSize{executable.ro.contents.size()};
@@ -70,20 +70,21 @@ namespace skyline::loader {
             hookSize = util::AlignUp(state.nce->GetHookSectionSize(executableSymbols), PAGE_SIZE);
         }
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false}, memory::states::Reserved); // ---
-        Logger::Error("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
+        auto patchType{process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit ? memory::states::Heap : memory::states::Reserved};
+        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false}, patchType); // ---
+        Logger::Debug("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
         if (hookSize > 0)
             Logger::Error("Successfully mapped section .hook @ 0x{:X}, Size = 0x{:X}", base + patch.size, hookSize);
 
         u8 *executableBase{base + patch.size + hookSize};
         process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.text.offset, textSize}, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
-        Logger::Error("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", executableBase, textSize);
+        Logger::Debug("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", executableBase, textSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.ro.offset, roSize}, memory::Permission{true, false, false}, memory::states::CodeStatic); // R--
-        Logger::Error("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", executableBase + executable.ro.offset, roSize);
+        Logger::Debug("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", executableBase + executable.ro.offset, roSize);
 
         process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.data.offset, dataSize}, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
-        Logger::Error("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", executableBase + executable.data.offset, dataSize);
+        Logger::Debug("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", executableBase + executable.data.offset, dataSize);
 
         size_t size{patch.size + hookSize + textSize + roSize + dataSize};
         {

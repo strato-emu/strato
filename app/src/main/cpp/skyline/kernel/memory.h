@@ -215,8 +215,10 @@ namespace skyline {
             std::vector<ChunkDescriptor> chunks;
 
           public:
+            memory::AddressSpaceType addressSpaceType{};
             span<u8> addressSpace{}; //!< The entire address space
-            span<u8> base{}; //!< The application-accessible address space
+            span<u8> codeBase36Bit{}; //!< A mapping in the lower 36 bits of the address space for mapping code and stack on 36-bit guests
+            span<u8> base{}; //!< The application-accessible address space (for 39-bit guests) or the heap/alias address space (for 36-bit guests)
             span<u8> code{};
             span<u8> alias{};
             span<u8> heap{};
@@ -224,6 +226,7 @@ namespace skyline {
             span<u8> tlsIo{}; //!< TLS/IO
 
             FileDescriptor memoryFd{}; //!< The file descriptor of the memory backing for the entire guest address space
+            FileDescriptor code36BitFd{}; //!< The file descriptor of the memory backing for in the lower 36 bits of the address space for mapping code and stack on 36-bit guests
 
             std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it's locked in shared mode by readers and exclusive mode by writers
 
@@ -274,6 +277,16 @@ namespace skyline {
              * @note There is a ceiling of SystemResourceSize as specified in the NPDM, this value will be clipped to that
              */
             size_t GetSystemResourceUsage();
+
+            /**
+             * @return If the supplied region is contained withing the accessible guest address space
+             */
+            bool AddressSpaceContains(span<u8> region) const {
+                if (addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit)
+                    return codeBase36Bit.contains(region) || base.contains(region);
+                else
+                    return base.contains(region);
+            }
         };
     }
 }
