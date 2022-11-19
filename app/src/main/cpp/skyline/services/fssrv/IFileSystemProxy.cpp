@@ -86,6 +86,10 @@ namespace skyline::service::fssrv {
         return {};
     }
 
+    Result IFileSystemProxy::OpenPatchDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return result::EntityNotFound;
+    }
+
     Result IFileSystemProxy::GetGlobalAccessLogMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(0);
         return {};
