@@ -93,6 +93,7 @@ namespace skyline::gpu {
 
         if (hasRobustness2Ext) {
             FEAT_SET(vk::PhysicalDeviceRobustness2FeaturesEXT, nullDescriptor, supportsNullDescriptor)
+            FEAT_SET(vk::PhysicalDeviceFeatures2, features.robustBufferAccess, std::ignore)
             FEAT_SET(vk::PhysicalDeviceRobustness2FeaturesEXT, robustBufferAccess2, std::ignore)
             FEAT_SET(vk::PhysicalDeviceRobustness2FeaturesEXT, robustImageAccess2, std::ignore)
         } else {
