@@ -7,12 +7,13 @@
 #include <gpu.h>
 #include <dlfcn.h>
 #include "command_executor.h"
+#include <nce.h>
 
 namespace skyline::gpu::interconnect {
     CommandRecordThread::CommandRecordThread(const DeviceState &state)
         : state{state},
-          incoming{*state.settings->executorSlotCount},
-          outgoing{*state.settings->executorSlotCount},
+          incoming{1U << *state.settings->executorSlotCountScale},
+          outgoing{1U << *state.settings->executorSlotCountScale},
           thread{&CommandRecordThread::Run, this} {}
 
     CommandRecordThread::Slot::ScopedBegin::ScopedBegin(CommandRecordThread::Slot &slot) : slot{slot} {}
@@ -126,7 +127,7 @@ namespace skyline::gpu::interconnect {
         }
 
         std::vector<Slot> slots{};
-        std::generate_n(std::back_inserter(slots), *state.settings->executorSlotCount, [&] () -> Slot { return gpu; });
+        std::generate_n(std::back_inserter(slots), (1U << *state.settings->executorSlotCountScale), [&] () -> Slot { return gpu; });
 
         outgoing.AppendTranform(span<Slot>(slots), [](auto &slot) { return &slot; });
 
@@ -472,7 +473,7 @@ namespace skyline::gpu::interconnect {
         renderPassIndex = 0;
 
         // Periodically clear preserve attachments just in case there are new waiters which would otherwise end up waiting forever
-        if ((submissionNumber % (*state.settings->executorSlotCount * 2)) == 0) {
+        if ((submissionNumber % (2U << *state.settings->executorSlotCountScale)) == 0) {
             preserveAttachedBuffers.clear();
             preserveAttachedTextures.clear();
         }

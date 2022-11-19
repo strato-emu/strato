@@ -129,11 +129,11 @@
             app:title="@string/respect_display_cutout" />
         <SeekBarPreference
             android:min="1"
-            android:defaultValue="6"
-            android:max="16"
-            android:summary="@string/executor_slot_count_desc"
-            app:key="executor_slot_count"
-            app:title="@string/executor_slot_count"
+            android:defaultValue="4"
+            android:max="6"
+            android:summary="@string/executor_slot_count_scale_desc"
+            app:key="executor_slot_count_scale"
+            app:title="@string/executor_slot_count_scale"
             app:showSeekBarValue="true" />
     </PreferenceCategory>
     <PreferenceCategory

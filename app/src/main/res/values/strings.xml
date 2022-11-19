@@ -73,8 +73,8 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
-    <string name="executor_slot_count">Executor Slot Count</string>
-    <string name="executor_slot_count_desc">Maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
+    <string name="executor_slot_count_scale">Executor Slot Count Scale</string>
+    <string name="executor_slot_count_scale_desc">Scale controlling the maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
     <!-- Settings - Hacks -->
     <string name="hacks">Hacks</string>
     <string name="enable_fast_gpu_readback">Enable fast GPU readback</string>
