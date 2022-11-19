@@ -19,7 +19,7 @@ namespace skyline::gpu::interconnect {
 
     static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, const Shader::Info &info, BufferView view, size_t idx) {
         if (!view) // Return a dummy buffer if the constant buffer isn't bound
-            return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer, 0, PAGE_SIZE};
+            return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, PAGE_SIZE).buffer, 0, PAGE_SIZE};
 
         ctx.executor.AttachBuffer(view);
 
@@ -40,6 +40,9 @@ namespace skyline::gpu::interconnect {
         static constexpr size_t MinAlignment{0x40};
 
         auto ssbo{cbuf.Read<SsboDescriptor>(ctx.executor, desc.cbuf_offset)};
+        if (ssbo.size == 0)
+            return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, PAGE_SIZE).buffer, 0, PAGE_SIZE};
+
         size_t padding{ssbo.address & (MinAlignment - 1)};
         cachedView.Update(ctx, ssbo.address - padding, util::AlignUp(ssbo.size + padding, MinAlignment));
 
