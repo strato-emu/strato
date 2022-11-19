@@ -239,6 +239,7 @@ namespace skyline::gpu {
 
             case vk::DriverId::eArmProprietary: {
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
+                brokenComputeShaders = true;
                 break;
             }
 

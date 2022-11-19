@@ -28,6 +28,9 @@ namespace skyline::gpu::interconnect::kepler_compute {
     }
 
     void KeplerCompute::Dispatch(const QMD &qmd) {
+        if (ctx.gpu.traits.quirks.brokenComputeShaders)
+            return;
+
         StateUpdateBuilder builder{*ctx.executor.allocator};
 
         constantBuffers.Update(ctx, qmd);
