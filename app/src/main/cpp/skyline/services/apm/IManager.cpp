@@ -11,4 +11,9 @@ namespace skyline::service::apm {
         manager.RegisterService(SRVREG(ISession), session, response);
         return {};
     }
+
+    Result IManager::IsCpuOverclockEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(false);
+        return {};
+    }
 }

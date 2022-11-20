@@ -19,8 +19,14 @@ namespace skyline::service::apm {
          */
         Result OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/PPC_services#IsCpuOverclockEnabled
+         */
+        Result IsCpuOverclockEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x0, IManager, OpenSession)
+            SFUNC(0x0, IManager, OpenSession),
+            SFUNC(0x6, IManager, IsCpuOverclockEnabled)
         )
     };
 }
