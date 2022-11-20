@@ -19,6 +19,7 @@ namespace skyline::service::am {
         std::shared_ptr<kernel::type::KEvent> libraryAppletLaunchableEvent; //!< This KEvent is triggered when the library applet is launchable
         std::shared_ptr<kernel::type::KEvent> accumulatedSuspendedTickChangedEvent; //!< This KEvent is triggered when the time the system has spent in suspend is updated
         std::shared_ptr<hosbinder::IHOSBinderDriver> hosbinder; //!< IHOSBinder service for managed display layers
+        u32 idleTimeDetectionExtension{0};
 
       public:
         ISelfController(const DeviceState &state, ServiceManager &manager);
@@ -99,6 +100,11 @@ namespace skyline::service::am {
         Result SetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetIdleTimeDetectionExtension
+         */
+        Result GetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns how long the process was suspended for in ticks
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickValue
          */
@@ -129,6 +135,7 @@ namespace skyline::service::am {
             SFUNC(0x13, ISelfController, SetAlbumImageOrientation),
             SFUNC(0x28, ISelfController, CreateManagedDisplayLayer),
             SFUNC(0x3E, ISelfController, SetIdleTimeDetectionExtension),
+            SFUNC(0x3F, ISelfController, GetIdleTimeDetectionExtension),
             SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
             SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent),
             SFUNC(0x64, ISelfController, SetAlbumImageTakenNotificationEnabled)

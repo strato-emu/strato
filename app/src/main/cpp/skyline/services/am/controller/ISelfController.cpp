@@ -71,8 +71,13 @@ namespace skyline::service::am {
     }
 
     Result ISelfController::SetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto idleTimeDetectionExtension{request.Pop<u32>()};
+        idleTimeDetectionExtension = request.Pop<u32>();
         Logger::Debug("Setting Idle Time Detection Extension: 0x{:X}", idleTimeDetectionExtension);
+        return {};
+    }
+
+    Result ISelfController::GetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(idleTimeDetectionExtension);
         return {};
     }
 
