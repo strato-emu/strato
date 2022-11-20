@@ -73,6 +73,16 @@ namespace skyline::service::account {
         return {};
     }
 
+    Result IAccountServiceForApplication::IsUserRegistrationRequestPermitted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(false); // Registration isn't permitted via the application account service
+        return {};
+    }
+
+    Result IAccountServiceForApplication::TrySelectUserWithoutInteraction(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(constant::DefaultUserId);
+        return {};
+    }
+
     Result IAccountServiceForApplication::GetBaasAccountManagerForApplication(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto id{request.Pop<UserId>()};
         if (id == UserId{})
@@ -83,6 +93,16 @@ namespace skyline::service::account {
     }
 
     Result IAccountServiceForApplication::InitializeApplicationInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IAccountServiceForApplication::ListQualifiedUsers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        try {
+            // We only support one active user currently. And we don't have parental control, so we can assume all users are qualified
+            return WriteUserList(request.outputBuf.at(0), {constant::DefaultUserId});
+        } catch (const std::out_of_range &) {
+            return result::InvalidInputBuffer;
+        }
         return {};
     }
 
@@ -108,11 +128,6 @@ namespace skyline::service::account {
     }
 
     Result IAccountServiceForApplication::InitializeApplicationInfoV2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return {};
-    }
-
-    Result IAccountServiceForApplication::IsUserRegistrationRequestPermitted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u8>(false); // Registration isn't permitted via the application account service
         return {};
     }
 }
