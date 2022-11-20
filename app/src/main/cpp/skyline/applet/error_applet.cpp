@@ -21,6 +21,9 @@ namespace skyline::applet {
         Logger::Debug("ErrorApplet: version: 0x{:X}, type: 0x{:X}", commonArg.apiVersion, errorCommonHeader.type);
 
         switch (errorCommonHeader.type) {
+            case ErrorType::ErrorCommonArg:
+                HandleErrorCommonArg();
+                break;
             case ErrorType::ApplicationErrorArg:
                 HandleApplicationErrorArg();
                 break;
@@ -32,6 +35,11 @@ namespace skyline::applet {
         onAppletStateChanged->Signal();
 
         return {};
+    }
+
+    void ErrorApplet::HandleErrorCommonArg() {
+        auto errorCommonArg{errorStorage->GetSpan().as<ErrorCommonArg>()};
+        Logger::Error("ErrorApplet: error code: 0x{:X}, result: 0x{:X}", errorCommonArg.errorCode, errorCommonArg.result);
     }
 
     void ErrorApplet::HandleApplicationErrorArg() {

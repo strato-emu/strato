@@ -41,6 +41,15 @@ namespace skyline::applet {
         };
         static_assert(sizeof(ErrorCommonHeader) == 0x8);
 
+        /**
+         * @url https://switchbrew.org/wiki/Error_Applet#ErrorCommonArg
+         */
+        struct ErrorCommonArg {
+            ErrorCommonHeader header;
+            u64 errorCode;
+            Result result;
+        };
+
         struct ApplicationErrorArg {
             ErrorCommonHeader commonHeader;
             u32 errorNumber;
@@ -53,6 +62,8 @@ namespace skyline::applet {
         #pragma pack(pop)
 
         std::shared_ptr<service::am::IStorage> errorStorage;
+
+        void HandleErrorCommonArg();
 
         void HandleApplicationErrorArg();
 
