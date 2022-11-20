@@ -18,6 +18,10 @@ namespace skyline::service::nifm {
         return {};
     }
 
+    Result IGeneralService::GetCurrentIpAddress(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return result::NoInternetConnection;
+    }
+
     Result IGeneralService::IsAnyInternetRequestAccepted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         // We don't emulate networking so always return false
         response.Push(false);

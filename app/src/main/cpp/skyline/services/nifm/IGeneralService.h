@@ -6,6 +6,9 @@
 #include <services/serviceman.h>
 
 namespace skyline::service::nifm {
+    namespace result {
+        constexpr Result NoInternetConnection{110, 300};
+    }
     /**
      * @brief IGeneralService is used by applications to control the network connection
      * @url https://switchbrew.org/wiki/Network_Interface_services#IGeneralService
@@ -25,6 +28,11 @@ namespace skyline::service::nifm {
         Result CreateRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Network_Interface_services#GetCurrentIpAddress
+         */
+        Result GetCurrentIpAddress(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/Network_Interface_services#IsAnyInternetRequestAccepted
          */
         Result IsAnyInternetRequestAccepted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -32,6 +40,7 @@ namespace skyline::service::nifm {
         SERVICE_DECL(
             SFUNC(0x1, IGeneralService, CreateScanRequest),
             SFUNC(0x4, IGeneralService, CreateRequest),
+            SFUNC(0xC, IGeneralService, GetCurrentIpAddress),
             SFUNC(0x15, IGeneralService, IsAnyInternetRequestAccepted)
         )
     };
