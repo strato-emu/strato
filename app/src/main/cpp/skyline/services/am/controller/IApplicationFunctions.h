@@ -80,6 +80,11 @@ namespace skyline::service::am {
         Result SetGamePlayRecordingState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#EnableApplicationCrashReport
+         */
+        Result EnableApplicationCrashReport(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Uses the given transfer memory to setup memory for the screenshot copyright image
          * @url https://switchbrew.org/wiki/Applet_Manager_services#InitializeApplicationCopyrightFrameBuffer
          */
@@ -96,6 +101,16 @@ namespace skyline::service::am {
          * @url https://switchbrew.org/wiki/Applet_Manager_services#SetApplicationCopyrightVisibility
          */
         Result SetApplicationCopyrightVisibility(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#QueryApplicationPlayStatistics
+         */
+        Result QueryApplicationPlayStatistics(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#QueryApplicationPlayStatisticsByUid
+         */
+        Result QueryApplicationPlayStatisticsByUid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Gets the ProgramIndex of the Application which launched this title
@@ -126,9 +141,12 @@ namespace skyline::service::am {
             SFUNC(0x32, IApplicationFunctions, GetPseudoDeviceId),
             SFUNC(0x42, IApplicationFunctions, InitializeGamePlayRecording),
             SFUNC(0x43, IApplicationFunctions, SetGamePlayRecordingState),
+            SFUNC(0x5A, IApplicationFunctions, EnableApplicationCrashReport),
             SFUNC(0x64, IApplicationFunctions, InitializeApplicationCopyrightFrameBuffer),
             SFUNC(0x65, IApplicationFunctions, SetApplicationCopyrightImage),
             SFUNC(0x66, IApplicationFunctions, SetApplicationCopyrightVisibility),
+            SFUNC(0x6E, IApplicationFunctions, QueryApplicationPlayStatistics),
+            SFUNC(0x6F, IApplicationFunctions, QueryApplicationPlayStatisticsByUid),
             SFUNC(0x7B, IApplicationFunctions, GetPreviousProgramIndex),
             SFUNC(0x82, IApplicationFunctions, GetGpuErrorDetectedSystemEvent),
             SFUNC(0x8C, IApplicationFunctions, GetFriendInvitationStorageChannelEvent),

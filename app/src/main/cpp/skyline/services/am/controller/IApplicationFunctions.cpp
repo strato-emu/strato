@@ -105,6 +105,10 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result IApplicationFunctions::EnableApplicationCrashReport(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IApplicationFunctions::InitializeApplicationCopyrightFrameBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         i32 width{request.Pop<i32>()};
         i32 height{request.Pop<i32>()};
@@ -143,6 +147,16 @@ namespace skyline::service::am {
     Result IApplicationFunctions::SetApplicationCopyrightVisibility(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u8 visiblity{request.Pop<u8>()};
         Logger::Debug("Visiblity: {}", visiblity);
+        return {};
+    }
+
+    Result IApplicationFunctions::QueryApplicationPlayStatistics(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(0);
+        return {};
+    }
+
+    Result IApplicationFunctions::QueryApplicationPlayStatisticsByUid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(0);
         return {};
     }
 
