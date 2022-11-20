@@ -8,6 +8,13 @@
 namespace skyline::service::settings {
     ISettingsServer::ISettingsServer(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
+    Result ISettingsServer::GetLanguageCode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto systemLanguage{language::GetApplicationLanguage(*state.settings->systemLanguage)};
+
+        response.Push(language::GetLanguageCode(language::GetSystemLanguage(systemLanguage)));
+        return {};
+    }
+
     Result ISettingsServer::GetAvailableLanguageCodes(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         request.outputBuf.at(0).copy_from(span(language::LanguageCodeList).first(constant::OldLanguageCodeListSize));
         response.Push<i32>(constant::OldLanguageCodeListSize);
