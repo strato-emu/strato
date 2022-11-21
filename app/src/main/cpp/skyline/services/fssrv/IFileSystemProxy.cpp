@@ -21,6 +21,12 @@ namespace skyline::service::fssrv {
         return {};
     }
 
+    Result IFileSystemProxy::GetCacheStorageSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u64>(0);
+        response.Push<u64>(0);
+        return {};
+    }
+
     Result IFileSystemProxy::OpenSaveDataFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto spaceId{request.Pop<SaveDataSpaceId>()};
         auto attribute{request.Pop<SaveDataAttribute>()};

@@ -73,6 +73,8 @@ namespace skyline::service::fssrv {
          */
         Result OpenSdCardFileSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result GetCacheStorageSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         /**
          * @brief Returns a handle to an instance of #IFileSystem
          * @url https://switchbrew.org/wiki/Filesystem_services#IFileSystem for the requested save data area
@@ -110,6 +112,7 @@ namespace skyline::service::fssrv {
         SERVICE_DECL(
             SFUNC(0x1, IFileSystemProxy, SetCurrentProcess),
             SFUNC(0x12, IFileSystemProxy, OpenSdCardFileSystem),
+            SFUNC(0x22, IFileSystemProxy, GetCacheStorageSize),
             SFUNC(0x33, IFileSystemProxy, OpenSaveDataFileSystem),
             SFUNC(0x35, IFileSystemProxy, OpenReadOnlySaveDataFileSystem),
             SFUNC(0xC8, IFileSystemProxy, OpenDataStorageByCurrentProcess),
