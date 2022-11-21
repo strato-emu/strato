@@ -100,4 +100,8 @@ namespace skyline::service::am {
         Logger::Debug("Setting Album Image Taken Notification Enabled: {}", albumImageTakenNotificationEnabled);
         return {};
     }
+
+    Result ISelfController::SetRecordVolumeMuted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

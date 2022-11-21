@@ -121,6 +121,11 @@ namespace skyline::service::am {
          */
         Result SetAlbumImageTakenNotificationEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetRecordVolumeMuted
+         */
+        Result SetRecordVolumeMuted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, ISelfController, Exit),
             SFUNC(0x1, ISelfController, LockExit),
@@ -138,7 +143,8 @@ namespace skyline::service::am {
             SFUNC(0x3F, ISelfController, GetIdleTimeDetectionExtension),
             SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
             SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent),
-            SFUNC(0x64, ISelfController, SetAlbumImageTakenNotificationEnabled)
+            SFUNC(0x64, ISelfController, SetAlbumImageTakenNotificationEnabled),
+            SFUNC(0x82, ISelfController, SetRecordVolumeMuted)
         )
     };
 }
