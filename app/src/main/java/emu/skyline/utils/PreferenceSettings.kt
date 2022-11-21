@@ -51,6 +51,7 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
 
     // Input
     var onScreenControl by sharedPreferences(context, true)
+    var onScreenControlFeedback by sharedPreferences(context, true)
     var onScreenControlRecenterSticks by sharedPreferences(context, true)
 
     // Other

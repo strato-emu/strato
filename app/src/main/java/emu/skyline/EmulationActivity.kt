@@ -265,6 +265,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             isGone = controllerType == ControllerType.None || !preferenceSettings.onScreenControl
             setOnButtonStateChangedListener(::onButtonStateChanged)
             setOnStickStateChangedListener(::onStickStateChanged)
+            hapticFeedback = preferenceSettings.onScreenControl && preferenceSettings.onScreenControlFeedback
             recenterSticks = preferenceSettings.onScreenControlRecenterSticks
         }
 

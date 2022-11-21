@@ -9,8 +9,14 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
+import android.content.Context.VIBRATOR_MANAGER_SERVICE
+import android.content.Context.VIBRATOR_SERVICE
 import android.graphics.Canvas
 import android.graphics.PointF
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -55,6 +61,11 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             field = value
             controls.joysticks.forEach { it.recenterSticks = recenterSticks }
         }
+    var hapticFeedback = false
+        set(value) {
+            field = value
+            (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons).forEach { it.hapticFeedback = hapticFeedback }
+        }
 
     override fun onDraw(canvas : Canvas) {
         super.onDraw(canvas)
@@ -70,6 +81,16 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                 button.height = height
                 button.render(canvas)
             }
+        }
+    }
+
+    private val vibrationEffect = VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE)
+    private val vibrate = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (context.getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator.vibrate(vibrationEffect)
+        } else {
+            @Suppress("DEPRECATION")
+            (context.getSystemService(VIBRATOR_SERVICE) as Vibrator).vibrate(vibrationEffect)
         }
     }
 
@@ -102,6 +123,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                     if (button.config.enabled && button.isTouched(x, y)) {
                         button.touchPointerId = pointerId
                         button.onFingerDown(x, y)
+                        if (hapticFeedback) vibrate()
                         performClick()
                         onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Pressed)
                         handled = true

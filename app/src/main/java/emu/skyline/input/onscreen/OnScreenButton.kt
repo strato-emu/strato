@@ -74,6 +74,8 @@ abstract class OnScreenButton(
 
     var isPressed = false
 
+    var hapticFeedback = false
+
     var isEditing = false
         private set
 
