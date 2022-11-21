@@ -13,5 +13,14 @@ namespace skyline::service::ssl {
     class ISslContext : public BaseService {
       public:
         ISslContext(const DeviceState &state, ServiceManager &manager);
+
+        /**
+         * @url https://switchbrew.org/wiki/SSL_services#ImportServerPki
+         */
+        Result ImportServerPki(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x4, ISslContext, ImportServerPki)
+        )
     };
 }
