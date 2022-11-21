@@ -89,6 +89,7 @@
     <string name="delete_gpu_driver">Delete this GPU driver</string>
     <string name="system_driver">System Driver</string>
     <string name="system_driver_desc">The GPU driver provided by your system</string>
+    <string name="install">Install</string>
     <string name="gpu_driver_install_inprogress">Installing the GPU driver…</string>
     <string name="gpu_driver_install_success">GPU driver installed successfully</string>
     <string name="gpu_driver_install_invalid_archive">Failed to unzip the provided driver package</string>
