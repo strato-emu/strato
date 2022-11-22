@@ -49,6 +49,8 @@ namespace skyline::vfs {
 
         std::string GetApplicationVersion();
 
+        std::string GetSaveDataOwnerId();
+
         std::string GetApplicationPublisher(language::ApplicationLanguage language);
     };
 }

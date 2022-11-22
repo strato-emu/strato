@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.snackbar.Snackbar
 import emu.skyline.data.AppItem
 import emu.skyline.databinding.AppDialogBinding
 import emu.skyline.loader.LoaderResult
@@ -66,6 +67,7 @@ class AppDialog : BottomSheetDialogFragment() {
         binding.gameIcon.setImageBitmap(item.icon ?: missingIcon)
         binding.gameTitle.text = item.title
         binding.gameVersion.text = item.version ?: item.loaderResultString(requireContext())
+        binding.gameTitleId.text = item.titleId
         binding.gameAuthor.text = item.author
 
         binding.gamePlay.isEnabled = item.loaderResult == LoaderResult.Success
@@ -89,6 +91,13 @@ class AppDialog : BottomSheetDialogFragment() {
             info.setIntent(intent)
 
             shortcutManager.requestPinShortcut(info.build(), null)
+        }
+
+        binding.gameTitleId.setOnLongClickListener {
+            val clipboard = requireActivity().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Title ID", item.titleId))
+            Snackbar.make(binding.root, getString(R.string.copied_to_clipboard), Snackbar.LENGTH_SHORT).show()
+            true
         }
 
         dialog?.setOnKeyListener { _, keyCode, event ->

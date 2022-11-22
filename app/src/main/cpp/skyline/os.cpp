@@ -61,7 +61,7 @@ namespace skyline::kernel {
                 name = nacp->GetApplicationName(nacp->GetFirstSupportedTitleLanguage());
             if (publisher.empty())
                 publisher = nacp->GetApplicationPublisher(nacp->GetFirstSupportedTitleLanguage());
-            Logger::InfoNoPrefix(R"(Starting "{}" v{} by "{}")", name, nacp->GetApplicationVersion(), publisher);
+            Logger::InfoNoPrefix(R"(Starting "{}" ({}) v{} by "{}")", name, nacp->GetSaveDataOwnerId(), nacp->GetApplicationVersion(), publisher);
         }
 
         process->InitializeHeapTls();

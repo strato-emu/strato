@@ -30,6 +30,11 @@ data class AppItem(private val meta : AppEntry) : DataItem() {
     val title get() = meta.name
 
     /**
+     * The title ID of the application
+     */
+    val titleId get() = meta.titleId
+
+    /**
      * The application version
      */
     val version get() = meta.version

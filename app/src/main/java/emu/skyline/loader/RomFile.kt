@@ -66,6 +66,7 @@ enum class LoaderResult(val value : Int) {
 data class AppEntry(
     var name : String,
     var version : String?,
+    var titleId : String?,
     var author : String?,
     var icon : Bitmap?,
     var format : RomFormat,
@@ -76,7 +77,7 @@ data class AppEntry(
         val nameIndex : Int = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
         cursor.moveToFirst()
         cursor.getString(nameIndex)
-    }!!.dropLast(format.name.length + 1), null, null, null, format, uri, loaderResult)
+    }!!.dropLast(format.name.length + 1), null, null, null, null, format, uri, loaderResult)
 
     private fun writeObject(output : ObjectOutputStream) {
         output.writeUTF(name)
@@ -85,6 +86,9 @@ data class AppEntry(
         output.writeBoolean(version != null)
         if (version != null)
             output.writeUTF(version)
+        output.writeBoolean(titleId != null)
+        if (titleId != null)
+            output.writeUTF(titleId)
         output.writeBoolean(author != null)
         if (author != null)
             output.writeUTF(author)
@@ -105,6 +109,8 @@ data class AppEntry(
         uri = Uri.parse(input.readUTF())
         if (input.readBoolean())
             version = input.readUTF()
+        if (input.readBoolean())
+            titleId = input.readUTF()
         if (input.readBoolean())
             author = input.readUTF()
         loaderResult = LoaderResult.get(input.readInt())
@@ -128,6 +134,11 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
      * @note This field is filled in by native code
      */
     private var applicationName : String? = null
+
+    /**
+     * @note This field is filled in by native code
+     */
+    private var applicationTitleId : String? = null
 
     /**
      * @note This field is filled in by native code
@@ -158,9 +169,11 @@ internal class RomFile(context : Context, format : RomFormat, uri : Uri, systemL
 
         appEntry = applicationName?.let { name ->
             applicationVersion?.let { version ->
-                applicationAuthor?.let { author ->
-                    rawIcon?.let { icon ->
-                        AppEntry(name, version, author, BitmapFactory.decodeByteArray(icon, 0, icon.size), format, uri, result)
+                applicationTitleId?.let { titleId ->
+                    applicationAuthor?.let { author ->
+                        rawIcon?.let { icon ->
+                            AppEntry(name, version, titleId, author, BitmapFactory.decodeByteArray(icon, 0, icon.size), format, uri, result)
+                        }
                     }
                 }
             }
