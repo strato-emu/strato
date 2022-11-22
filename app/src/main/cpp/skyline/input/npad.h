@@ -83,7 +83,7 @@ namespace skyline::input {
         /**
          * @brief Checks if the NpadId is valid
          */
-        bool IsNpadIdValid(NpadId id) {
+        static bool IsNpadIdValid(NpadId id) {
             switch (id) {
                 case NpadId::Player1:
                 case NpadId::Player2:
