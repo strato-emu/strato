@@ -444,7 +444,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Global Shader Config State */
     void GlobalShaderConfigState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, postVtgShaderAttributeSkipMask, bindlessTexture, apiMandatedEarlyZ);
+        manager.Bind(handle, postVtgShaderAttributeSkipMask, bindlessTexture, apiMandatedEarlyZ, viewportScaleOffsetEnable);
     }
 
     GlobalShaderConfigState::GlobalShaderConfigState(const EngineRegisters &engine) : engine{engine} {}
@@ -453,6 +453,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.postVtgShaderAttributeSkipMask = engine.postVtgShaderAttributeSkipMask;
         packedState.bindlessTextureConstantBufferSlotSelect = engine.bindlessTexture.constantBufferSlotSelect;
         packedState.apiMandatedEarlyZ = engine.apiMandatedEarlyZ;
+        packedState.viewportTransformEnable = engine.viewportScaleOffsetEnable;
     }
 
     /* Pipeline State */

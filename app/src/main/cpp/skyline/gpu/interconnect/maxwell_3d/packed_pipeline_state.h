@@ -59,6 +59,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             bool alphaTestEnable : 1;
             bool depthClampEnable : 1; // Use SetDepthClampEnable
             bool dynamicStateActive : 1;
+            bool viewportTransformEnable : 1;
         };
 
         u32 patchSize;

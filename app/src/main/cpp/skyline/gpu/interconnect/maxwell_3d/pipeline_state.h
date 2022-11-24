@@ -258,6 +258,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const std::array<u32, 8> &postVtgShaderAttributeSkipMask;
             const engine_common::BindlessTexture &bindlessTexture;
             const u32 &apiMandatedEarlyZ;
+            const u32 &viewportScaleOffsetEnable;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };

@@ -33,7 +33,7 @@ namespace skyline::dirty {
      * @tparam OverlapPoolSize Size of the pool used to store handles when there are multiple bound to the same subresource
      * @note This class is *NOT* thread-safe
      */
-    template<size_t ManagedResourceSize, size_t Granularity, size_t OverlapPoolSize = 0x1000>
+    template<size_t ManagedResourceSize, size_t Granularity, size_t OverlapPoolSize = 0x2000>
     class Manager {
       private:
         struct BindingState {

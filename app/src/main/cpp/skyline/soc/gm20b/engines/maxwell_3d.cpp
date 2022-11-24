@@ -24,7 +24,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             .depthStencilRegisters = {*registers.depthTestEnable, *registers.depthWriteEnable, *registers.depthFunc, *registers.depthBoundsTestEnable, *registers.stencilTestEnable, *registers.twoSidedStencilTestEnable, *registers.stencilOps, *registers.stencilBack, *registers.alphaTestEnable, *registers.alphaFunc, *registers.alphaRef},
             .colorBlendRegisters = {*registers.logicOp, *registers.singleCtWriteControl, *registers.ctWrites, *registers.blendStatePerTargetEnable, *registers.blendPerTargets, *registers.blend},
             .transformFeedbackRegisters = {*registers.streamOutputEnable, *registers.streamOutControls, *registers.streamOutLayoutSelect},
-            .globalShaderConfigRegisters = {*registers.postVtgShaderAttributeSkipMask, *registers.bindlessTexture, *registers.apiMandatedEarlyZEnable},
+            .globalShaderConfigRegisters = {*registers.postVtgShaderAttributeSkipMask, *registers.bindlessTexture, *registers.apiMandatedEarlyZEnable, *registers.viewportScaleOffsetEnable},
             .ctSelect = *registers.ctSelect
         };
     }
@@ -35,7 +35,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             .vertexBuffersRegisters = util::MergeInto<REGTYPE(VertexBufferState), type::VertexStreamCount>(*registers.vertexStreams, *registers.vertexStreamLimits),
             .indexBufferRegisters = {*registers.indexBuffer},
             .transformFeedbackBuffersRegisters = util::MergeInto<REGTYPE(TransformFeedbackBufferState), type::StreamOutBufferCount>(*registers.streamOutBuffers, *registers.streamOutputEnable),
-            .viewportsRegisters = util::MergeInto<REGTYPE(ViewportState), type::ViewportCount>(registers.viewports[0], registers.viewportClips[0], *registers.viewports, *registers.viewportClips, *registers.windowOrigin, *registers.viewportScaleOffsetEnable),
+            .viewportsRegisters = util::MergeInto<REGTYPE(ViewportState), type::ViewportCount>(registers.viewports[0], registers.viewportClips[0], *registers.viewports, *registers.viewportClips, *registers.windowOrigin, *registers.viewportScaleOffsetEnable, *registers.surfaceClip),
             .scissorsRegisters = util::MergeInto<REGTYPE(ScissorState), type::ViewportCount>(*registers.scissors),
             .lineWidthRegisters = {*registers.lineWidth, *registers.lineWidthAliased, *registers.aliasedLineWidthEnable},
             .depthBiasRegisters = {*registers.depthBias, *registers.depthBiasClamp, *registers.slopeScaleDepthBias},

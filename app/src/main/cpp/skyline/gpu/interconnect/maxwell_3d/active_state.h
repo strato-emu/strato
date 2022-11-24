@@ -92,6 +92,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const engine::ViewportClip &viewportClip;
             const engine::WindowOrigin &windowOrigin;
             const u32 &viewportScaleOffsetEnable;
+            const engine::SurfaceClip &surfaceClip;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
         };

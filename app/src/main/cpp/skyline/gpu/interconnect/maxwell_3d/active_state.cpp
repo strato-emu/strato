@@ -218,7 +218,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
                      viewport.offsetX, viewport.offsetY, viewport.scaleX, viewport.scaleY, viewport.swizzle,
                      viewportClip,
                      windowOrigin,
-                     viewportScaleOffsetEnable);
+                     viewportScaleOffsetEnable,
+                     surfaceClip);
     }
 
     ViewportState::ViewportState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
@@ -258,14 +259,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (index != 0 && !ctx.gpu.traits.supportsMultipleViewports)
             return;
 
-        if (!engine->viewportScaleOffsetEnable)
-            // https://github.com/Ryujinx/Ryujinx/pull/3328
-            Logger::Warn("Viewport scale/offset disable is unimplemented");
-
-        if (engine->viewport.scaleX == 0.0f || engine->viewport.scaleY == 0.0f)
+        if (!engine->viewportScaleOffsetEnable) {
+            builder.SetViewport(index, vk::Viewport{
+                .x = static_cast<float>(engine->surfaceClip.horizontal.x),
+                .y = static_cast<float>(engine->surfaceClip.vertical.y),
+                .width = engine->surfaceClip.horizontal.width ? static_cast<float>(engine->surfaceClip.horizontal.width) : 1.0f,
+                .height = engine->surfaceClip.vertical.height ? static_cast<float>(engine->surfaceClip.vertical.height) : 1.0f,
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f,
+            });
+        } else if (engine->viewport.scaleX == 0.0f || engine->viewport.scaleY == 0.0f) {
             builder.SetViewport(index, ConvertViewport(engine->viewport0, engine->viewportClip0, engine->windowOrigin, engine->viewportScaleOffsetEnable));
-        else
+        } else {
             builder.SetViewport(index, ConvertViewport(engine->viewport, engine->viewportClip, engine->windowOrigin, engine->viewportScaleOffsetEnable));
+        }
     }
 
     /* Scissor */

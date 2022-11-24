@@ -192,6 +192,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 ConvertCompilerShaderStage(static_cast<PipelineStage>(i)),
                 shaderBinaries[i].binary, shaderBinaries[i].baseOffset,
                 packedState.bindlessTextureConstantBufferSlotSelect,
+                packedState.viewportTransformEnable,
                 [&](u32 index, u32 offset) {
                     size_t shaderStage{i > 0 ? (i - 1) : 0};
                     return constantBuffers[shaderStage][index].Read<int>(ctx.executor, offset);
