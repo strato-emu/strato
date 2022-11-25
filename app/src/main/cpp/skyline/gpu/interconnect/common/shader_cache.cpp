@@ -87,7 +87,7 @@ namespace skyline::gpu::interconnect {
                     return span{shaderInstructions.begin(), it}.cast<u8>();
             }
 
-            return span<u8>{};
+            return mapping;
         }(blockMappingMirror.subspan(blockOffset));
 
         binary.baseOffset = programOffset;
