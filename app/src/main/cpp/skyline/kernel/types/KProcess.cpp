@@ -111,15 +111,15 @@ namespace skyline::kernel::type {
 
     constexpr u32 HandleWaitersBit{1UL << 30}; //!< A bit which denotes if a mutex psuedo-handle has waiters or not
 
-    Result KProcess::MutexLock(u32 *mutex, KHandle ownerHandle, KHandle tag) {
+    Result KProcess::MutexLock(u32 *mutex, KHandle ownerHandle, KHandle tag, bool failOnOutdated) {
         TRACE_EVENT_FMT("kernel", "MutexLock 0x{:X}", mutex);
 
         std::shared_ptr<KThread> owner;
         try {
             owner = GetHandle<KThread>(ownerHandle);
         } catch (const std::out_of_range &) {
-            if (*mutex != (ownerHandle | HandleWaitersBit))
-                return result::InvalidCurrentMemory;
+            if (__atomic_load_n(mutex, __ATOMIC_SEQ_CST) != (ownerHandle | HandleWaitersBit))
+                return failOnOutdated ? result::InvalidCurrentMemory : Result{};
 
             return result::InvalidHandle;
         }
@@ -128,13 +128,10 @@ namespace skyline::kernel::type {
         {
             std::scoped_lock lock{owner->waiterMutex, state.thread->waiterMutex}; // We need to lock both mutexes at the same time as we mutate the owner and the current thread, the ordering of locks **must** match MutexUnlock to avoid deadlocks
 
-            u32 value{};
-            if (__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-                // We try to do a CAS to get ownership of the mutex in the case that it's unoccupied
-                return {};
+            u32 value{__atomic_load_n(mutex, __ATOMIC_SEQ_CST)};
             if (value != (ownerHandle | HandleWaitersBit))
                 // We ensure that the mutex's value is the handle with the waiter bit set
-                return result::InvalidCurrentMemory;
+                return failOnOutdated ? result::InvalidCurrentMemory : Result{};
 
             auto &waiters{owner->waiters};
             isHighestPriority = waiters.insert(std::upper_bound(waiters.begin(), waiters.end(), state.thread->priority.load(), KThread::IsHigherPriority), state.thread) == waiters.begin();
@@ -250,7 +247,7 @@ namespace skyline::kernel::type {
 
         KHandle value{};
         if (!__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-            while (MutexLock(mutex, value & ~HandleWaitersBit, tag) != Result{})
+            while (MutexLock(mutex, value & ~HandleWaitersBit, tag, true) != Result{})
                 if ((value = __atomic_or_fetch(mutex, HandleWaitersBit, __ATOMIC_SEQ_CST)) == HandleWaitersBit)
                     if (__atomic_compare_exchange_n(mutex, &value, tag, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
                         break;
