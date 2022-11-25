@@ -309,6 +309,9 @@ namespace skyline::kernel::type {
                     break;
             }
 
+            if (timeout == 0) [[unlikely]]
+                return result::TimedOut;
+
             auto queue{syncWaiters.equal_range(address)};
             syncWaiters.insert(std::upper_bound(queue.first, queue.second, state.thread->priority.load(), [](const i8 priority, const SyncWaiters::value_type &it) { return it.second->priority > priority; }), {address, state.thread});
 
