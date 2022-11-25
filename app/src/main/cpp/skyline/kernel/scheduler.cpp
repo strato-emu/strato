@@ -95,6 +95,16 @@ namespace skyline::kernel {
             thread->scheduleCondition.wait(lock, [&]() { return !thread->isPaused; });
         }
 
+        #ifndef NDEBUG
+        // Scan the queue for the same thread to prevent double insertion
+        for (auto &residentThread : core.queue) {
+            if (residentThread == thread) {
+                Logger::Error("T{} already exists in C{}", thread->id, core.id);
+                Logger::EmulationContext.Flush();
+            }
+        }
+        #endif
+
         auto nextThread{std::upper_bound(core.queue.begin(), core.queue.end(), thread->priority.load(), type::KThread::IsHigherPriority)};
         if (nextThread == core.queue.begin()) {
             if (nextThread != core.queue.end()) {
