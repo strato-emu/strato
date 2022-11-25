@@ -406,6 +406,8 @@ namespace skyline::gpu {
 
         std::vector<TextureViewStorage> views;
 
+        std::shared_ptr<memory::StagingBuffer> downloadStagingBuffer{};
+
         u32 lastRenderPassIndex{}; //!< The index of the last render pass that used this texture
         texture::RenderPassUsage lastRenderPassUsage{texture::RenderPassUsage::None}; //!< The type of usage in the last render pass
 
