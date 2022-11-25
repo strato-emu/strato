@@ -225,12 +225,12 @@ namespace skyline {
             /**
              * @brief Waits on the conditional variable at the specified address
              */
-            Result ConditionalVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout);
+            Result ConditionVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout);
 
             /**
              * @brief Signals the conditional variable at the specified address
              */
-            void ConditionalVariableSignal(u32 *key, i32 amount);
+            void ConditionVariableSignal(u32 *key, i32 amount);
 
             enum class ArbitrationType : u32 {
                 WaitIfLessThan = 0,

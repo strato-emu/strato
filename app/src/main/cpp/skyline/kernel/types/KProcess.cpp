@@ -215,8 +215,8 @@ namespace skyline::kernel::type {
         }
     }
 
-    Result KProcess::ConditionalVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout) {
-        TRACE_EVENT_FMT("kernel", "ConditionalVariableWait 0x{:X} (0x{:X})", key, mutex);
+    Result KProcess::ConditionVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout) {
+        TRACE_EVENT_FMT("kernel", "ConditionVariableWait 0x{:X} (0x{:X})", key, mutex);
 
         {
             // Update all waiter information
@@ -317,8 +317,8 @@ namespace skyline::kernel::type {
         return state.thread->waitResult;
     }
 
-    void KProcess::ConditionalVariableSignal(u32 *key, i32 amount) {
-        TRACE_EVENT_FMT("kernel", "ConditionalVariableSignal 0x{:X}", key);
+    void KProcess::ConditionVariableSignal(u32 *key, i32 amount) {
+        TRACE_EVENT_FMT("kernel", "ConditionVariableSignal 0x{:X}", key);
 
         i32 waiterCount{amount};
         while (amount <= 0 || waiterCount) {

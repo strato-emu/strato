@@ -791,7 +791,7 @@ namespace skyline::kernel::svc {
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
         Logger::Debug("Waiting on 0x{:X} with 0x{:X} for {}ns", conditional, mutex, timeout);
 
-        auto result{state.process->ConditionalVariableWait(conditional, mutex, requesterHandle, timeout)};
+        auto result{state.process->ConditionVariableWait(conditional, mutex, requesterHandle, timeout)};
         if (result == Result{})
             Logger::Debug("Waited for 0x{:X} and reacquired 0x{:X}", conditional, mutex);
         else if (result == result::TimedOut)
@@ -804,7 +804,7 @@ namespace skyline::kernel::svc {
         i32 count{static_cast<i32>(state.ctx->gpr.w1)};
 
         Logger::Debug("Signalling 0x{:X} for {} waiters", conditional, count);
-        state.process->ConditionalVariableSignal(conditional, count);
+        state.process->ConditionVariableSignal(conditional, count);
         state.ctx->gpr.w0 = Result{};
     }
 
