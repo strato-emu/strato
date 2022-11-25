@@ -751,7 +751,7 @@ namespace skyline::kernel::svc {
 
         KHandle ownerHandle{state.ctx->gpr.w0};
         KHandle requesterHandle{state.ctx->gpr.w2};
-        auto result{state.process->MutexLock(mutex, ownerHandle, requesterHandle)};
+        auto result{state.process->MutexLock(state.thread, mutex, ownerHandle, requesterHandle)};
         if (result == Result{})
             Logger::Debug("Locked 0x{:X}", mutex);
         else if (result == result::InvalidCurrentMemory)
