@@ -320,13 +320,18 @@ namespace skyline::kernel::type {
                 std::scoped_lock lock{syncWaiterMutex};
                 auto queue{syncWaiters.equal_range(address)};
                 auto iterator{std::find(queue.first, queue.second, SyncWaiters::value_type{address, state.thread})};
-                if (iterator != queue.second)
+                if (iterator != queue.second) {
                     if (syncWaiters.erase(iterator) == queue.second)
+                        // We need to update the boolean flag denoting that there are no more threads waiting on this address
                         __atomic_store_n(address, false, __ATOMIC_SEQ_CST);
+                } else {
+                    state.scheduler->WaitSchedule(false);
+                    return {};
+                }
             }
 
             state.scheduler->InsertThread(state.thread);
-            state.scheduler->WaitSchedule();
+            state.scheduler->WaitSchedule(false);
 
             return result::TimedOut;
         } else {
