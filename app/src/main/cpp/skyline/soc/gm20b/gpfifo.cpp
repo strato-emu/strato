@@ -359,9 +359,11 @@ namespace skyline::soc::gm20b {
             }, [this, &channelLocked]() {
                 // If we run out of GpEntries to process ensure we submit any remaining GPU work before waiting for more to arrive
                 Logger::Debug("Finished processing pushbuffer batch");
-                channelCtx.executor.Submit();
-                channelCtx.Unlock();
-                channelLocked = false;
+                if (channelLocked) {
+                    channelCtx.executor.Submit();
+                    channelCtx.Unlock();
+                    channelLocked = false;
+                }|
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
