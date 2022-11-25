@@ -62,11 +62,14 @@ namespace skyline {
             bool pendingYield{}; //!< If the thread has been yielded and hasn't been acted upon it yet
             bool forceYield{}; //!< If the thread has been forcefully yielded by another thread
 
-            std::mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
+            std::recursive_mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
             u32 *waitKey; //!< The key of the mutex which this thread is waiting on
             KHandle waitTag; //!< The handle of the thread which requested the mutex lock
             std::shared_ptr<KThread> waitThread; //!< The thread which this thread is waiting on
             std::list<std::shared_ptr<type::KThread>> waiters; //!< A queue of threads waiting on this thread sorted by priority
+            void *waitConditionVariable; //!< The condition variable which this thread is waiting on
+            bool waitSignalled{}; //!< If the conditional variable has been signalled already
+            Result waitResult; //!< The result of the wait operation
 
             bool isCancellable{false}; //!< If the thread is currently in a position where it's cancellable
             bool cancelSync{false}; //!< Whether to cancel the SvcWaitSynchronization call this thread currently is in/the next one it joins
