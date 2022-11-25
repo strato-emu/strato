@@ -63,7 +63,7 @@ namespace skyline {
             bool forceYield{}; //!< If the thread has been forcefully yielded by another thread
 
             std::recursive_mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
-            u32 *waitKey; //!< The key of the mutex which this thread is waiting on
+            u32 *waitMutex; //!< The key of the mutex which this thread is waiting on
             KHandle waitTag; //!< The handle of the thread which requested the mutex lock
             std::shared_ptr<KThread> waitThread; //!< The thread which this thread is waiting on
             std::list<std::shared_ptr<type::KThread>> waiters; //!< A queue of threads waiting on this thread sorted by priority

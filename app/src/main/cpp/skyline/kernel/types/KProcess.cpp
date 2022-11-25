@@ -139,7 +139,7 @@ namespace skyline::kernel::type {
                 state.scheduler->RemoveThread();
 
             thread->waitThread = owner;
-            thread->waitKey = mutex;
+            thread->waitMutex = mutex;
             thread->waitTag = tag;
         }
 
@@ -158,18 +158,18 @@ namespace skyline::kernel::type {
 
         std::scoped_lock lock{state.thread->waiterMutex};
         auto &waiters{state.thread->waiters};
-        auto nextOwnerIt{std::find_if(waiters.begin(), waiters.end(), [mutex](const std::shared_ptr<KThread> &thread) { return thread->waitKey == mutex; })};
+        auto nextOwnerIt{std::find_if(waiters.begin(), waiters.end(), [mutex](const std::shared_ptr<KThread> &thread) { return thread->waitMutex == mutex; })};
         if (nextOwnerIt != waiters.end()) {
             auto nextOwner{*nextOwnerIt};
             std::scoped_lock nextLock{nextOwner->waiterMutex};
             nextOwner->waitThread = std::shared_ptr<KThread>{nullptr};
-            nextOwner->waitKey = nullptr;
+            nextOwner->waitMutex = nullptr;
 
             // Move all threads waiting on this key to the next owner's waiter list
             std::shared_ptr<KThread> nextWaiter{};
             for (auto it{waiters.erase(nextOwnerIt)}, nextIt{std::next(it)}; it != waiters.end(); it = nextIt++) {
                 auto thread{*it};
-                if (thread->waitKey == mutex) {
+                if (thread->waitMutex == mutex) {
                     nextOwner->waiters.splice(std::upper_bound(nextOwner->waiters.begin(), nextOwner->waiters.end(), (*it)->priority.load(), KThread::IsHigherPriority), waiters, it);
                     thread->waitThread = nextOwner;
                     if (!nextWaiter)
@@ -221,7 +221,7 @@ namespace skyline::kernel::type {
         {
             // Update all waiter information
             std::unique_lock lock{state.thread->waiterMutex};
-            state.thread->waitKey = mutex;
+            state.thread->waitMutex = mutex;
             state.thread->waitTag = tag;
             state.thread->waitConditionVariable = key;
             state.thread->waitSignalled = false;
@@ -259,7 +259,7 @@ namespace skyline::kernel::type {
                     std::unique_lock lock{state.thread->waiterMutex};
 
                     if (state.thread->waitSignalled) {
-                        if (state.thread->waitKey) {
+                        if (state.thread->waitMutex) {
                             auto waitThread{state.thread->waitThread};
                             std::unique_lock waitLock{waitThread->waiterMutex, std::try_to_lock};
                             if (!waitLock) {
@@ -276,7 +276,7 @@ namespace skyline::kernel::type {
                                 waiters.erase(it);
                                 state.thread->UpdatePriorityInheritance();
 
-                                state.thread->waitKey = nullptr;
+                                state.thread->waitMutex = nullptr;
                                 state.thread->waitTag = 0;
                                 state.thread->waitThread = nullptr;
                             } else {
@@ -284,7 +284,7 @@ namespace skyline::kernel::type {
                                 shouldWait = true;
                             }
                         } else {
-                            // If the waitKey is null then we were signalled and are no longer waiting on the associated mutex
+                            // If the waitMutex is null then we were signalled and are no longer waiting on the associated mutex
                             shouldWait = true;
                         }
                     } else {
@@ -350,7 +350,7 @@ namespace skyline::kernel::type {
             std::scoped_lock lock{thread->waiterMutex};
             if (thread->waitConditionVariable == conditionVariable) {
                 // If the thread is still waiting on the same condition variable then we can signal it (It could no longer be waiting due to a timeout)
-                u32 *mutex{thread->waitKey};
+                u32 *mutex{thread->waitMutex};
                 KHandle tag{thread->waitTag};
 
                 while (true) {
