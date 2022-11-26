@@ -27,4 +27,8 @@ namespace skyline::service::friends {
     Result IFriendService::UpdateUserPresence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
+
+    Result IFriendService::GetPlayHistoryRegistrationKey(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

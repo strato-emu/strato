@@ -24,12 +24,15 @@ namespace skyline::service::friends {
 
         Result UpdateUserPresence(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result GetPlayHistoryRegistrationKey(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x2775, IFriendService, GetFriendList),
             SFUNC(0x28A0, IFriendService, GetBlockedUserListIds),
             SFUNC(0x2968, IFriendService, DeclareOpenOnlinePlaySession),
             SFUNC(0x2969, IFriendService, DeclareCloseOnlinePlaySession),
-            SFUNC(0x2972, IFriendService, UpdateUserPresence)
+            SFUNC(0x2972, IFriendService, UpdateUserPresence),
+            SFUNC(0x29CC, IFriendService, GetPlayHistoryRegistrationKey)
         )
     };
 }

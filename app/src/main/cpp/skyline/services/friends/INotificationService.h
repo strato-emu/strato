@@ -7,6 +7,9 @@
 #include <services/serviceman.h>
 
 namespace skyline::service::friends {
+    namespace result {
+        constexpr Result NoNotifications{124, 15};
+    }
     /**
      * @brief INotificationService is used by applications to receive notifications
      * @url https://switchbrew.org/wiki/Friend_services#INotificationService
@@ -23,8 +26,11 @@ namespace skyline::service::friends {
          */
         Result GetEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result Pop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x0, INotificationService, GetEvent)
+            SFUNC(0x0, INotificationService, GetEvent),
+            SFUNC(0x2, INotificationService, Pop)
         )
     };
 }

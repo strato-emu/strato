@@ -16,4 +16,8 @@ namespace skyline::service::friends {
         response.copyHandles.push_back(handle);
         return {};
     }
+
+    Result INotificationService::Pop(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return result::NoNotifications;
+    }
 }
