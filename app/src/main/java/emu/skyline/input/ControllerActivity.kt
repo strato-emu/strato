@@ -91,7 +91,7 @@ class ControllerActivity : AppCompatActivity() {
                     adapter.notifyItemChanged(position)
                 })
 
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_feedback), "", preferenceSettings.onScreenControlFeedback) { item, position ->
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_feedback), getString(R.string.osc_feedback_description), preferenceSettings.onScreenControlFeedback) { item, position ->
                     preferenceSettings.onScreenControlFeedback = item.checked
                     adapter.notifyItemChanged(position)
                 })

@@ -111,6 +111,7 @@
     <string name="osc_not_shown">On-Screen Controls won\'t be shown</string>
     <string name="osc_shown">On-Screen Controls will be shown</string>
     <string name="osc_feedback">Enable Haptic Feedback</string>
+    <string name="osc_feedback_description">Excludes joysticks and hardware controls</string>
     <string name="osc_edit">Edit On-Screen Controls layout</string>
     <string name="setup_guide">Setup Guide</string>
     <string name="setup_guide_description">Sequentially map every stick and button</string>
