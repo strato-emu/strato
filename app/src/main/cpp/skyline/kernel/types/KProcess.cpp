@@ -425,6 +425,7 @@ namespace skyline::kernel::type {
         }
 
         if (timeout > 0 && !state.scheduler->TimedWaitSchedule(std::chrono::nanoseconds(timeout))) {
+            bool shouldWait{false};
             {
                 std::scoped_lock lock{syncWaiterMutex};
                 auto queue{syncWaiters.equal_range(address)};
@@ -434,9 +435,14 @@ namespace skyline::kernel::type {
                         // We need to update the boolean flag denoting that there are no more threads waiting on this address
                         __atomic_store_n(address, false, __ATOMIC_SEQ_CST);
                 } else {
-                    state.scheduler->WaitSchedule(false);
-                    return {};
+                    // If we didn't find the thread in the queue then it must have been signalled already and we should just wait
+                    shouldWait = true;
                 }
+            }
+
+            if (shouldWait) {
+                state.scheduler->WaitSchedule(false);
+                return {};
             }
 
             state.scheduler->InsertThread(state.thread);
