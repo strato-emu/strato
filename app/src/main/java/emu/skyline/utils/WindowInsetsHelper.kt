@@ -7,9 +7,7 @@ package emu.skyline.utils
 
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
+import androidx.core.view.*
 
 /**
  * An interface to easily add window insets handling to any layout
@@ -44,13 +42,21 @@ interface WindowInsetsHelper {
         }
 
         fun addMargin(view : View, consume : Boolean = true, left : Boolean = false, top : Boolean = false, right : Boolean = false, bottom : Boolean = false) {
+            // Save initial margin values to avoid adding to the initial margin multiple times
+            val baseMargin = object {
+                val left = view.marginLeft
+                val top = view.marginTop
+                val right = view.marginRight
+                val bottom = view.marginBottom
+            }
+
             ViewCompat.setOnApplyWindowInsetsListener(view) { v, windowInsets ->
                 val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
                 v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    if (left) leftMargin += insets.left
-                    if (top) topMargin += insets.top
-                    if (right) rightMargin += insets.right
-                    if (bottom) bottomMargin += insets.bottom
+                    if (left) leftMargin = baseMargin.left + insets.left
+                    if (top) topMargin = baseMargin.top + insets.top
+                    if (right) rightMargin = baseMargin.right + insets.right
+                    if (bottom) bottomMargin = baseMargin.bottom + insets.bottom
                 }
                 if (consume) WindowInsetsCompat.CONSUMED else windowInsets
             }
@@ -70,13 +76,21 @@ interface WindowInsetsHelper {
         }
 
         fun addPadding(view : View, consume : Boolean = true, left : Boolean = false, top : Boolean = false, right : Boolean = false, bottom : Boolean = false) {
+            // Save initial padding values to avoid adding to the initial padding multiple times
+            val basePadding = object {
+                val left = view.paddingLeft
+                val top = view.paddingTop
+                val right = view.paddingRight
+                val bottom = view.paddingBottom
+            }
+
             ViewCompat.setOnApplyWindowInsetsListener(view) { v, windowInsets ->
                 val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
                 v.setPadding(
-                    if (left) insets.left + v.paddingLeft else v.paddingLeft,
-                    if (top) insets.top + v.paddingTop else v.paddingTop,
-                    if (right) insets.right + v.paddingRight else v.paddingRight,
-                    if (bottom) insets.bottom + v.paddingBottom else v.paddingBottom
+                    if (left) basePadding.left + insets.left else basePadding.left,
+                    if (top) basePadding.top + insets.top else basePadding.top,
+                    if (right) basePadding.right + insets.right else basePadding.right,
+                    if (bottom) basePadding.bottom + insets.bottom else basePadding.bottom
                 )
                 if (consume) WindowInsetsCompat.CONSUMED else windowInsets
             }
