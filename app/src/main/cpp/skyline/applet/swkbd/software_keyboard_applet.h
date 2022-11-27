@@ -74,6 +74,7 @@ namespace skyline::applet::swkbd {
         #pragma pack(pop)
 
         KeyboardConfigVB config{};
+        service::applet::LibraryAppletMode mode{};
         bool validationPending{};
         std::u16string currentText{};
         CloseResult currentResult{};
