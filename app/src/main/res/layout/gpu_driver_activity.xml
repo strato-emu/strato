@@ -21,15 +21,16 @@
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/add_driver_button"
-        style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton"
+        style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton.Icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
         android:layout_margin="16dp"
         android:contentDescription="@string/add_gpu_driver"
+        android:elevation="@dimen/mtrl_extended_fab_elevation"
+        android:stateListAnimator="@null"
         android:text="@string/install"
-        app:hoveredFocusedTranslationZ="0dp"
         app:icon="@drawable/ic_add"
-        app:pressedTranslationZ="0dp" />
+        tools:ignore="PrivateResource" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
