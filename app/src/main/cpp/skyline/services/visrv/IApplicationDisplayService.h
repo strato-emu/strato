@@ -54,6 +54,11 @@ namespace skyline::service::visrv {
         Result GetManagerDisplayService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Display_services#ListDisplays
+         */
+        Result ListDisplays(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Opens up a display using its name as the input
          * @url https://switchbrew.org/wiki/Display_services#OpenDisplay
          */
@@ -99,6 +104,7 @@ namespace skyline::service::visrv {
           SFUNC(0x65, IApplicationDisplayService, GetSystemDisplayService),
           SFUNC(0x66, IApplicationDisplayService, GetManagerDisplayService),
           SFUNC(0x67, IApplicationDisplayService, GetIndirectDisplayTransactionService),
+          SFUNC(0x3E8, IApplicationDisplayService, ListDisplays),
           SFUNC(0x3F2, IApplicationDisplayService, OpenDisplay),
           SFUNC(0x3FC, IApplicationDisplayService, CloseDisplay),
           SFUNC(0x7E4, IApplicationDisplayService, OpenLayer),

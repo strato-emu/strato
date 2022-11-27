@@ -40,6 +40,21 @@ namespace skyline::service::visrv {
         return {};
     }
 
+    Result IApplicationDisplayService::ListDisplays(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        struct DisplayInfo {
+            std::array<u8, 0x40> displayName{"Default"};
+            u8 hasLimitedLayers{1};
+            u8 pad[7];
+            u64 maxLayers{1};
+            u64 width{1920};
+            u64 height{1080};
+        } displayInfo;
+
+        request.outputBuf.at(0).as<DisplayInfo>() = displayInfo;
+        response.Push<u64>(1);
+        return {};
+    }
+
     Result IApplicationDisplayService::OpenDisplay(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto displayName(request.PopString());
         Logger::Debug("Opening display: {}", displayName);
