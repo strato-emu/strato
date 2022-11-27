@@ -25,6 +25,7 @@ namespace skyline::applet {
             case AppletId::LibraryAppletError:
                 return std::make_shared<ErrorApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             case AppletId::LibraryAppletOfflineWeb:
+            case AppletId::LibraryAppletShop:
                 return std::make_shared<WebApplet>(state, manager, std::move(onAppletStateChanged), std::move(onNormalDataPushFromApplet), std::move(onInteractiveDataPushFromApplet), appletMode);
             default:
                 throw exception{"Unimplemented Applet: 0x{:X} ({})", static_cast<u32>(appletId), ToString(appletId)};
