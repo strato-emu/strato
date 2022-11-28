@@ -254,6 +254,11 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::IsVibrationPermitted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(0);
+        return {};
+    }
+
     Result IHidServer::SetPalmaBoostMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
