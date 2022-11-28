@@ -87,6 +87,7 @@ namespace skyline {
 
             /**
              * @brief Inserts the specified thread into the scheduler queue at the appropriate location based on its priority
+             * @note This is a non-blocking operation when the thread is paused, the thread will only be inserted when it is resumed
              */
             void InsertThread(const std::shared_ptr<type::KThread> &thread);
 

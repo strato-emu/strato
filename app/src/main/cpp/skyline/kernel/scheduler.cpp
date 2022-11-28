@@ -91,9 +91,9 @@ namespace skyline::kernel {
         std::unique_lock lock{core.mutex};
 
         if (thread->isPaused) {
-            // We cannot insert a thread that is paused, so we need to wait until it has been resumed
-            thread->insertThreadOnResume = false;
-            thread->scheduleCondition.wait(lock, [&]() { return !thread->isPaused; });
+            // We cannot insert a thread that is paused, so we just let the resuming thread insert it
+            thread->insertThreadOnResume = true;
+            return;
         }
 
         #ifndef NDEBUG
