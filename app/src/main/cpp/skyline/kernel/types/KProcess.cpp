@@ -330,15 +330,16 @@ namespace skyline::kernel::type {
                 auto queue{syncWaiters.equal_range(key)};
 
                 if (queue.first != queue.second) {
-                    // If we found a thread then we need to remove it from the queue
-                    thread = queue.first->second;
+                    // If threads are waiting on us still then we need to remove the highest priority thread from the queue
+                    auto it{std::min_element(queue.first, queue.second, [](const SyncWaiters::value_type &lhs, const SyncWaiters::value_type &rhs) { return lhs.second->priority < rhs.second->priority; })};
+                    thread = it->second;
                     conditionVariable = thread->waitConditionVariable;
                     #ifndef NDEBUG
                     if (conditionVariable != key)
                         Logger::Warn("Condition variable mismatch: 0x{:X} != 0x{:X}", conditionVariable, key);
                     #endif
 
-                    syncWaiters.erase(queue.first);
+                    syncWaiters.erase(it);
                     waiterCount--;
                 } else if (queue.first == queue.second) {
                     // If we didn't find a thread then we need to clear the boolean flag denoting that there are no more threads waiting on this conditional variable
@@ -488,8 +489,23 @@ namespace skyline::kernel::type {
         }
 
         i32 waiterCount{amount};
-        for (auto it{queue.first}; it != queue.second && (amount <= 0 || waiterCount); it = syncWaiters.erase(it), waiterCount--)
-            state.scheduler->InsertThread(it->second);
+        boost::container::small_vector<SyncWaiters::iterator, 10> orderedThreads;
+        for (auto it{queue.first}; it != queue.second; it++) {
+            // While threads should generally be inserted in priority order, they may not always be due to the way the kernel handles priority updates
+            // As a result, we need to create a second list of threads ordered by priority to ensure that we wake up the highest priority threads first
+            auto thread{it->second};
+            orderedThreads.insert(std::upper_bound(orderedThreads.begin(), orderedThreads.end(), thread->priority.load(), [](const i8 priority, const SyncWaiters::iterator &it) { return it->second->priority > priority; }), it);
+        }
+
+        for (auto &it : orderedThreads) {
+            auto thread{it->second};
+
+            syncWaiters.erase(it);
+            state.scheduler->InsertThread(thread);
+
+            if (--waiterCount == 0 && amount > 0)
+                break;
+        }
 
         return {};
     }
