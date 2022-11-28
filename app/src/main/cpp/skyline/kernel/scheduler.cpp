@@ -86,8 +86,9 @@ namespace skyline::kernel {
     }
 
     void Scheduler::InsertThread(const std::shared_ptr<type::KThread> &thread) {
+        std::scoped_lock migrationLock{thread->coreMigrationMutex};
         auto &core{cores.at(thread->coreId)};
-        std::unique_lock lock(core.mutex);
+        std::unique_lock lock{core.mutex};
 
         if (thread->isPaused) {
             // We cannot insert a thread that is paused, so we need to wait until it has been resumed

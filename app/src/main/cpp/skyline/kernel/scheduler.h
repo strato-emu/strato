@@ -58,7 +58,7 @@ namespace skyline {
             std::list<std::shared_ptr<type::KThread>> parkedQueue; //!< A queue of threads which are parked and waiting on core migration
 
             /**
-             * @brief Migrate a thread from its resident core to its ideal core
+             * @brief Migrate a thread from its resident core to the target core
              * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
              * @note This is used to handle non-cooperative core affinity mask changes where the resident core is not in its new affinity mask
              */

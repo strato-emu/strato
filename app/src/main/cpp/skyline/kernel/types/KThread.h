@@ -50,7 +50,7 @@ namespace skyline {
             std::atomic<i8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
             std::atomic<i8> priority; //!< The priority of the thread for the scheduler including priority-inheritance
 
-            std::mutex coreMigrationMutex; //!< Synchronizes operations which depend on which core the thread is running on
+            std::recursive_mutex coreMigrationMutex; //!< Synchronizes operations which depend on which core the thread is running on
             u8 idealCore; //!< The ideal CPU core for this thread to run on
             u8 coreId; //!< The CPU core on which this thread is running
             CoreMask affinityMask{}; //!< A mask of CPU cores this thread is allowed to run on
