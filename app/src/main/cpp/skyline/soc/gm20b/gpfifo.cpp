@@ -363,7 +363,7 @@ namespace skyline::soc::gm20b {
                     channelCtx.executor.Submit();
                     channelCtx.Unlock();
                     channelLocked = false;
-                }|
+                }
             });
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {

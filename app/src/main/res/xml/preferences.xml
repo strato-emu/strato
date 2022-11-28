@@ -141,8 +141,8 @@
         android:title="@string/hacks">
         <CheckBoxPreference
             android:defaultValue="false"
-            android:summaryOff="@string/enable_fast_gpu_readback_enabled"
-            android:summaryOn="@string/enable_fast_gpu_readback_disabled"
+            android:summaryOff="@string/enable_fast_gpu_readback_disabled"
+            android:summaryOn="@string/enable_fast_gpu_readback_enabled"
             app:key="enable_fast_gpu_readback_hack"
             app:title="@string/enable_fast_gpu_readback" />
     </PreferenceCategory>
