@@ -58,6 +58,24 @@ namespace skyline::service::hid {
         Result StopSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Sets the gyroscope zero drift mode
+         * @url https://switchbrew.org/wiki/HID_services#SetGyroscopeZeroDriftMode
+         */
+        Result SetGyroscopeZeroDriftMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Returns the gyroscope zero drift mode
+         * @url https://switchbrew.org/wiki/HID_services#GetGyroscopeZeroDriftMode
+         */
+        Result GetGyroscopeZeroDriftMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Rsets the gyroscope zero drift mode to Standard
+         * @url https://switchbrew.org/wiki/HID_services#ResetGyroscopeZeroDriftMode
+         */
+        Result ResetGyroscopeZeroDriftMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/HID_services#IsSixAxisSensorAtRest
          */
         Result IsSixAxisSensorAtRest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -202,6 +220,9 @@ namespace skyline::service::hid {
             SFUNC(0x1F, IHidServer, ActivateKeyboard),
             SFUNC(0x42, IHidServer, StartSixAxisSensor),
             SFUNC(0x43, IHidServer, StopSixAxisSensor),
+            SFUNC(0x4F, IHidServer, SetGyroscopeZeroDriftMode),
+            SFUNC(0x50, IHidServer, GetGyroscopeZeroDriftMode),
+            SFUNC(0x51, IHidServer, ResetGyroscopeZeroDriftMode),
             SFUNC(0x52, IHidServer, IsSixAxisSensorAtRest),
             SFUNC(0x64, IHidServer, SetSupportedNpadStyleSet),
             SFUNC(0x65, IHidServer, GetSupportedNpadStyleSet),

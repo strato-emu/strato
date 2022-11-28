@@ -70,6 +70,8 @@ namespace skyline::input {
     /**
      * @brief A handle to a specific device addressed by its ID and type
      * @note This is used by both Six-Axis and Vibration
+     * @url https://switchbrew.org/wiki/HID_services#SixAxisSensorHandle
+     * @url https://switchbrew.org/wiki/HID_services#VibrationDeviceHandle
      */
     union __attribute__((__packed__)) NpadDeviceHandle {
         u32 raw;
@@ -125,6 +127,15 @@ namespace skyline::input {
     };
     static_assert(sizeof(NpadVibrationValue) == 0x10);
 
+    /**
+     * @url https://switchbrew.org/wiki/HID_services#GyroscopeZeroDriftMode
+     */
+    enum class GyroscopeZeroDriftMode : u32 {
+        Loose = 0,
+        Standard = 1,
+        Tight = 2,
+    };
+
     class NpadManager;
 
     /**
@@ -170,6 +181,7 @@ namespace skyline::input {
         NpadControllerType type{};
         NpadConnectionState connectionState{};
         std::shared_ptr<kernel::type::KEvent> updateEvent; //!< This event is triggered on the controller's style changing
+        GyroscopeZeroDriftMode gyroZeroDriftMode;
 
         NpadDevice(NpadManager &manager, NpadSection &section, NpadId id);
 

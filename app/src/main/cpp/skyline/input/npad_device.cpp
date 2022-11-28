@@ -10,7 +10,8 @@ namespace skyline::input {
         : manager(manager),
           section(section),
           id(id),
-          updateEvent(std::make_shared<kernel::type::KEvent>(manager.state, false)) {
+          updateEvent(std::make_shared<kernel::type::KEvent>(manager.state, false)),
+          gyroZeroDriftMode(GyroscopeZeroDriftMode::Standard) {
         constexpr std::size_t InitializeEntryCount{19}; //!< HW initializes the first 19 entries
 
         ResetDeviceProperties();

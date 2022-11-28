@@ -41,6 +41,28 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::SetGyroscopeZeroDriftMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto npadHandle{request.Pop<NpadDeviceHandle>()};
+        auto mode{request.Pop<GyroscopeZeroDriftMode>()};
+
+        state.input->npad[npadHandle.id].gyroZeroDriftMode = mode;
+        return {};
+    }
+
+    Result IHidServer::GetGyroscopeZeroDriftMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto npadHandle{request.Pop<NpadDeviceHandle>()};
+
+        response.Push(state.input->npad[npadHandle.id].gyroZeroDriftMode);
+        return {};
+    }
+
+    Result IHidServer::ResetGyroscopeZeroDriftMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto npadHandle{request.Pop<NpadDeviceHandle>()};
+
+        state.input->npad[npadHandle.id].gyroZeroDriftMode = GyroscopeZeroDriftMode::Standard;
+        return {};
+    }
+
     Result IHidServer::IsSixAxisSensorAtRest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u8>(1);
         return {};
