@@ -34,6 +34,11 @@ namespace skyline::service::fssrv {
         Result CreateDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Deletes a directory at the specified path in the filesystem
+         */
+        Result DeleteDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Queries the DirectoryEntryType of the given path
          * @url https://switchbrew.org/wiki/Filesystem_services#GetEntryType
          */
@@ -60,6 +65,7 @@ namespace skyline::service::fssrv {
             SFUNC(0x0, IFileSystem, CreateFile),
             SFUNC(0x1, IFileSystem, DeleteFile),
             SFUNC(0x2, IFileSystem, CreateDirectory),
+            SFUNC(0x3, IFileSystem, DeleteDirectory),
             SFUNC(0x7, IFileSystem, GetEntryType),
             SFUNC(0x8, IFileSystem, OpenFile),
             SFUNC(0x9, IFileSystem, OpenDirectory),
