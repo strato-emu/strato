@@ -129,6 +129,7 @@ namespace skyline {
             /**
              * @brief Updates the core that the supplied thread is resident to according to its new affinity mask and ideal core
              * @note This supports changing the core of a thread which is currently running
+             * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
              */
             void UpdateCore(const std::shared_ptr<type::KThread> &thread);
 
