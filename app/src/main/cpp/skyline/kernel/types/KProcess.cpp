@@ -221,6 +221,7 @@ namespace skyline::kernel::type {
         {
             // Update all waiter information
             std::unique_lock lock{state.thread->waiterMutex};
+            state.thread->waitThread = std::shared_ptr<KThread>{nullptr};
             state.thread->waitMutex = mutex;
             state.thread->waitTag = tag;
             state.thread->waitConditionVariable = key;
@@ -259,7 +260,7 @@ namespace skyline::kernel::type {
                     std::unique_lock lock{state.thread->waiterMutex};
 
                     if (state.thread->waitSignalled) {
-                        if (state.thread->waitMutex) {
+                        if (state.thread->waitThread) {
                             auto waitThread{state.thread->waitThread};
                             std::unique_lock waitLock{waitThread->waiterMutex, std::try_to_lock};
                             if (!waitLock) {
@@ -284,7 +285,7 @@ namespace skyline::kernel::type {
                                 shouldWait = true;
                             }
                         } else {
-                            // If the waitMutex is null then we were signalled and are no longer waiting on the associated mutex
+                            // If the waitThread is null then we were signalled and are no longer waiting on the associated mutex
                             shouldWait = true;
                         }
                     } else {
