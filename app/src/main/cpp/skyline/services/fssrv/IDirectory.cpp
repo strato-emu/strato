@@ -28,17 +28,18 @@ namespace skyline::service::fssrv {
         auto outputEntries{request.outputBuf.at(0).cast<DirectoryEntry, std::dynamic_extent, true>()};
         size_t i{};
 
-        for (; i < std::min(entries.size() - remainingReadCount, outputEntries.size()); i++) {
-            auto &entry{entries.at(i)};
+        if (!entries.empty())
+            for (; i < std::min(entries.size() - remainingReadCount, outputEntries.size()); i++) {
+                auto &entry{entries.at(i)};
 
-            outputEntries[i] = {
-                .type = entry.type,
-                .attributes.directory = (entry.type == vfs::Directory::EntryType::Directory),
-                .size = entry.size,
-            };
+                outputEntries[i] = {
+                    .type = entry.type,
+                    .attributes.directory = (entry.type == vfs::Directory::EntryType::Directory),
+                    .size = entry.size,
+                };
 
-            span(outputEntries[i].name).copy_from(entry.name);
-        }
+                span(outputEntries[i].name).copy_from(entry.name);
+            }
 
         remainingReadCount += i;
         response.Push<u64>(i);
