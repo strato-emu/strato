@@ -85,6 +85,22 @@ namespace skyline::kernel {
         return *currentCore;
     }
 
+    void Scheduler::YieldThread(const std::shared_ptr<type::KThread> &thread) {
+        if (state.thread != thread) {
+            // If another thread is being yielded, we need to send it an OS signal to yield
+            if (!thread->pendingYield) {
+                // We only want to yield the thread if it hasn't already been sent a signal to yield in the past
+                // Not doing this can lead to races and deadlocks but is also slower as it prevents redundant signals
+                thread->SendSignal(YieldSignal);
+                thread->pendingYield = true;
+            }
+        } else {
+            // If the calling thread is being yielded, we can just set the YieldPending flag
+            // This avoids an OS signal which would just flip the YieldPending flag but with significantly more overhead
+            YieldPending = true;
+        }
+    }
+
     void Scheduler::InsertThread(const std::shared_ptr<type::KThread> &thread) {
         std::scoped_lock migrationLock{thread->coreMigrationMutex};
         auto &core{cores.at(thread->coreId)};
@@ -117,19 +133,7 @@ namespace skyline::kernel {
                 core.queue.splice(std::upper_bound(core.queue.begin(), core.queue.end(), front->priority.load(), type::KThread::IsHigherPriority), core.queue, core.queue.begin());
                 core.queue.push_front(thread);
 
-                if (state.thread != front) {
-                    // If the calling thread isn't at the front, we need to send it an OS signal to yield
-                    if (!front->pendingYield) {
-                        // We only want to yield the thread if it hasn't already been sent a signal to yield in the past
-                        // Not doing this can lead to races and deadlocks but is also slower as it prevents redundant signals
-                        front->SendSignal(YieldSignal);
-                        front->pendingYield = true;
-                    }
-                } else {
-                    // If the calling thread at the front is being yielded, we can just set the YieldPending flag
-                    // This avoids an OS signal which would just flip the YieldPending flag but with significantly more overhead
-                    YieldPending = true;
-                }
+                YieldThread(front);
             } else {
                 core.queue.push_front(thread);
             }
@@ -287,10 +291,7 @@ namespace skyline::kernel {
         } else if (currentIt == core->queue.begin()) {
             // Alternatively, if it's currently running then we'd just want to yield if there's a higher priority thread to run instead
             if (nextIt != core->queue.end() && (*nextIt)->priority < thread->priority) {
-                if (!thread->pendingYield) {
-                    thread->SendSignal(YieldSignal);
-                    thread->pendingYield = true;
-                }
+                YieldThread(thread);
             } else if (!thread->isPreempted && thread->priority == core->preemptionPriority) {
                 // If the thread needs to be preempted due to its new priority then arm its preemption timer
                 thread->ArmPreemptionTimer(PreemptiveTimeslice);
@@ -305,11 +306,7 @@ namespace skyline::kernel {
             auto targetIt{std::upper_bound(core->queue.begin(), core->queue.end(), thread->priority.load(), type::KThread::IsHigherPriority)};
             if (targetIt == core->queue.begin() && targetIt != core->queue.end()) {
                 core->queue.insert(std::next(core->queue.begin()), thread);
-                auto front{core->queue.front()};
-                if (!front->pendingYield) {
-                    front->SendSignal(YieldSignal);
-                    front->pendingYield = true;
-                }
+                YieldThread(core->queue.front());
             } else {
                 core->queue.insert(targetIt, thread);
             }
@@ -381,10 +378,7 @@ namespace skyline::kernel {
 
             if (it == core->queue.begin()) {
                 // We need to send a yield signal to the thread if it's currently running
-                if (!thread->pendingYield) {
-                    thread->SendSignal(YieldSignal);
-                    thread->pendingYield = true;
-                }
+                YieldThread(thread);
                 thread->forceYield = true;
             }
         } else {

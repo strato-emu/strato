@@ -64,6 +64,11 @@ namespace skyline {
              */
             void MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext *targetCore, std::unique_lock<std::mutex> &lock);
 
+            /**
+             * @brief Trigger a thread to yield via a signal or on SVC exit if it is the current thread
+             */
+            void YieldThread(const std::shared_ptr<type::KThread> &thread);
+
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
             inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a non-cooperative yield in running threads
