@@ -257,20 +257,25 @@ namespace skyline::kernel {
 
     void Scheduler::RemoveThread() {
         auto &thread{state.thread};
-        auto &core{cores.at(thread->coreId)};
         {
+            auto &core{cores.at(thread->coreId)};
             std::unique_lock lock(core.mutex);
-            auto it{std::find(core.queue.begin(), core.queue.end(), thread)};
-            if (it != core.queue.end()) {
-                it = core.queue.erase(it);
-                if (it == core.queue.begin()) {
-                    // We need to update the averageTimeslice accordingly, if we've been unscheduled by this
-                    if (thread->timesliceStart)
-                        thread->averageTimeslice = (thread->averageTimeslice / 4) + (3 * (util::GetTimeTicks() - thread->timesliceStart / 4));
 
-                    if (it != core.queue.end())
-                        (*it)->scheduleCondition.notify_one(); // We need to wake the thread at the front of the queue, if we were at the front previously
+            if (!thread->isPaused) {
+                auto it{std::find(core.queue.begin(), core.queue.end(), thread)};
+                if (it != core.queue.end()) {
+                    it = core.queue.erase(it);
+                    if (it == core.queue.begin()) {
+                        // We need to update the averageTimeslice accordingly, if we've been unscheduled by this
+                        if (thread->timesliceStart)
+                            thread->averageTimeslice = (thread->averageTimeslice / 4) + (3 * (util::GetTimeTicks() - thread->timesliceStart / 4));
+
+                        if (it != core.queue.end())
+                            (*it)->scheduleCondition.notify_one(); // We need to wake the thread at the front of the queue, if we were at the front previously
+                    }
                 }
+            } else {
+                thread->insertThreadOnResume = false;
             }
         }
 
