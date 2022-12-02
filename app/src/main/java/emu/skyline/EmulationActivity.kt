@@ -249,6 +249,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                         postDelayed(this, 250)
                     }
                 }, 250)
+                setOnClickListener {
+                    preferenceSettings.disableFrameThrottling = !preferenceSettings.disableFrameThrottling
+                    var color = if (preferenceSettings.disableFrameThrottling) getColor(R.color.colorPerfStatsSecondary) else getColor(R.color.colorPerfStatsPrimary)
+                    binding.perfStats.setTextColor(color)
+                }
             }
         }
 

@@ -105,6 +105,11 @@ namespace skyline::gpu {
          */
         void UpdateSwapchain(texture::Format format, texture::Dimensions extent);
 
+        /**
+         * @brief Handles DisableFrameThrottling setting changed event
+        */
+        void OnDisableFrameThrottlingChanged(const bool &value);
+
       public:
         PresentationEngine(const DeviceState &state, GPU &gpu);
 
