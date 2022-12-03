@@ -12,7 +12,7 @@
 
 namespace skyline::gpu::interconnect {
     /* Pipeline Stage */
-    ShaderBinary ShaderCache::Lookup(InterconnectContext &ctx, u64 programBase, u32 programOffset) {
+    std::pair<ShaderBinary, u64> ShaderCache::Lookup(InterconnectContext &ctx, u64 programBase, u32 programOffset) {
         lastProgramBase = programBase;
         lastProgramOffset = programOffset;
         auto[blockMapping, blockOffset]{ctx.channelCtx.asCtx->gmmu.LookupBlock(programBase + programOffset)};
@@ -91,11 +91,11 @@ namespace skyline::gpu::interconnect {
         }(blockMappingMirror.subspan(blockOffset));
 
         binary.baseOffset = programOffset;
-        binary.hash = XXH64(binary.binary.data(), binary.binary.size_bytes(), 0);
 
-        entry->cache.insert({blockMapping.data() + blockOffset, binary});
+        u64 hash{XXH64(binary.binary.data(), binary.binary.size_bytes(), 0)};
+        entry->cache.insert({blockMapping.data() + blockOffset, {binary, hash}});
 
-        return binary;
+        return {binary, hash};
     }
 
     bool ShaderCache::Refresh(InterconnectContext &ctx, u64 programBase, u32 programOffset) {

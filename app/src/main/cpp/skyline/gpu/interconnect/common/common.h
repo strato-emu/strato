@@ -67,7 +67,6 @@ namespace skyline::gpu::interconnect {
 
     struct ShaderBinary {
         span<u8> binary;
-        u64 hash;
         u32 baseOffset;
     };
 

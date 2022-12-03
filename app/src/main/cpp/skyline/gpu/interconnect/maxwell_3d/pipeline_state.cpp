@@ -256,11 +256,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             throw exception("Shader type mismatch: {} != {}!", engine->pipeline.shader.type, static_cast<u8>(shaderType));
 
         if (!engine->pipeline.shader.enable && shaderType != engine::Pipeline::Shader::Type::Vertex) {
-            binary.hash = 0;
+            hash = 0;
             return;
         }
 
-        binary = cache.Lookup(ctx, engine->programRegion, engine->pipeline.programOffset);
+        std::tie(binary, hash) = cache.Lookup(ctx, engine->programRegion, engine->pipeline.programOffset);
     }
 
     bool PipelineStageState::Refresh(InterconnectContext &ctx) {
@@ -495,7 +495,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
         for (size_t i{}; i < engine::PipelineCount; i++) {
             const auto &stage{pipelineStages[i].UpdateGet(ctx)};
-            packedState.shaderHashes[i] = stage.binary.hash;
+            packedState.shaderHashes[i] = stage.hash;
             shaderBinaries[i] = stage.binary;
         }
 

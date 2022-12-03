@@ -75,6 +75,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       public:
         ShaderBinary binary;
+        u64 hash;
 
         PipelineStageState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u8 shaderType);
 

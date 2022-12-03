@@ -7,6 +7,9 @@
 #include "common.h"
 
 namespace skyline::gpu::interconnect {
+    /**
+     * @brief Caches guest shader binaries and their memory locations
+     */
     class ShaderCache {
       private:
         /**
@@ -14,7 +17,7 @@ namespace skyline::gpu::interconnect {
          */
         struct MirrorEntry {
             span<u8> mirror;
-            tsl::robin_map<u8 *, ShaderBinary> cache;
+            tsl::robin_map<u8 *, std::pair<ShaderBinary, u64>> cache;
             std::optional<nce::NCE::TrapHandle> trap;
 
             static constexpr u32 SkipTrapThreshold{20}; //!< Threshold for the number of times a mirror trap needs to be hit before we fallback to always hashing
@@ -34,7 +37,10 @@ namespace skyline::gpu::interconnect {
         u32 lastProgramOffset{};
 
       public:
-        ShaderBinary Lookup(InterconnectContext &ctx, u64 programBase, u32 programOffset);
+        /**
+         * @brief Returns the shader binary located at the given address
+         */
+        std::pair<ShaderBinary, u64> Lookup(InterconnectContext &ctx, u64 programBase, u32 programOffset);
 
         bool Refresh(InterconnectContext &ctx, u64 programBase, u32 programOffset);
 

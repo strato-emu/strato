@@ -14,7 +14,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
         : engine{manager, dirtyHandle, engine} {}
 
     void PipelineStageState::Flush(InterconnectContext &ctx, u32 programOffset) {
-        binary = cache.Lookup(ctx, engine->programRegion, programOffset);
+        std::tie(binary, hash) = cache.Lookup(ctx, engine->programRegion, programOffset);
     }
 
     bool PipelineStageState::Refresh(InterconnectContext &ctx, u32 programOffset) {
@@ -32,7 +32,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
 
     Pipeline *PipelineState::Update(InterconnectContext &ctx, StateUpdateBuilder &builder, Textures &textures, ConstantBufferSet &constantBuffers, const QMD &qmd) {
         const auto &stage{pipelineStage.UpdateGet(ctx, qmd.programOffset)};
-        packedState.shaderHash = stage.binary.hash;
+        packedState.shaderHash = stage.hash;
         packedState.dimensions = {qmd.ctaThreadDimension0, qmd.ctaThreadDimension1, qmd.ctaThreadDimension2};
         packedState.localMemorySize = qmd.shaderLocalMemoryLowSize + qmd.shaderLocalMemoryHighSize;
         packedState.sharedMemorySize = qmd.sharedMemorySize;

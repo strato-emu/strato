@@ -26,6 +26,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
 
       public:
         ShaderBinary binary;
+        u64 hash{};
 
         PipelineStageState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
         
