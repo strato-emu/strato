@@ -205,7 +205,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     size_t PackedPipelineState::GetColorRenderTargetCount() const {
         for (size_t i{engine::ColorTargetCount}; i > 0 ; i--)
-            if (IsColorRenderTargetEnabled(i - 1))
+            if (IsColorRenderTargetEnabled(ctSelect[i - 1]))
                 return i;
 
         return 0;

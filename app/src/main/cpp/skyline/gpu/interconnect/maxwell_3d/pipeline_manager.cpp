@@ -530,7 +530,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         for (u32 i{}; i < packedState.GetColorRenderTargetCount(); i++) {
             attachmentBlendStates.push_back(packedState.GetAttachmentBlendState(i));
-            texture::Format format{packedState.GetColorRenderTargetFormat(i)};
+            texture::Format format{packedState.GetColorRenderTargetFormat(packedState.ctSelect[i])};
             colorAttachmentFormats.push_back(format ? format->vkFormat : vk::Format::eUndefined);
         }
 
@@ -595,10 +595,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     Pipeline::Pipeline(InterconnectContext &ctx, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState)
-        : shaderStages{MakePipelineShaders(ctx, accessor, packedState)},
+        : sourcePackedState{packedState},
+          shaderStages{MakePipelineShaders(ctx, accessor, sourcePackedState)},
           descriptorInfo{MakePipelineDescriptorInfo(shaderStages, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites)},
-          compiledPipeline{MakeCompiledPipeline(ctx, packedState, shaderStages, descriptorInfo.descriptorSetLayoutBindings)},
-          sourcePackedState{packedState} {
+          compiledPipeline{MakeCompiledPipeline(ctx, sourcePackedState, shaderStages, descriptorInfo.descriptorSetLayoutBindings)} {
         storageBufferViews.resize(descriptorInfo.totalStorageBufferCount);
     }
 

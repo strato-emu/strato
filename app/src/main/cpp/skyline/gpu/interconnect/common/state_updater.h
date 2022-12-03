@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <future>
 #include <gpu/interconnect/command_executor.h>
 #include "common.h"
 
@@ -261,6 +262,16 @@ namespace skyline::gpu::interconnect {
     };
     using SetPipelineCmd = CmdHolder<SetPipelineCmdImpl>;
 
+    struct SetPipelineFutureCmdImpl {
+        void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
+            commandBuffer.bindPipeline(bindPoint, *pipeline.get());
+        }
+
+        std::shared_future<vk::raii::Pipeline> pipeline;
+        vk::PipelineBindPoint bindPoint;
+    };
+    using SetPipelineFutureCmd = CmdHolder<SetPipelineFutureCmdImpl>;
+
     /**
      * @brief Single-use helper for recording a batch of state updates into a command buffer
      */
@@ -465,6 +476,14 @@ namespace skyline::gpu::interconnect {
 
         void SetPipeline(vk::Pipeline pipeline, vk::PipelineBindPoint bindPoint) {
             AppendCmd<SetPipelineCmd>(
+                {
+                    .pipeline = pipeline,
+                    .bindPoint = bindPoint,
+                });
+        }
+
+        void SetPipeline(const std::shared_future<vk::raii::Pipeline> &pipeline, vk::PipelineBindPoint bindPoint) {
+            AppendCmd<SetPipelineFutureCmd>(
                 {
                     .pipeline = pipeline,
                     .bindPoint = bindPoint,

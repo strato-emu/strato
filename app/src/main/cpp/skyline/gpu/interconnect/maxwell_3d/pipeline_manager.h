@@ -82,6 +82,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             u32 totalImageDescCount;
         };
 
+        PackedPipelineState sourcePackedState;
+
       private:
         std::vector<CachedMappedBufferView> storageBufferViews;
         u32 lastExecutionNumber{}; //!< The last execution number this pipeline was used at
@@ -98,8 +100,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
         size_t sampledImageCount{};
-
-        PackedPipelineState sourcePackedState;
 
         Pipeline(InterconnectContext &ctx, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState);
 

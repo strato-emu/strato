@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <future>
+#include <BS_thread_pool.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace skyline::gpu {
@@ -136,12 +138,15 @@ namespace skyline::gpu::cache {
         struct PipelineCacheEntry {
             vk::raii::DescriptorSetLayout descriptorSetLayout;
             vk::raii::PipelineLayout pipelineLayout;
-            vk::raii::Pipeline pipeline;
+            std::optional<std::shared_future<vk::raii::Pipeline>> pipeline;
 
-            PipelineCacheEntry(vk::raii::DescriptorSetLayout&& descriptorSetLayout, vk::raii::PipelineLayout &&layout, vk::raii::Pipeline &&pipeline);
+            PipelineCacheEntry(vk::raii::DescriptorSetLayout&& descriptorSetLayout, vk::raii::PipelineLayout &&layout);
         };
 
+        BS::thread_pool pool;
         std::unordered_map<PipelineCacheKey, PipelineCacheEntry, PipelineStateHash, PipelineCacheEqual> pipelineCache;
+
+        vk::raii::Pipeline BuildPipeline(const PipelineCacheKey &key, vk::PipelineLayout pipelineLayout);
 
       public:
         GraphicsPipelineCache(GPU &gpu);
@@ -149,7 +154,7 @@ namespace skyline::gpu::cache {
         struct CompiledPipeline {
             vk::DescriptorSetLayout descriptorSetLayout;
             vk::PipelineLayout pipelineLayout;
-            vk::Pipeline pipeline;
+            std::shared_future<vk::raii::Pipeline> pipeline;
 
             CompiledPipeline(const PipelineCacheEntry &entry);
         };
