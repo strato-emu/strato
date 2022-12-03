@@ -31,8 +31,9 @@ namespace skyline::gpu::cache {
             const vk::PipelineColorBlendStateCreateInfo &colorBlendState;
             const vk::PipelineDynamicStateCreateInfo &dynamicState;
 
-            span<TextureView *> colorAttachments; //!< All color attachments in the subpass of this pipeline
-            TextureView *depthStencilAttachment; //!< A nullable pointer to the depth/stencil attachment in the subpass of this pipeline
+            span<vk::Format> colorFormats; //!< All color attachment formats in the subpass of this pipeline
+            vk::Format depthStencilFormat; //!< The depth attachment format in the subpass of this pipeline, 'Undefined' if there is no depth attachment
+            vk::SampleCountFlagBits sampleCount; //!< The sample count of the subpass of this pipeline
 
             constexpr const vk::PipelineVertexInputStateCreateInfo &VertexInputState() const {
                 return vertexState.get<vk::PipelineVertexInputStateCreateInfo>();
@@ -63,9 +64,8 @@ namespace skyline::gpu::cache {
          */
         struct AttachmentMetadata {
             vk::Format format;
-            vk::SampleCountFlagBits sampleCount;
 
-            constexpr AttachmentMetadata(vk::Format format, vk::SampleCountFlagBits sampleCount) : format(format), sampleCount(sampleCount) {}
+            constexpr AttachmentMetadata(vk::Format format, vk::SampleCountFlagBits sampleCount) : format(format) {}
 
             bool operator==(const AttachmentMetadata &rhs) const = default;
         };
@@ -91,8 +91,9 @@ namespace skyline::gpu::cache {
             vk::PipelineDynamicStateCreateInfo dynamicState;
             std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;
 
-            std::vector<AttachmentMetadata> colorAttachments;
-            std::optional<AttachmentMetadata> depthStencilAttachment;
+            std::vector<vk::Format> colorFormats;
+            vk::Format depthStencilFormat;
+            vk::SampleCountFlagBits sampleCount;
 
             PipelineCacheKey(const PipelineState& state);
 

@@ -36,15 +36,11 @@ namespace skyline::gpu::cache {
 
         colorBlendState.pAttachments = colorBlendAttachments.data();
 
-        for (auto &colorAttachment : state.colorAttachments) {
-            if (colorAttachment)
-                colorAttachments.emplace_back(AttachmentMetadata{colorAttachment->format->vkFormat, colorAttachment->texture->sampleCount});
-            else
-                colorAttachments.emplace_back(AttachmentMetadata{vk::Format::eUndefined, vk::SampleCountFlagBits::e1});
-        }
+        for (auto &colorFormat : state.colorFormats)
+            colorFormats.emplace_back(colorFormat);
 
-        if (state.depthStencilAttachment)
-            depthStencilAttachment.emplace(AttachmentMetadata{state.depthStencilAttachment->format->vkFormat, state.depthStencilAttachment->texture->sampleCount});
+        depthStencilFormat = state.depthStencilFormat;
+        sampleCount = state.sampleCount;
     }
 
     #undef VEC_CPY
@@ -168,45 +164,23 @@ namespace skyline::gpu::cache {
             HASH(static_cast<VkBlendFactor>(attachment.srcColorBlendFactor));
         }
 
+        HASH(key.colorFormats.size());
+        for (auto format : key.colorFormats) {
+            HASH(format);
+        }
+
+        HASH(key.depthStencilFormat);
+        HASH(key.sampleCount);
+
         return hash;
     }
 
     size_t GraphicsPipelineCache::PipelineStateHash::operator()(const GraphicsPipelineCache::PipelineState &key) const {
-        size_t hash{HashCommonPipelineState(key)};
-
-        HASH(key.colorAttachments.size());
-        for (const auto &attachment : key.colorAttachments) {
-            if (attachment) {
-                HASH(attachment->format->vkFormat);
-                HASH(attachment->texture->sampleCount);
-            }
-        }
-
-        HASH(key.depthStencilAttachment != nullptr);
-        if (key.depthStencilAttachment != nullptr) {
-            HASH(key.depthStencilAttachment->format->vkFormat);
-            HASH(key.depthStencilAttachment->texture->sampleCount);
-        }
-
-        return hash;
+        return HashCommonPipelineState(key);
     }
 
     size_t GraphicsPipelineCache::PipelineStateHash::operator()(const GraphicsPipelineCache::PipelineCacheKey &key) const {
-        size_t hash{HashCommonPipelineState(key)};
-
-        HASH(key.colorAttachments.size());
-        for (const auto &attachment : key.colorAttachments) {
-            HASH(attachment.format);
-            HASH(attachment.sampleCount);
-        }
-
-        HASH(key.depthStencilAttachment.has_value());
-        if (key.depthStencilAttachment) {
-            HASH(key.depthStencilAttachment->format);
-            HASH(key.depthStencilAttachment->sampleCount);
-        }
-
-        return hash;
+        return HashCommonPipelineState(key);
     }
 
     #undef HASH
@@ -296,16 +270,13 @@ namespace skyline::gpu::cache {
             KEYNEQ(colorBlendState.blendConstants)
         )
 
-        RETF(CARREQ(colorAttachments.begin(), colorAttachments.size(), {
-            return lhs.format == rhs->format->vkFormat && lhs.sampleCount == rhs->texture->sampleCount;
+        RETF(CARREQ(colorFormats.begin(), colorFormats.size(), {
+            return lhs == rhs;
         }))
 
-        RETF(lhs.depthStencilAttachment.has_value() != (rhs.depthStencilAttachment != nullptr) ||
-            (lhs.depthStencilAttachment.has_value() &&
-                lhs.depthStencilAttachment->format != rhs.depthStencilAttachment->format->vkFormat &&
-                lhs.depthStencilAttachment->sampleCount != rhs.depthStencilAttachment->texture->sampleCount
-            )
-        )
+        RETF(lhs.depthStencilFormat == rhs.depthStencilFormat)
+        RETF(lhs.sampleCount == rhs.sampleCount)
+
 
         #undef ARREQ
         #undef CARREQ
@@ -349,22 +320,22 @@ namespace skyline::gpu::cache {
         boost::container::small_vector<vk::AttachmentDescription, 8> attachmentDescriptions;
         boost::container::small_vector<vk::AttachmentReference, 8> attachmentReferences;
 
-        auto pushAttachment{[&](TextureView *view) {
-            if (view) {
+        auto pushAttachment{[&](vk::Format format) {
+            if (format != vk::Format::eUndefined) {
                 attachmentDescriptions.push_back(vk::AttachmentDescription{
-                    .format = view->format->vkFormat,
-                    .samples = view->texture->sampleCount,
+                    .format = format,
+                    .samples = state.sampleCount,
                     .loadOp = vk::AttachmentLoadOp::eLoad,
                     .storeOp = vk::AttachmentStoreOp::eStore,
                     .stencilLoadOp = vk::AttachmentLoadOp::eLoad,
                     .stencilStoreOp = vk::AttachmentStoreOp::eStore,
-                    .initialLayout = view->texture->layout,
-                    .finalLayout = view->texture->layout,
+                    .initialLayout = vk::ImageLayout::eGeneral,
+                    .finalLayout = vk::ImageLayout::eGeneral,
                     .flags = vk::AttachmentDescriptionFlagBits::eMayAlias
                 });
                 attachmentReferences.push_back(vk::AttachmentReference{
                     .attachment = static_cast<u32>(attachmentDescriptions.size() - 1),
-                    .layout = view->texture->layout,
+                    .layout = vk::ImageLayout::eGeneral,
                 });
             } else {
                 attachmentReferences.push_back(vk::AttachmentReference{
@@ -378,11 +349,11 @@ namespace skyline::gpu::cache {
             .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
         };
 
-        for (auto &colorAttachment : state.colorAttachments)
+        for (auto &colorAttachment : state.colorFormats)
             pushAttachment(colorAttachment);
 
-        if (state.depthStencilAttachment) {
-            pushAttachment(state.depthStencilAttachment);
+        if (state.depthStencilFormat != vk::Format::eUndefined) {
+            pushAttachment(state.depthStencilFormat);
 
             subpassDescription.pColorAttachments = attachmentReferences.data();
             subpassDescription.colorAttachmentCount = static_cast<u32>(attachmentReferences.size() - 1);
