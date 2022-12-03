@@ -150,7 +150,8 @@ namespace skyline::gpu::interconnect {
                     renderDocApi->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), nullptr);
                 slot->capture = false;
 
-                if (slot->didWait && slots.size() < (1U << *state.settings->executorSlotCountScale)) {
+                if (slot->didWait && (slots.size() + 1) < (1U << *state.settings->executorSlotCountScale)) {
+                    outgoing.Push(&slots.emplace_back(gpu));
                     outgoing.Push(&slots.emplace_back(gpu));
                     slot->didWait = false;
                 }

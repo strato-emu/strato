@@ -63,7 +63,7 @@ namespace skyline::gpu::interconnect {
         };
 
       private:
-        static constexpr size_t GrowThresholdNs{constant::NsInMillisecond / 4}; //!< The wait time threshold at which the slot count will be increased
+        static constexpr size_t GrowThresholdNs{constant::NsInMillisecond / 50}; //!< The wait time threshold at which the slot count will be increased
         const DeviceState &state;
         CircularQueue<Slot *> incoming; //!< Slots pending recording
         CircularQueue<Slot *> outgoing; //!< Slots that have been submitted, may still be active on the GPU

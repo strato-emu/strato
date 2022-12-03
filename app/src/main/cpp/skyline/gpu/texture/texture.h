@@ -450,8 +450,8 @@ namespace skyline::gpu {
         static constexpr size_t FrequentlyLockedThreshold{2}; //!< Threshold for the number of times a texture can be locked (not from context locks, only normal) before it should be considered frequently locked
         size_t accumulatedCpuLockCounter{};
 
-        static constexpr size_t SkipReadbackHackWaitCountThreshold{8}; //!< Threshold for the number of times a texture can be waited on before it should be considered for the readback hack
-        static constexpr std::chrono::nanoseconds SkipReadbackHackWaitTimeThreshold{constant::NsInSecond / 2}; //!< Threshold for the amount of time a texture can be waited on before it should be considered for the readback hack, `SkipReadbackHackWaitCountThreshold` needs to be hit before this
+        static constexpr size_t SkipReadbackHackWaitCountThreshold{6}; //!< Threshold for the number of times a texture can be waited on before it should be considered for the readback hack
+        static constexpr std::chrono::nanoseconds SkipReadbackHackWaitTimeThreshold{constant::NsInSecond / 4}; //!< Threshold for the amount of time a texture can be waited on before it should be considered for the readback hack, `SkipReadbackHackWaitCountThreshold` needs to be hit before this
         size_t accumulatedGuestWaitCounter{}; //!< Total number of times the texture has been waited on
         std::chrono::nanoseconds accumulatedGuestWaitTime{}; //!< Amount of time the texture has been waited on for since the `SkipReadbackHackWaitCountThreshold`th wait on it by the guest
 
