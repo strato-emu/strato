@@ -16,7 +16,7 @@
 namespace skyline::gpu::interconnect::maxwell3d {
     /* Vertex Buffer */
     void VertexBufferState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, vertexStream.format, vertexStream.location);
+        manager.Bind(handle, vertexStream.format, vertexStream.location, vertexStreamLimit);
     }
 
     VertexBufferState::VertexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
