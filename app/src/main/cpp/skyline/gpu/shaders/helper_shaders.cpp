@@ -136,6 +136,7 @@ namespace skyline::gpu {
             .scissorCount = 1
         };
 
+        std::array<vk::Format, 1> colorFormats{colorAttachment ? colorAttachment->format->vkFormat : vk::Format::eUndefined};
         return gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
             .shaderStages = shaderStages,
             .vertexState = vertexState,
@@ -147,8 +148,8 @@ namespace skyline::gpu {
             .depthStencilState = depthStencilState,
             .colorBlendState = blendState,
             .dynamicState = {},
-            .colorAttachments = span<TextureView *>{colorAttachment},
-            .depthStencilAttachment = depthStencilAttachment,
+            .colorFormats = colorFormats,
+            .depthStencilFormat = depthStencilAttachment ? depthStencilAttachment->format->vkFormat : vk::Format::eUndefined,
         }, layoutBindings, pushConstantRanges, true);
     }
 

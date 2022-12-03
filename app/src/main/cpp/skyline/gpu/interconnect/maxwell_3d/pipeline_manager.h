@@ -11,6 +11,7 @@
 #include "common.h"
 #include "packed_pipeline_state.h"
 #include "constant_buffers.h"
+#include "graphics_pipeline_state_accessor.h"
 
 namespace skyline::gpu {
     class TextureView;
@@ -100,7 +101,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         PackedPipelineState sourcePackedState;
 
-        Pipeline(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment);
+        Pipeline(InterconnectContext &ctx, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState);
 
         Pipeline *LookupNext(const PackedPipelineState &packedState);
 
@@ -123,17 +124,23 @@ namespace skyline::gpu::interconnect::maxwell3d {
         DescriptorUpdateInfo *SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind, span<TextureView *> sampledImages);
     };
 
+    /**
+     * @brief Manages the caching and creation of pipelines
+     */
     class PipelineManager {
       private:
+        PipelineStateBundle bundle;
         tsl::robin_map<PackedPipelineState, std::unique_ptr<Pipeline>, PackedPipelineStateHash> map;
 
       public:
-        Pipeline *FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries, span<TextureView *> colorAttachments, TextureView *depthAttachment) {
+        Pipeline *FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries) {
             auto it{map.find(packedState)};
             if (it != map.end())
                 return it->second.get();
 
-            return map.emplace(packedState, std::make_unique<Pipeline>(ctx, textures, constantBuffers, packedState, shaderBinaries, colorAttachments, depthAttachment)).first->second.get();
+            bundle.Reset(packedState);
+            auto accessor{RuntimeGraphicsPipelineStateAccessor{bundle, ctx, textures, constantBuffers, shaderBinaries}};
+            return map.emplace(packedState, std::make_unique<Pipeline>(ctx, accessor, packedState)).first->second.get();
         }
     };
 }

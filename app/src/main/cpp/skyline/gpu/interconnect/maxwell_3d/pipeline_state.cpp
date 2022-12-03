@@ -432,7 +432,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }
 
-        auto newPipeline{pipelineManager.FindOrCreate(ctx, textures, constantBuffers, packedState, shaderBinaries, colorAttachments, depthAttachment)};
+        auto newPipeline{pipelineManager.FindOrCreate(ctx, textures, constantBuffers, packedState, shaderBinaries)};
         if (pipeline)
             pipeline->AddTransition(newPipeline);
         pipeline = newPipeline;

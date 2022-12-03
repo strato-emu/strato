@@ -190,6 +190,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/interconnect/inline2memory.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/active_state.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/pipeline_state.cpp
+        ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/graphics_pipeline_state_accessor.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/packed_pipeline_state.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/pipeline_manager.cpp
         ${source_DIR}/skyline/gpu/interconnect/maxwell_3d/constant_buffers.cpp
@@ -205,6 +206,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/interconnect/common/samplers.cpp
         ${source_DIR}/skyline/gpu/interconnect/common/textures.cpp
         ${source_DIR}/skyline/gpu/interconnect/common/shader_cache.cpp
+        ${source_DIR}/skyline/gpu/interconnect/common/pipeline_state_bundle.cpp
         ${source_DIR}/skyline/gpu/shaders/helper_shaders.cpp
         ${source_DIR}/skyline/soc/smmu.cpp
         ${source_DIR}/skyline/soc/host1x/syncpoint.cpp
