@@ -88,6 +88,7 @@ namespace skyline::gpu::cache {
             vk::PipelineMultisampleStateCreateInfo multisampleState;
             vk::PipelineDepthStencilStateCreateInfo depthStencilState;
             vk::PipelineColorBlendStateCreateInfo colorBlendState;
+            std::vector<vk::DynamicState> dynamicStates;
             vk::PipelineDynamicStateCreateInfo dynamicState;
             std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments;
 

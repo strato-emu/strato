@@ -25,6 +25,8 @@ namespace skyline::gpu::cache {
           multisampleState(state.multisampleState),
           depthStencilState(state.depthStencilState),
           colorBlendState(state.colorBlendState),
+          dynamicStates(VEC_CPY(dynamicState.pDynamicStates, dynamicState.dynamicStateCount)),
+          dynamicState(state.dynamicState),
           colorBlendAttachments(VEC_CPY(colorBlendState.pAttachments, colorBlendState.attachmentCount)) {
         auto &vertexInputState{vertexState.get<vk::PipelineVertexInputStateCreateInfo>()};
         vertexInputState.pVertexBindingDescriptions = vertexBindings.data();
@@ -35,6 +37,8 @@ namespace skyline::gpu::cache {
         viewportState.pScissors = scissors.data();
 
         colorBlendState.pAttachments = colorBlendAttachments.data();
+
+        dynamicState.pDynamicStates = dynamicStates.data();
 
         for (auto &colorFormat : state.colorFormats)
             colorFormats.emplace_back(colorFormat);
@@ -164,10 +168,11 @@ namespace skyline::gpu::cache {
             HASH(static_cast<VkBlendFactor>(attachment.srcColorBlendFactor));
         }
 
+        HASH(key.dynamicState.dynamicStateCount);
+
         HASH(key.colorFormats.size());
-        for (auto format : key.colorFormats) {
+        for (auto format : key.colorFormats)
             HASH(format);
-        }
 
         HASH(key.depthStencilFormat);
         HASH(key.sampleCount);
