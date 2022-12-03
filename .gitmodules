@@ -54,3 +54,6 @@
 [submodule "app/libraries/robin-map"]
 	path = app/libraries/robin-map
 	url = https://github.com/Tessil/robin-map
+[submodule "app/libraries/thread-pool"]
+	path = app/libraries/thread-pool
+	url = https://github.com/bshoshany/thread-pool.git
