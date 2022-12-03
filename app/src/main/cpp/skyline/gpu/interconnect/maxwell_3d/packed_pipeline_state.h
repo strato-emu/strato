@@ -4,6 +4,7 @@
 #pragma once
 
 #include <tuple>
+#include <gpu/texture/format.h>
 #include <shader_compiler/runtime_info.h>
 #include "common.h"
 
@@ -67,7 +68,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         float pointSize;
         std::array<engine::VertexAttribute, engine::VertexAttributeCount> vertexAttributes;
         std::array<u8, engine::ColorTargetCount> colorRenderTargetFormats; //!< Use {Set, Get}ColorRenderTargetFormat
-        std::bitset<8> activeColorTargets;
+        engine::CtSelect ctSelect;
         std::array<u32, 8> postVtgShaderAttributeSkipMask;
 
         struct VertexBinding {
@@ -105,9 +106,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
         std::array<TransformFeedbackVarying, 0x100> transformFeedbackVaryings{};
 
-        void SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format);
+        /**
+         * @param rawIndex Index in HW ignoring the ctSelect register
+         */
+        void SetColorRenderTargetFormat(size_t rawIndex, engine::ColorTarget::Format format);
 
-        void SetDepthRenderTargetFormat(engine::ZtFormat format);
+        void SetDepthRenderTargetFormat(engine::ZtFormat format, bool enabled);
 
         void SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance);
 
@@ -132,6 +136,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::Blend blend);
 
         void SetAttachmentBlendState(u32 index, bool enable, engine::CtWrite writeMask, engine::BlendPerTarget blend);
+
+        /**
+         * @param rawIndex Index in HW ignoring the ctSelect register
+         */
+        texture::Format GetColorRenderTargetFormat(size_t rawIndex) const;
+
+        /**
+         * @param rawIndex Index in HW ignoring the ctSelect register
+         */
+        bool IsColorRenderTargetEnabled(size_t rawIndex) const;
+
+        size_t GetColorRenderTargetCount() const;
+
+        texture::Format GetDepthRenderTargetFormat() const;
 
         std::array<vk::StencilOpState, 2> GetStencilOpsState() const;
 

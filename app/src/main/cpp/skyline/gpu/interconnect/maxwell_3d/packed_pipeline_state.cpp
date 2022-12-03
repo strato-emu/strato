@@ -10,12 +10,17 @@
 #pragma clang diagnostic ignored "-Wbitfield-enum-conversion"
 
 namespace skyline::gpu::interconnect::maxwell3d {
+    static constexpr u8 DepthDisabledMagic{0x1f}; // Format value (unused in HW) used to signal that depth is disabled
+
     void PackedPipelineState::SetColorRenderTargetFormat(size_t index, engine::ColorTarget::Format format) {
         colorRenderTargetFormats[index] = static_cast<u8>(format);
     }
 
-    void PackedPipelineState::SetDepthRenderTargetFormat(engine::ZtFormat format) {
-        depthRenderTargetFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
+    void PackedPipelineState::SetDepthRenderTargetFormat(engine::ZtFormat format, bool enabled) {
+        if (enabled)
+            depthRenderTargetFormat = static_cast<u8>(format) - static_cast<u8>(engine::ZtFormat::ZF32);
+        else
+            depthRenderTargetFormat = DepthDisabledMagic;
     }
 
     void PackedPipelineState::SetVertexBinding(u32 index, engine::VertexStream stream, engine::VertexStreamInstance instance) {
@@ -101,6 +106,133 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     vk::LogicOp PackedPipelineState::GetLogicOp() const {
         return static_cast<vk::LogicOp>(logicOp);
+    }
+
+    texture::Format PackedPipelineState::GetColorRenderTargetFormat(size_t rawIndex) const {
+        auto format{static_cast<engine::ColorTarget::Format>(colorRenderTargetFormats[rawIndex])};
+        #define FORMAT_CASE_BASE(engineFormat, skFormat, warn) \
+                case engine::ColorTarget::Format::engineFormat:                     \
+                    if constexpr (warn)                                             \
+                        Logger::Warn("Partially supported RT format: " #engineFormat " used!"); \
+                    return skyline::gpu::format::skFormat
+
+        #define FORMAT_CASE(engineFormat, skFormat) FORMAT_CASE_BASE(engineFormat, skFormat, false)
+        #define FORMAT_CASE_WARN(engineFormat, skFormat) FORMAT_CASE_BASE(engineFormat, skFormat, true)
+
+        switch (format) {
+            case engine::ColorTarget::Format::Disabled:
+                return texture::Format{};
+            FORMAT_CASE(RF32_GF32_BF32_AF32, R32G32B32A32Float);
+            FORMAT_CASE(RS32_GS32_BS32_AS32, R32G32B32A32Sint);
+            FORMAT_CASE(RU32_GU32_BU32_AU32, R32G32B32A32Uint);
+            FORMAT_CASE_WARN(RF32_GF32_BF32_X32, R32G32B32A32Float); // TODO: ignore X32 component with blend
+            FORMAT_CASE_WARN(RS32_GS32_BS32_X32, R32G32B32A32Sint); // TODO: ^
+            FORMAT_CASE_WARN(RU32_GU32_BU32_X32, R32G32B32A32Uint); // TODO: ^
+            FORMAT_CASE(R16_G16_B16_A16, R16G16B16A16Unorm);
+            FORMAT_CASE(RN16_GN16_BN16_AN16, R16G16B16A16Snorm);
+            FORMAT_CASE(RS16_GS16_BS16_AS16, R16G16B16A16Sint);
+            FORMAT_CASE(RU16_GU16_BU16_AU16, R16G16B16A16Uint);
+            FORMAT_CASE(RF16_GF16_BF16_AF16, R16G16B16A16Float);
+            FORMAT_CASE(RF32_GF32, R32G32Float);
+            FORMAT_CASE(RS32_GS32, R32G32Sint);
+            FORMAT_CASE(RU32_GU32, R32G32Uint);
+            FORMAT_CASE_WARN(RF16_GF16_BF16_X16, R16G16B16A16Float); // TODO: ^^
+            FORMAT_CASE(A8R8G8B8, B8G8R8A8Unorm);
+            FORMAT_CASE(A8RL8GL8BL8, B8G8R8A8Srgb);
+            FORMAT_CASE(A2B10G10R10, A2B10G10R10Unorm);
+            FORMAT_CASE(AU2BU10GU10RU10, A2B10G10R10Uint);
+            FORMAT_CASE(A8B8G8R8, R8G8B8A8Unorm);
+            FORMAT_CASE(A8BL8GL8RL8, R8G8B8A8Srgb);
+            FORMAT_CASE(AN8BN8GN8RN8, R8G8B8A8Snorm);
+            FORMAT_CASE(AS8BS8GS8RS8, R8G8B8A8Sint);
+            FORMAT_CASE(AU8BU8GU8RU8, R8G8B8A8Uint);
+            FORMAT_CASE(R16_G16, R16G16Unorm);
+            FORMAT_CASE(RN16_GN16, R16G16Snorm);
+            FORMAT_CASE(RS16_GS16, R16G16Sint);
+            FORMAT_CASE(RU16_GU16, R16G16Uint);
+            FORMAT_CASE(RF16_GF16, R16G16Float);
+            FORMAT_CASE(A2R10G10B10, A2B10G10R10Unorm);
+            FORMAT_CASE(BF10GF11RF11, B10G11R11Float);
+            FORMAT_CASE(RS32, R32Sint);
+            FORMAT_CASE(RU32, R32Uint);
+            FORMAT_CASE(RF32, R32Float);
+            FORMAT_CASE_WARN(X8R8G8B8, B8G8R8A8Unorm); // TODO: ^^
+            FORMAT_CASE_WARN(X8RL8GL8BL8, B8G8R8A8Srgb); // TODO: ^^
+            FORMAT_CASE(R5G6B5, R5G6B5Unorm);
+            FORMAT_CASE(A1R5G5B5, A1R5G5B5Unorm);
+            FORMAT_CASE(G8R8, R8G8Unorm);
+            FORMAT_CASE(GN8RN8, R8G8Snorm);
+            FORMAT_CASE(GS8RS8, R8G8Sint);
+            FORMAT_CASE(GU8RU8, R8G8Uint);
+            FORMAT_CASE(R16, R16Unorm);
+            FORMAT_CASE(RN16, R16Snorm);
+            FORMAT_CASE(RS16, R16Sint);
+            FORMAT_CASE(RU16, R16Uint);
+            FORMAT_CASE(RF16, R16Float);
+            FORMAT_CASE(R8, R8Unorm);
+            FORMAT_CASE(RN8, R8Snorm);
+            FORMAT_CASE(RS8, R8Sint);
+            FORMAT_CASE(RU8, R8Uint);
+            // FORMAT_CASE(A8, A8Unorm);
+            FORMAT_CASE_WARN(X1R5G5B5, A1R5G5B5Unorm); // TODO: ^^
+            FORMAT_CASE_WARN(X8B8G8R8, R8G8B8A8Unorm); // TODO: ^^
+            FORMAT_CASE_WARN(X8BL8GL8RL8, R8G8B8A8Srgb); // TODO: ^^
+            FORMAT_CASE_WARN(Z1R5G5B5, A1R5G5B5Unorm); // TODO: ^^ but with zero blend
+            FORMAT_CASE_WARN(O1R5G5B5, A1R5G5B5Unorm); // TODO: ^^ but with one blend
+            FORMAT_CASE_WARN(Z8R8G8B8, B8G8R8A8Unorm); // TODO: ^^ but with zero blend
+            FORMAT_CASE_WARN(O8R8G8B8, B8G8R8A8Unorm); // TODO: ^^ but with one blend
+            // FORMAT_CASE(R32, R32Unorm);
+            // FORMAT_CASE(A16, A16Unorm);
+            // FORMAT_CASE(AF16, A16Float);
+            // FORMAT_CASE(AF32, A32Float);
+            // FORMAT_CASE(A8R8, R8A8Unorm);
+            // FORMAT_CASE(R16_A16, R16A16Unorm);
+            // FORMAT_CASE(RF16_AF16, R16A16Float);
+            // FORMAT_CASE(RF32_AF32, R32A32Float);
+            // FORMAT_CASE(B8G8R8A8, A8R8G8B8Unorm)
+            default:
+                throw exception("Unsupported colour rendertarget format: 0x{:X}", static_cast<u32>(format));
+        }
+
+        #undef FORMAT_CASE
+        #undef FORMAT_CASE_WARN
+        #undef FORMAT_CASE_BASE
+    }
+
+    bool PackedPipelineState::IsColorRenderTargetEnabled(size_t rawIndex) const {
+        return colorRenderTargetFormats[rawIndex] != 0;
+    }
+
+    size_t PackedPipelineState::GetColorRenderTargetCount() const {
+        for (size_t i{engine::ColorTargetCount}; i > 0 ; i--)
+            if (IsColorRenderTargetEnabled(i - 1))
+                return i;
+
+        return 0;
+    }
+
+    texture::Format PackedPipelineState::GetDepthRenderTargetFormat() const {
+        if (depthRenderTargetFormat == DepthDisabledMagic)
+            return texture::Format{};
+
+        auto format{static_cast<engine::ZtFormat>(depthRenderTargetFormat + static_cast<u8>(engine::ZtFormat::ZF32))};
+        #define FORMAT_CASE(engineFormat, skFormat) \
+            case engine::ZtFormat::engineFormat: \
+                return skyline::gpu::format::skFormat
+
+        switch (format) {
+            FORMAT_CASE(Z16, D16Unorm);
+            FORMAT_CASE(Z24S8, S8UintD24Unorm);
+            FORMAT_CASE(X8Z24, D24UnormX8Uint);
+            FORMAT_CASE(S8Z24, D24UnormS8Uint);
+            FORMAT_CASE(S8, S8Uint);
+            FORMAT_CASE(ZF32, D32Float);
+            FORMAT_CASE(ZF32_X24S8, D32FloatS8Uint);
+            default:
+                throw exception("Unsupported depth rendertarget format: 0x{:X}", static_cast<u32>(format));
+        }
+
+        #undef FORMAT_CASE
     }
 
     static u8 ConvertStencilOp(engine::StencilOps::Op op) {
