@@ -51,6 +51,13 @@ namespace skyline::service::audio {
 
         Result QueryAudioDeviceOutputEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Audio_services#GetActiveAudioOutputDeviceName
+         */
+        Result GetActiveAudioOutputDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result ListAudioOutputDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IAudioDevice, ListAudioDeviceName),
             SFUNC(0x1, IAudioDevice, SetAudioDeviceOutputVolume),
@@ -61,7 +68,9 @@ namespace skyline::service::audio {
             SFUNC(0x7, IAudioDevice, SetAudioDeviceOutputVolume),
             SFUNC(0xA, IAudioDevice, GetActiveAudioDeviceName),
             SFUNC(0xB, IAudioDevice, QueryAudioDeviceInputEvent),
-            SFUNC(0xC, IAudioDevice, QueryAudioDeviceOutputEvent)
+            SFUNC(0xC, IAudioDevice, QueryAudioDeviceOutputEvent),
+            SFUNC(0xD, IAudioDevice, GetActiveAudioOutputDeviceName),
+            SFUNC(0xE, IAudioDevice, ListAudioOutputDeviceName)
         )
     };
 }

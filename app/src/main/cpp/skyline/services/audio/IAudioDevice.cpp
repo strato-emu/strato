@@ -62,4 +62,25 @@ namespace skyline::service::audio {
         response.copyHandles.push_back(handle);
         return {};
     }
+
+    Result IAudioDevice::GetActiveAudioOutputDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        std::string_view deviceName{"AudioTvOutput\0"};
+        if (deviceName.size() > request.outputBuf.at(0).size())
+            throw exception("The buffer supplied to GetActiveAudioDeviceName is too small");
+        request.outputBuf.at(0).copy_from(deviceName);
+        return {};
+    }
+
+    Result IAudioDevice::ListAudioOutputDeviceName(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        span buffer{request.outputBuf.at(0)};
+        std::array<std::string_view, 3> devices{"AudioExternalOutput\0", "AudioBuiltInSpeakerOutput\0", "AudioTvOutput\0"};
+        for (std::string_view deviceName : devices) {
+            if (deviceName.size() > buffer.size())
+                throw exception("The buffer supplied to ListAudioDeviceName is too small");
+            buffer.copy_from(deviceName);
+            buffer = buffer.subspan(deviceName.size());
+        }
+        response.Push<u32>(devices.size());
+        return {};
+    }
 }
