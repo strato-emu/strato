@@ -44,6 +44,11 @@ namespace skyline::service::nifm {
         Result Submit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Network_Interface_services#SetConnectionConfirmationOption
+         */
+        Result SetConnectionConfirmationOption(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/Network_Interface_services#GetAppletInfo
          */
         Result GetAppletInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -53,6 +58,7 @@ namespace skyline::service::nifm {
             SFUNC(0x1, IRequest, GetResult),
             SFUNC(0x2, IRequest, GetSystemEventReadableHandles),
             SFUNC(0x4, IRequest, Submit),
+            SFUNC(0xB, IRequest, SetConnectionConfirmationOption),
             SFUNC(0x15, IRequest, GetAppletInfo)
       )
     };

@@ -40,6 +40,10 @@ namespace skyline::service::nifm {
         return {};
     }
 
+    Result IRequest::SetConnectionConfirmationOption(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IRequest::GetAppletInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return result::AppletLaunchNotRequired;
     }
