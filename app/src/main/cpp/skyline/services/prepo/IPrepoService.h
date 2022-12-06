@@ -17,10 +17,16 @@ namespace skyline::service::prepo {
         /**
          * @brief Saves a play report for the given user
          */
+        Result SaveReportWithUserOld (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         Result SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result RequestImmediateTransmission(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x2775, IPrepoService, SaveReportWithUser)
+            SFUNC(0x2775, IPrepoService, SaveReportWithUserOld),
+            SFUNC(0x2779, IPrepoService, SaveReportWithUser),
+            SFUNC(0x27D8, IPrepoService, RequestImmediateTransmission)
         )
     };
 }

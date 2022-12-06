@@ -6,7 +6,15 @@
 namespace skyline::service::prepo {
     IPrepoService::IPrepoService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
+    Result IPrepoService::SaveReportWithUserOld (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IPrepoService::SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IPrepoService::RequestImmediateTransmission(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
 }
