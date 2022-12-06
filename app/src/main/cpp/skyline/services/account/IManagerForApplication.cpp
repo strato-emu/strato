@@ -5,7 +5,9 @@
 #include "IAccountServiceForApplication.h"
 
 namespace skyline::service::account {
-    IManagerForApplication::IManagerForApplication(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
+    IManagerForApplication::IManagerForApplication(const DeviceState &state, ServiceManager &manager, std::vector<UserId> &openedUsers) : BaseService(state, manager) {
+        this->openedUsers = std::make_shared<std::vector<UserId>>(openedUsers);
+    }
 
     Result IManagerForApplication::CheckAvailability(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(false);
@@ -18,6 +20,8 @@ namespace skyline::service::account {
     }
 
     Result IManagerForApplication::StoreOpenContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        openedUsers->clear();
+        openedUsers->push_back(constant::DefaultUserId);
         return {};
     }
 }

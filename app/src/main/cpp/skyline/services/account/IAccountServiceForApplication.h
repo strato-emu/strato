@@ -32,6 +32,8 @@ namespace skyline {
         */
         class IAccountServiceForApplication : public BaseService {
           private:
+            std::vector<account::UserId> openedUsers;
+
             /**
              * @brief Writes a vector of 128-bit user IDs to an output buffer
              */
