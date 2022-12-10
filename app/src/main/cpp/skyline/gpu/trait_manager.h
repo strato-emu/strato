@@ -65,6 +65,7 @@ namespace skyline::gpu {
             bool brokenPushDescriptors{}; //!< [Adreno Proprietary] A bug that causes push descriptor updates to ignored by the driver in certain situations
             bool brokenSpirvPositionInput{}; //!< [Adreno Proprietary] A bug that causes the shader compiler to fail on shaders with vertex position inputs not contained within a struct
             bool brokenComputeShaders{}; //!< [ARM Proprietary] A bug that causes compute shaders in some games to crash the GPU
+            bool brokenMultithreadedPipelineCompilation{}; //!< [Qualcomm Proprietary] A bug that causes the shader compiler to crash when compiling pipelines on multiple threads simultaneously
 
             u32 maxSubpassCount{std::numeric_limits<u32>::max()}; //!< The maximum amount of subpasses within a renderpass, this is limited to 64 on older Adreno proprietary drivers
             vk::QueueGlobalPriorityEXT maxGlobalPriority{vk::QueueGlobalPriorityEXT::eMedium}; //!< The highest allowed global priority of the queue, drivers will not allow higher priorities to be set on queues

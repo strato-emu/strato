@@ -227,6 +227,10 @@ namespace skyline::gpu {
 
                 if (deviceProperties.driverVersion < VK_MAKE_VERSION(512, 600, 0))
                     maxSubpassCount = 64; // Driver will segfault while destroying the renderpass and associated objects if this is exceeded on all 5xx and below drivers
+
+                if (deviceProperties.driverVersion >= VK_MAKE_VERSION(512, 615, 0) && deviceProperties.driverVersion <= VK_MAKE_VERSION(512, 615, 512))
+                    brokenMultithreadedPipelineCompilation = true;
+
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
                 break;
             }

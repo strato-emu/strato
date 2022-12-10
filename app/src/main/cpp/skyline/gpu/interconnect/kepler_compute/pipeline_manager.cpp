@@ -90,6 +90,10 @@ namespace skyline::gpu::interconnect::kepler_compute {
             .layout = *pipelineLayout,
         };
 
+
+        if (ctx.gpu.traits.quirks.brokenMultithreadedPipelineCompilation)
+            ctx.gpu.graphicsPipelineCache.WaitIdle();
+
         vk::raii::Pipeline pipeline{ctx.gpu.vkDevice, nullptr, pipelineInfo};
 
         return Pipeline::CompiledPipeline{

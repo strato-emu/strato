@@ -6,7 +6,10 @@
 #include "graphics_pipeline_cache.h"
 
 namespace skyline::gpu::cache {
-    GraphicsPipelineCache::GraphicsPipelineCache(GPU &gpu) : gpu(gpu), vkPipelineCache(gpu.vkDevice, vk::PipelineCacheCreateInfo{}) {}
+    GraphicsPipelineCache::GraphicsPipelineCache(GPU &gpu)
+        : gpu{gpu},
+          vkPipelineCache{gpu.vkDevice, vk::PipelineCacheCreateInfo{}},
+          pool{gpu.traits.quirks.brokenMultithreadedPipelineCompilation ? 1U : 0U} {}
 
     #define VEC_CPY(pointer, size) state.pointer, state.pointer + state.size
 
@@ -395,5 +398,9 @@ namespace skyline::gpu::cache {
         auto pipelineFuture{pool.submit(&GraphicsPipelineCache::BuildPipeline, this, std::ref(pipelineEntryIt.first->first), std::ref(*pipelineEntryIt.first->second.pipelineLayout))};
         pipelineEntryIt.first->second.pipeline = pipelineFuture.share();
         return CompiledPipeline{pipelineEntryIt.first->second};
+    }
+
+    void GraphicsPipelineCache::WaitIdle() {
+        pool.wait_for_tasks();
     }
 }

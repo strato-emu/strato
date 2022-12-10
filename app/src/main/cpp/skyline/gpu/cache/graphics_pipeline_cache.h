@@ -165,5 +165,10 @@ namespace skyline::gpu::cache {
          * @note Input/Resolve attachments are **not** supported and using them with the supplied pipeline will result in UB
          */
         CompiledPipeline GetCompiledPipeline(const PipelineState& state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges = {}, bool noPushDescriptors = false);
+
+        /**
+         * @brief Waits until the pipeline compilation thread pool is idle and all pipelines have been compiled
+         */
+        void WaitIdle();
     };
 }
