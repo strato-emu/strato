@@ -49,8 +49,6 @@ namespace skyline::gpu::interconnect::kepler_compute {
         const engine_common::BindlessTexture &bindlessTexture;
 
         PackedPipelineState packedState{};
-        PipelineManager pipelineManager;
-
 
       public:
         PipelineState(DirtyManager &manager, const EngineRegisters &engine);

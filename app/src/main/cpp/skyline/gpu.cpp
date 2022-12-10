@@ -382,4 +382,9 @@ namespace skyline::gpu {
           graphicsPipelineCache(*this),
           renderPassCache(*this),
           framebufferCache(*this) {}
+
+    void GPU::Initialise() {
+        graphicsPipelineCacheManager.emplace(state, state.os->publicAppFilesPath + "graphics_pipeline_cache/" + state.loader->nacp->GetSaveDataOwnerId());
+        graphicsPipelineManager.emplace(*this);
+    }
 }

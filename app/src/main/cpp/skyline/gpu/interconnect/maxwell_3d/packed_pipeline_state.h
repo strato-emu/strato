@@ -15,6 +15,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     /**
      * @brief Packed struct of pipeline state suitable for use as a map key
      * @note This is heavily based around yuzu's pipeline key with some packing modifications
+     * @note Any modifications to this struct *MUST* be accompanied by a pipeline cache version bump
      * @url https://github.com/yuzu-emu/yuzu/blob/9c701774562ea490296b9cbea3dbd8c096bc4483/src/video_core/renderer_vulkan/fixed_pipeline_state.h#L20
      */
     struct PackedPipelineState {

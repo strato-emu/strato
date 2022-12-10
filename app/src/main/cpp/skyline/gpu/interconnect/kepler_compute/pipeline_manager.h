@@ -10,7 +10,6 @@
 #include "packed_pipeline_state.h"
 #include "constant_buffers.h"
 
-
 namespace skyline::gpu {
     class TextureView;
 }

@@ -31,7 +31,7 @@ namespace skyline::gpu::interconnect {
         /**
          * @brief Marks that all Get* operations on the pipeline state has finished and the pipeline is build
          */
-        virtual void MarkComplete() const = 0;
+        virtual void MarkComplete() = 0;
 
         virtual ~PipelineStateAccessor() = default;
     };

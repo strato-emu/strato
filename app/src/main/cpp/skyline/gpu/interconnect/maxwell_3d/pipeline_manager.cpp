@@ -4,9 +4,11 @@
 #include <gpu/texture/texture.h>
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/interconnect/common/pipeline.inc>
+#include <gpu/interconnect/common/file_pipeline_state_accessor.h>
 #include <gpu/cache/graphics_pipeline_cache.h>
 #include <gpu/shader_manager.h>
 #include <gpu.h>
+#include "graphics_pipeline_state_accessor.h"
 #include "pipeline_manager.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {

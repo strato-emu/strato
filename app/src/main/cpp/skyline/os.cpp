@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "gpu.h"
 #include "nce.h"
 #include "nce/guest.h"
 #include "kernel/types/KProcess.h"
@@ -49,6 +50,8 @@ namespace skyline::kernel {
                     throw exception("Unsupported ROM extension.");
             }
         }();
+
+        state.gpu->Initialise();
 
         auto &process{state.process};
         process = std::make_shared<kernel::type::KProcess>(state);

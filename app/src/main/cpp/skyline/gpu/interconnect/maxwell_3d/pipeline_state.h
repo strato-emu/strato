@@ -299,8 +299,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
       private:
-        PipelineManager pipelineManager{};
-
         PackedPipelineState packedState{};
 
         dirty::BoundSubresource<EngineRegisters> engine;

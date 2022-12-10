@@ -15,14 +15,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
      */
     class RuntimeGraphicsPipelineStateAccessor : public PipelineStateAccessor {
       private:
-        PipelineStateBundle &bundle;
+        std::unique_ptr<PipelineStateBundle> bundle;
         InterconnectContext &ctx;
         Textures &textures;
         ConstantBufferSet &constantBuffers;
         std::array<ShaderBinary, engine::PipelineCount> shaderBinaries;
 
       public:
-        RuntimeGraphicsPipelineStateAccessor(PipelineStateBundle &bundle,
+        RuntimeGraphicsPipelineStateAccessor(std::unique_ptr<PipelineStateBundle> bundle,
                                              InterconnectContext &ctx,
                                              Textures &textures, ConstantBufferSet &constantBuffers,
                                              const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries);
@@ -33,6 +33,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         ShaderBinary GetShaderBinary(u32 pipelineStage) const override;
 
-        void MarkComplete() const override;
+        void MarkComplete() override;
     };
 }

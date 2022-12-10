@@ -12,10 +12,13 @@
 #include "gpu/megabuffer.h"
 #include "gpu/descriptor_allocator.h"
 #include "gpu/shader_manager.h"
+#include "gpu/pipeline_cache_manager.h"
 #include "gpu/shaders/helper_shaders.h"
 #include "gpu/cache/graphics_pipeline_cache.h"
 #include "gpu/cache/renderpass_cache.h"
 #include "gpu/cache/framebuffer_cache.h"
+#include "gpu/interconnect/maxwell_3d/pipeline_manager.h"
+#include "gpu/interconnect/kepler_compute/pipeline_manager.h"
 
 namespace skyline::gpu {
     static constexpr u32 VkApiVersion{VK_API_VERSION_1_1}; //!< The version of core Vulkan that we require
@@ -58,7 +61,15 @@ namespace skyline::gpu {
         cache::FramebufferCache framebufferCache;
 
         std::mutex channelLock;
+        std::optional<PipelineCacheManager> graphicsPipelineCacheManager;
+        std::optional<interconnect::maxwell3d::PipelineManager> graphicsPipelineManager;
+        interconnect::kepler_compute::PipelineManager computePipelineManager;
 
         GPU(const DeviceState &state);
+
+        /**
+         * @brief Should be called after loader population to initialize the per-title caches
+         */
+        void Initialise();
     };
 }
