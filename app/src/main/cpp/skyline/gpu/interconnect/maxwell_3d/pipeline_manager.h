@@ -129,18 +129,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
      */
     class PipelineManager {
       private:
-        PipelineStateBundle bundle;
         tsl::robin_map<PackedPipelineState, std::unique_ptr<Pipeline>, PackedPipelineStateHash> map;
 
       public:
-        Pipeline *FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries) {
-            auto it{map.find(packedState)};
-            if (it != map.end())
-                return it->second.get();
+        PipelineManager(GPU &gpu);
 
-            bundle.Reset(packedState);
-            auto accessor{RuntimeGraphicsPipelineStateAccessor{bundle, ctx, textures, constantBuffers, shaderBinaries}};
-            return map.emplace(packedState, std::make_unique<Pipeline>(ctx, accessor, packedState)).first->second.get();
-        }
+        Pipeline *FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries);
     };
 }

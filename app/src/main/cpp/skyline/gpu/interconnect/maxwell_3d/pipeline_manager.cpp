@@ -849,5 +849,37 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .descriptorSetIndex = 0,
         });
     }
+
+    PipelineManager::PipelineManager(GPU &gpu) {
+        std::ifstream stream{gpu.graphicsPipelineCacheManager->OpenReadStream()};
+        i64 lastKnownGoodOffset{stream.tellg()};
+        try {
+            auto startTime{util::GetTimeNs()};
+            PipelineStateBundle bundle;
+
+            while (bundle.Deserialise(stream)) {
+                lastKnownGoodOffset = stream.tellg();
+                auto accessor{FilePipelineStateAccessor{bundle}};
+                map.emplace(bundle.GetKey<PackedPipelineState>(), std::make_unique<Pipeline>(gpu, accessor, bundle.GetKey<PackedPipelineState>()));
+            }
+
+            Logger::Info("Loaded {} graphics pipelines in {}ms", map.size(), (util::GetTimeNs() - startTime) / constant::NsInMillisecond);
+        } catch (const exception &e) {
+            Logger::Warn("Pipeline cache corrupted at: 0x{:X}, error: {}", lastKnownGoodOffset, e.what());
+            gpu.graphicsPipelineCacheManager->InvalidateAllAfter(static_cast<u64>(lastKnownGoodOffset));
+            return;
+        }
+    }
+
+    Pipeline *PipelineManager::FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries) {
+        auto it{map.find(packedState)};
+        if (it != map.end())
+            return it->second.get();
+
+        auto bundle{std::make_unique<PipelineStateBundle>()};
+        bundle->Reset(packedState);
+        auto accessor{RuntimeGraphicsPipelineStateAccessor{std::move(bundle), ctx, textures, constantBuffers, shaderBinaries}};
+        return map.emplace(packedState, std::make_unique<Pipeline>(ctx.gpu, accessor, packedState)).first->second.get();
+    }
 }
 
