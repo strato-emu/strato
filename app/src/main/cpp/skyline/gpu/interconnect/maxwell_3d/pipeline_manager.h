@@ -8,10 +8,10 @@
 #include <gpu/cache/graphics_pipeline_cache.h>
 #include <gpu/interconnect/common/samplers.h>
 #include <gpu/interconnect/common/textures.h>
+#include <gpu/interconnect/common/pipeline_state_accessor.h>
 #include "common.h"
 #include "packed_pipeline_state.h"
 #include "constant_buffers.h"
-#include "graphics_pipeline_state_accessor.h"
 
 namespace skyline::gpu {
     class TextureView;
@@ -95,13 +95,13 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         tsl::robin_map<Pipeline *, bool> bindingMatchCache; //!< Cache of which pipelines have bindings that match this pipeline
 
-        void SyncCachedStorageBufferViews(u32 executionNumber);
+        void SyncCachedStorageBufferViews(ContextTag executionTag);
 
       public:
         cache::GraphicsPipelineCache::CompiledPipeline compiledPipeline;
         size_t sampledImageCount{};
 
-        Pipeline(InterconnectContext &ctx, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState);
+        Pipeline(GPU &gpu, PipelineStateAccessor &accessor, const PackedPipelineState &packedState);
 
         Pipeline *LookupNext(const PackedPipelineState &packedState);
 

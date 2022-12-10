@@ -173,8 +173,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return info;
     }
 
-    static std::array<Pipeline::ShaderStage, engine::ShaderStageCount> MakePipelineShaders(InterconnectContext &ctx, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState) {
-        ctx.gpu.shader.ResetPools();
+    static std::array<Pipeline::ShaderStage, engine::ShaderStageCount> MakePipelineShaders(GPU &gpu, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState) {
+        gpu.shader.ResetPools();
 
         using PipelineStage = engine::Pipeline::Shader::Type;
         auto pipelineStage{[](u32 i) { return static_cast<PipelineStage>(i); }};
@@ -188,7 +188,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 continue;
 
             auto binary{accessor.GetShaderBinary(i)};
-            auto program{ctx.gpu.shader.ParseGraphicsShader(
+            auto program{gpu.shader.ParseGraphicsShader(
                 packedState.postVtgShaderAttributeSkipMask,
                 ConvertCompilerShaderStage(static_cast<PipelineStage>(i)),
                 binary.binary, binary.baseOffset,
@@ -202,7 +202,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 })};
             if (i == stageIdx(PipelineStage::Vertex) && packedState.shaderHashes[stageIdx(PipelineStage::VertexCullBeforeFetch)]) {
                 ignoreVertexCullBeforeFetch = true;
-                programs[i] = ctx.gpu.shader.CombineVertexShaders(programs[stageIdx(PipelineStage::VertexCullBeforeFetch)], program, binary.binary);
+                programs[i] = gpu.shader.CombineVertexShaders(programs[stageIdx(PipelineStage::VertexCullBeforeFetch)], program, binary.binary);
             } else {
                 programs[i] = program;
             }
@@ -219,7 +219,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 continue;
 
             auto runtimeInfo{MakeRuntimeInfo(packedState, programs[i], lastProgram, hasGeometry)};
-            shaderStages[i - (i >= 1 ? 1 : 0)] = {ConvertVkShaderStage(pipelineStage(i)), ctx.gpu.shader.CompileShader(runtimeInfo, programs[i], bindings), programs[i].info};
+            shaderStages[i - (i >= 1 ? 1 : 0)] = {ConvertVkShaderStage(pipelineStage(i)), gpu.shader.CompileShader(runtimeInfo, programs[i], bindings), programs[i].info};
 
             lastProgram = &programs[i];
         }
@@ -422,7 +422,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    static cache::GraphicsPipelineCache::CompiledPipeline MakeCompiledPipeline(InterconnectContext &ctx,
+    static cache::GraphicsPipelineCache::CompiledPipeline MakeCompiledPipeline(GPU &gpu,
                                                                                const PackedPipelineState &packedState,
                                                                                const std::array<Pipeline::ShaderStage, engine::ShaderStageCount> &shaderStages,
                                                                                span<vk::DescriptorSetLayoutBinding> layoutBindings) {
@@ -448,10 +448,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
                                    });
 
             if (binding.GetInputRate() == vk::VertexInputRate::eInstance) {
-                if (!ctx.gpu.traits.supportsVertexAttributeDivisor)
+                if (!gpu.traits.supportsVertexAttributeDivisor)
                     [[unlikely]]
                         Logger::Warn("Vertex attribute divisor used on guest without host support");
-                else if (!ctx.gpu.traits.supportsVertexAttributeZeroDivisor && binding.divisor == 0)
+                else if (!gpu.traits.supportsVertexAttributeZeroDivisor && binding.divisor == 0)
                     [[unlikely]]
                         Logger::Warn("Vertex attribute zero divisor used on guest without host support");
                 else
@@ -507,7 +507,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         rasterizationCreateInfo.frontFace = packedState.frontFaceClockwise ? vk::FrontFace::eClockwise : vk::FrontFace::eCounterClockwise;
         rasterizationCreateInfo.depthBiasEnable = packedState.depthBiasEnable;
         rasterizationCreateInfo.depthClampEnable = packedState.depthClampEnable;
-        if (!ctx.gpu.traits.supportsDepthClamp)
+        if (!gpu.traits.supportsDepthClamp)
             Logger::Warn("Depth clamp used on guest without host support");
         rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(packedState.provokingVertex);
 
@@ -560,7 +560,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         };
 
         vk::PipelineDynamicStateCreateInfo dynamicState{
-            .dynamicStateCount = ctx.gpu.traits.supportsExtendedDynamicState ? ExtendedDynamicStateCount : BaseDynamicStateCount,
+            .dynamicStateCount = gpu.traits.supportsExtendedDynamicState ? ExtendedDynamicStateCount : BaseDynamicStateCount,
             .pDynamicStates = dynamicStates.data()
         };
 
@@ -569,15 +569,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<vk::Viewport, engine::ViewportCount> emptyViewports{};
 
         vk::PipelineViewportStateCreateInfo viewportState{
-            .viewportCount = static_cast<u32>(ctx.gpu.traits.supportsMultipleViewports ? engine::ViewportCount : 1),
+            .viewportCount = static_cast<u32>(gpu.traits.supportsMultipleViewports ? engine::ViewportCount : 1),
             .pViewports = emptyViewports.data(),
-            .scissorCount = static_cast<u32>(ctx.gpu.traits.supportsMultipleViewports ? engine::ViewportCount : 1),
+            .scissorCount = static_cast<u32>(gpu.traits.supportsMultipleViewports ? engine::ViewportCount : 1),
             .pScissors = emptyScissors.data(),
         };
 
         texture::Format depthStencilFormat{packedState.GetDepthRenderTargetFormat()};
 
-        return ctx.gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
+        return gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
             .shaderStages = shaderStageInfos,
             .vertexState = vertexInputState,
             .inputAssemblyState = inputAssemblyState,
@@ -594,20 +594,21 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }, layoutBindings);
     }
 
-    Pipeline::Pipeline(InterconnectContext &ctx, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState)
+    Pipeline::Pipeline(GPU &gpu, PipelineStateAccessor &accessor, const PackedPipelineState &packedState)
         : sourcePackedState{packedState},
-          shaderStages{MakePipelineShaders(ctx, accessor, sourcePackedState)},
-          descriptorInfo{MakePipelineDescriptorInfo(shaderStages, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites)},
-          compiledPipeline{MakeCompiledPipeline(ctx, sourcePackedState, shaderStages, descriptorInfo.descriptorSetLayoutBindings)} {
+          shaderStages{MakePipelineShaders(gpu, accessor, sourcePackedState)},
+          descriptorInfo{MakePipelineDescriptorInfo(shaderStages, gpu.traits.quirks.needsIndividualTextureBindingWrites)},
+          compiledPipeline{MakeCompiledPipeline(gpu, sourcePackedState, shaderStages, descriptorInfo.descriptorSetLayoutBindings)} {
         storageBufferViews.resize(descriptorInfo.totalStorageBufferCount);
+        accessor.MarkComplete();
     }
 
-    void Pipeline::SyncCachedStorageBufferViews(u32 executionNumber) {
-        if (lastExecutionNumber != executionNumber) {
+    void Pipeline::SyncCachedStorageBufferViews(ContextTag executionTag) {
+        if (lastExecutionTag != executionTag) {
             for (auto &view : storageBufferViews)
                 view.PurgeCaches();
 
-            lastExecutionNumber = executionNumber;
+            lastExecutionTag = executionTag;
         }
     }
 
