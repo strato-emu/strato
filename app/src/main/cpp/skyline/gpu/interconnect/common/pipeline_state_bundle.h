@@ -13,6 +13,7 @@ namespace skyline::gpu::interconnect {
     class PipelineStateBundle {
       private:
         std::vector<u8> key; //!< Byte array containing the pipeline key, this is interpreted by the the user and two different keys might refer to the same pipeline
+        std::vector<u8> fileBuffer;
 
         /**
          * @brief Holds the raw binary and associated info for a pipeline stage
@@ -26,6 +27,7 @@ namespace skyline::gpu::interconnect {
 
         /**
          * @brief Holds a value of a constant buffer read from memory at pipeline creation time
+         * @note This struct *MUST* not be modified without a pipeline cache version bump
          */
         struct ConstantBufferValue {
             u32 shaderStage;
@@ -33,9 +35,20 @@ namespace skyline::gpu::interconnect {
             u32 offset;
             u32 value;
         };
+        static_assert(sizeof(ConstantBufferValue) == 0x10);
+
+        /**
+         * @brief Holds a the texture type of a TIC entry read at pipeline creation time
+         * @note This struct *MUST* not be modified without a pipeline cache version bump
+         */
+        struct TextureTypeEntry {
+            u32 index;
+            Shader::TextureType type;
+        };
+        static_assert(sizeof(TextureTypeEntry) == 0x8);
 
         boost::container::small_vector<ConstantBufferValue, 4> constantBufferValues;
-        boost::container::small_vector<std::pair<u32, Shader::TextureType>, 4> textureTypes;
+        boost::container::small_vector<TextureTypeEntry, 4> textureTypes;
 
         std::vector<PipelineStage> pipelineStages{};
 
@@ -47,7 +60,7 @@ namespace skyline::gpu::interconnect {
          */
         void Reset(span<const u8> newKey);
 
-        template<typename T> requires std::is_trivially_copyable_v<T>
+        template<typename T> requires std::is_trivially_copyable_v<T> && (!requires (T t){ t.size(); })
         void Reset(const T &value) {
             Reset(span<const u8>(reinterpret_cast<const u8 *>(&value), sizeof(T)));
         }
@@ -74,7 +87,7 @@ namespace skyline::gpu::interconnect {
 
         template<typename T> requires std::is_trivially_copyable_v<T>
         const T &GetKey() {
-            return *reinterpret_cast<const T *>(key.data());
+            return GetKey().as<T>();
         }
 
         /**
@@ -85,11 +98,15 @@ namespace skyline::gpu::interconnect {
         /**
          * @brief Returns the texture type for a given offset
          */
-        Shader::TextureType LookupTextureType(u32 offset);
+        Shader::TextureType LookupTextureType(u32 index);
 
         /**
          * @brief Returns the constant buffer value for a given offset and shader stage
          */
         u32 LookupConstantBufferValue(u32 shaderStage, u32 index, u32 offset);
+
+        bool Deserialise(std::ifstream &stream);
+
+        void Serialise(std::ofstream &stream);
     };
 }
