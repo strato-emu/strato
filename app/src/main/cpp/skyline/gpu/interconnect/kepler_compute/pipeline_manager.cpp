@@ -107,17 +107,17 @@ namespace skyline::gpu::interconnect::kepler_compute {
         storageBufferViews.resize(shaderStage.info.storage_buffers_descriptors.size());
     }
 
-    void Pipeline::SyncCachedStorageBufferViews(u32 executionNumber) {
-        if (lastExecutionNumber != executionNumber) {
+    void Pipeline::SyncCachedStorageBufferViews(ContextTag executionTag) {
+        if (lastExecutionTag != executionTag) {
             for (auto &view : storageBufferViews)
                 view.PurgeCaches();
 
-            lastExecutionNumber = executionNumber;
+            lastExecutionTag = executionTag;
         }
     }
 
     DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures) {
-        SyncCachedStorageBufferViews(ctx.executor.executionNumber);
+        SyncCachedStorageBufferViews(ctx.executor.executionTag);
 
         u32 writeIdx{};
         auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(descriptorInfo.totalWriteDescCount)};

@@ -343,7 +343,7 @@ namespace skyline::gpu {
             return {};
     }
 
-    BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber,
+    BufferBinding Buffer::TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, ContextTag executionTag,
                                             vk::DeviceSize offset, vk::DeviceSize size) {
         if ((!everHadInlineUpdate && sequenceNumber < FrequentlySyncedThreshold) || size >= MegaBufferChunkSize)
             // Don't megabuffer buffers that have never had inline updates and are not frequently synced since performance is only going to be harmed as a result of the constant copying and there wont be any benefit since there are no GPU inline updates that would be avoided
@@ -355,9 +355,9 @@ namespace skyline::gpu {
             return {};
 
         // If the active execution has changed all previous allocations are now invalid
-        if (executionNumber != lastExecutionNumber) [[unlikely]] {
+        if (executionTag != lastExecutionTag) [[unlikely]] {
             ResetMegabufferState();
-            lastExecutionNumber = executionNumber;
+            lastExecutionTag = executionTag;
         }
 
         // If more than half the buffer has been megabuffered in chunks within the same execution assume this will generally be the case for this buffer and just megabuffer the whole thing without chunking
@@ -427,7 +427,6 @@ namespace skyline::gpu {
     void Buffer::unlock() {
         tag = ContextTag{};
         AllowAllBackingWrites();
-        lastExecutionNumber = 0;
         mutex.unlock();
     }
 
@@ -489,8 +488,8 @@ namespace skyline::gpu {
         return GetBuffer()->Write(data, writeOffset + GetOffset(), gpuCopyCallback);
     }
 
-    BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber, size_t sizeOverride) const {
-        return GetBuffer()->TryMegaBufferView(pCycle, allocator, executionNumber, GetOffset(), sizeOverride ? sizeOverride : size);
+    BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, ContextTag executionTag, size_t sizeOverride) const {
+        return GetBuffer()->TryMegaBufferView(pCycle, allocator, executionTag, GetOffset(), sizeOverride ? sizeOverride : size);
     }
 
     span<u8> BufferView::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {

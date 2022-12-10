@@ -24,7 +24,7 @@ namespace skyline::gpu::interconnect {
         ctx.executor.AttachBuffer(view);
 
         size_t sizeOverride{std::min<size_t>(info.constant_buffer_used_sizes[idx], view.size)};
-        if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber, sizeOverride)}) {
+        if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag, sizeOverride)}) {
             return megaBufferBinding;
         } else {
             view.GetBuffer()->BlockSequencedCpuBackingWrites();
@@ -52,7 +52,7 @@ namespace skyline::gpu::interconnect {
         if (desc.is_written) {
             view.GetBuffer()->MarkGpuDirty();
         } else {
-            if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber)})
+            if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag)})
                 return megaBufferBinding;
         }
 

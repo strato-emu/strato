@@ -82,7 +82,7 @@ namespace skyline::gpu {
         bool unifiedMegaBufferEnabled{}; //!< If the unified megabuffer is enabled for this buffer and should be used instead of the table
         bool everHadInlineUpdate{}; //!< Whether the buffer has ever had an inline update since it was created, if this is set then megabuffering will be attempted by views to avoid the cost of inline GPU updates
 
-        u32 lastExecutionNumber{}; //!< The execution number of the last time megabuffer data was updated
+        ContextTag lastExecutionTag{}; //!< The execution tag of the last time megabuffer data was updated
 
         size_t megaBufferViewAccumulatedSize{};
         MegaBufferAllocator::Allocation unifiedMegaBuffer{}; //!< An optional full-size mirror of the buffer in the megabuffer for use when the buffer is frequently updated and *all* of the buffer is frequently used. Replaces all uses of the table when active
@@ -317,7 +317,7 @@ namespace skyline::gpu {
          * @return A binding to the megabuffer allocation for the view, may be invalid if megabuffering is not beneficial
          * @note The buffer **must** be locked prior to calling this
          */
-        BufferBinding TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber,
+        BufferBinding TryMegaBufferView(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, ContextTag executionTag,
                                         vk::DeviceSize offset, vk::DeviceSize size);
 
         /**
@@ -451,7 +451,7 @@ namespace skyline::gpu {
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::TryMegaBufferView
          */
-        BufferBinding TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, u32 executionNumber, size_t sizeOverride = 0) const;
+        BufferBinding TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, ContextTag executionTag, size_t sizeOverride = 0) const;
 
         /**
          * @return A span of the backing buffer contents

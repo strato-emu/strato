@@ -189,11 +189,11 @@ namespace skyline::gpu::interconnect {
             textureHeaderCache.resize(textureHeaders.size());
             std::fill(textureHeaderCache.begin(), textureHeaderCache.end(), CacheEntry{});
         } else if (auto &cached{textureHeaderCache[index]}; cached.view) {
-            if (cached.executionNumber == ctx.executor.executionNumber)
+            if (cached.executionTag == ctx.executor.executionTag)
                 return cached.view;
 
             if (cached.tic == textureHeaders[index] && !cached.view->texture->replaced) {
-                cached.executionNumber = ctx.executor.executionNumber;
+                cached.executionTag = ctx.executor.executionTag;
                 return cached.view;
             }
         }
@@ -321,7 +321,7 @@ namespace skyline::gpu::interconnect {
             texture = ctx.gpu.texture.FindOrCreate(guest, ctx.executor.tag);
         }
 
-        textureHeaderCache[index] = {textureHeader, texture.get(), ctx.executor.executionNumber};
+        textureHeaderCache[index] = {textureHeader, texture.get(), ctx.executor.executionTag};
         return texture.get();
     }
 

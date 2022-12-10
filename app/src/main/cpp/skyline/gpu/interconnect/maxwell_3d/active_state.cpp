@@ -29,7 +29,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (*view) {
                 ctx.executor.AttachBuffer(*view);
 
-                if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber);
+                if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag);
                     megaBufferBinding)
                     builder.SetVertexBuffer(index, megaBufferBinding, ctx.gpu.traits.supportsExtendedDynamicState, engine->vertexStream.format.stride);
                 else
@@ -50,7 +50,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         if (megaBufferBinding) {
-            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber)};
+            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag)};
                 newMegaBufferBinding != megaBufferBinding) {
 
                 megaBufferBinding = newMegaBufferBinding;
@@ -136,7 +136,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (quadConversion)
             megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, engine->indexBuffer.indexSize, *view, firstIndex, elementCount);
         else
-            megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber);
+            megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag);
 
         if (megaBufferBinding)
             builder.SetIndexBuffer(megaBufferBinding, indexType);
@@ -159,7 +159,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             megaBufferBinding = GenerateQuadConversionIndexBuffer(ctx, engine->indexBuffer.indexSize, *view, firstIndex, elementCount);
             builder.SetIndexBuffer(megaBufferBinding, indexType);
         } else if (megaBufferBinding) {
-            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionNumber)};
+            if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag)};
                 newMegaBufferBinding != megaBufferBinding) {
 
                 megaBufferBinding = newMegaBufferBinding;

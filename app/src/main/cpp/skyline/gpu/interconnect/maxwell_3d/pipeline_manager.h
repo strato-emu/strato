@@ -86,7 +86,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       private:
         std::vector<CachedMappedBufferView> storageBufferViews;
-        u32 lastExecutionNumber{}; //!< The last execution number this pipeline was used at
+        ContextTag lastExecutionTag{}; //!< The last execution tag this pipeline was used at
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
         DescriptorInfo descriptorInfo;
 

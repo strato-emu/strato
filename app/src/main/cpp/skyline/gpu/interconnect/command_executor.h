@@ -39,7 +39,7 @@ namespace skyline::gpu::interconnect {
             LinearAllocatorState<> allocator;
             std::mutex beginLock;
             std::condition_variable beginCondition;
-            u32 executionNumber;
+            ContextTag executionTag;
             bool ready{}; //!< If this slot's command buffer has had 'beginCommandBuffer' called and is ready to have commands recorded into it
             bool capture{}; //!< If this slot's Vulkan commands should be captured using the renderdoc API
             bool didWait{}; //!< If a wait of time longer than GrowThresholdNs occured when this slot was acquired
@@ -186,7 +186,7 @@ namespace skyline::gpu::interconnect {
         LinearAllocatorState<> *allocator;
         ContextTag tag; //!< The tag associated with this command executor, any tagged resource locking must utilize this tag
         size_t submissionNumber{};
-        u32 executionNumber{};
+        ContextTag executionTag{};
         bool captureNextExecution{};
 
         CommandExecutor(const DeviceState &state);

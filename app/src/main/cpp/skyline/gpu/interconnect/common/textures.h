@@ -41,7 +41,7 @@ namespace skyline::gpu::interconnect {
         struct CacheEntry {
             TextureImageControl tic;
             TextureView *view;
-            u32 executionNumber;
+            ContextTag executionTag;
         };
         std::vector<CacheEntry> textureHeaderCache;
 

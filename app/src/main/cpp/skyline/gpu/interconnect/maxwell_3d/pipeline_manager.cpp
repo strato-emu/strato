@@ -652,7 +652,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, span<TextureView *> sampledImages) {
-        SyncCachedStorageBufferViews(ctx.executor.executionNumber);
+        SyncCachedStorageBufferViews(ctx.executor.executionTag);
 
         u32 writeIdx{};
         auto writes{ctx.executor.allocator->AllocateUntracked<vk::WriteDescriptorSet>(descriptorInfo.totalWriteDescCount)};
@@ -761,7 +761,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     DescriptorUpdateInfo *Pipeline::SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind, span<TextureView *> sampledImages) {
-        SyncCachedStorageBufferViews(ctx.executor.executionNumber);
+        SyncCachedStorageBufferViews(ctx.executor.executionTag);
 
         size_t stageIndex{static_cast<size_t>(quickBind.stage)};
         const auto &stageDescInfo{descriptorInfo.stages[stageIndex]};
