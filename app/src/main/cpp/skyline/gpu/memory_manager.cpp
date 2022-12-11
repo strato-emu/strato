@@ -33,7 +33,7 @@ namespace skyline::gpu::memory {
         return pointer;
     }
 
-    MemoryManager::MemoryManager(const GPU &pGpu) : gpu(pGpu) {
+    MemoryManager::MemoryManager(GPU &pGpu) : gpu{pGpu} {
         auto instanceDispatcher{gpu.vkInstance.getDispatcher()};
         auto deviceDispatcher{gpu.vkDevice.getDispatcher()};
         VmaVulkanFunctions vulkanFunctions{
@@ -142,5 +142,35 @@ namespace skyline::gpu::memory {
         ThrowOnFail(vmaCreateImage(vmaAllocator, &static_cast<const VkImageCreateInfo &>(createInfo), &allocationCreateInfo, &image, &allocation, &allocationInfo));
 
         return Image(vmaAllocator, image, allocation);
+    }
+
+    ImportedBuffer MemoryManager::ImportBuffer(span<u8> cpuMapping) {
+        if (!gpu.traits.supportsAdrenoDirectMemoryImport)
+            throw exception("Cannot import host buffers without adrenotools import support!");
+
+        if (!adrenotools_import_user_mem(&gpu.adrenotoolsImportMapping, cpuMapping.data(), cpuMapping.size()))
+            throw exception("Failed to import user memory");
+
+        auto buffer{gpu.vkDevice.createBuffer(vk::BufferCreateInfo{
+            .size = cpuMapping.size(),
+            .usage = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eUniformTexelBuffer | vk::BufferUsageFlagBits::eStorageTexelBuffer | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransformFeedbackBufferEXT,
+            .sharingMode = vk::SharingMode::eExclusive
+        })};
+
+        auto memory{gpu.vkDevice.allocateMemory(vk::MemoryAllocateInfo{
+            .allocationSize = cpuMapping.size(),
+            .memoryTypeIndex = gpu.traits.hostVisibleCoherentCachedMemoryType,
+        })};
+
+        if (!adrenotools_validate_gpu_mapping(&gpu.adrenotoolsImportMapping))
+            throw exception("Failed to validate GPU mapping");
+
+        gpu.vkDevice.bindBufferMemory2({vk::BindBufferMemoryInfo{
+            .buffer = *buffer,
+            .memory = *memory,
+            .memoryOffset = 0
+        }});
+
+        return ImportedBuffer{cpuMapping, std::move(buffer), std::move(memory)};
     }
 }

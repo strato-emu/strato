@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <adrenotools/driver.h>
 #include "gpu/trait_manager.h"
 #include "gpu/memory_manager.h"
 #include "gpu/command_scheduler.h"
@@ -31,8 +32,10 @@ namespace skyline::gpu {
         const DeviceState &state; // We access the device state inside Texture (and Buffers) for setting up NCE memory tracking
         friend Texture;
         friend Buffer;
+        friend BufferManager;
 
       public:
+        adrenotools_gpu_mapping adrenotoolsImportMapping{}; //!< Persistent struct to store active adrenotools mapping import info
         vk::raii::Context vkContext;
         vk::raii::Instance vkInstance;
         vk::raii::DebugReportCallbackEXT vkDebugReportCallback; //!< An RAII Vulkan debug report manager which calls into 'GPU::DebugCallback'

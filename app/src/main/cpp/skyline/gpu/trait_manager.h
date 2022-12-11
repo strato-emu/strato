@@ -4,6 +4,7 @@
 #pragma once
 
 #include <vulkan/vulkan_raii.hpp>
+#include <adrenotools/driver.h>
 #include <common.h>
 
 namespace skyline::gpu {
@@ -49,8 +50,10 @@ namespace skyline::gpu {
         bool supportsExtendedDynamicState{}; //!< If the device supports the 'VK_EXT_extended_dynamic_state' Vulkan extension
         bool supportsNullDescriptor{}; //!< If the device supports the null descriptor feature in the 'VK_EXT_robustness2' Vulkan extension
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
+        u32 hostVisibleCoherentCachedMemoryType{std::numeric_limits<u32>::max()};
 
         std::bitset<7> bcnSupport{}; //!< Bitmask of BCn texture formats supported, it is ordered as BC1, BC2, BC3, BC4, BC5, BC6H and BC7
+        bool supportsAdrenoDirectMemoryImport{};
 
         /**
          * @brief Manages a list of any vendor/device-specific errata in the host GPU
@@ -111,7 +114,7 @@ namespace skyline::gpu {
         /**
          * @brief Applies driver specific binary patches to the driver (e.g. BCeNabler)
          */
-        void ApplyDriverPatches(const vk::raii::Context &context);
+        void ApplyDriverPatches(const vk::raii::Context &context, adrenotools_gpu_mapping *mapping);
 
         /**
          * @return A summary of all the GPU traits as a human-readable string

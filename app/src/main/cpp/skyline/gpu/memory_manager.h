@@ -45,6 +45,30 @@ namespace skyline::gpu::memory {
     };
 
     /**
+     * @brief A buffer that directly owns it's own memory
+     */
+    struct ImportedBuffer : public span<u8> {
+        vk::raii::Buffer vkBuffer;
+        vk::raii::DeviceMemory vkMemory;
+
+        ImportedBuffer(span<u8> data, vk::raii::Buffer vkBuffer, vk::raii::DeviceMemory vkMemory)
+            : vkBuffer{std::move(vkBuffer)},
+              vkMemory{std::move(vkMemory)},
+              span{data} {}
+
+        ImportedBuffer(const ImportedBuffer &) = delete;
+
+        ImportedBuffer(ImportedBuffer &&other)
+            : vkBuffer{std::move(other.vkBuffer)},
+              vkMemory{std::move(other.vkMemory)},
+              span{other} {}
+
+        ImportedBuffer &operator=(const ImportedBuffer &) = delete;
+
+        ImportedBuffer &operator=(ImportedBuffer &&) = default;
+    };
+
+    /**
      * @brief A Vulkan image which VMA allocates and manages the backing memory for
      * @note Any images created with VMA_ALLOCATION_CREATE_MAPPED_BIT must not be utilized with this since it'll unconditionally unmap when a pointer is present which is illegal when an image was created with that flag as unmapping will be automatically performed on image deletion
      */
@@ -94,11 +118,11 @@ namespace skyline::gpu::memory {
      */
     class MemoryManager {
       private:
-        const GPU &gpu;
+        GPU &gpu;
         VmaAllocator vmaAllocator{VK_NULL_HANDLE};
 
       public:
-        MemoryManager(const GPU &gpu);
+        MemoryManager(GPU &gpu);
 
         ~MemoryManager();
 
@@ -121,5 +145,10 @@ namespace skyline::gpu::memory {
          * @brief Creates an image which is allocated and deallocated using RAII and is optimal for being mapped on the CPU
          */
         Image AllocateMappedImage(const vk::ImageCreateInfo &createInfo);
+
+        /**
+         * @brief Maps the input CPU mapped region into a new buffer
+         */
+        ImportedBuffer ImportBuffer(span<u8> cpuMapping);
     };
 }
