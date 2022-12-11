@@ -20,6 +20,21 @@ namespace skyline::gpu {
      */
     class SimpleSingleRtShader {
       protected:
+        /**
+         * @brief Holds all per-pipeline state for a helper shader
+         */
+        struct PipelineState {
+            vk::Format colorFormat;
+            vk::Format depthFormat;
+            bool depthWrite;
+            bool stencilWrite;
+            u32 stencilValue;
+            VkColorComponentFlags colorWriteMask;
+
+            bool operator<=>(const PipelineState &) const = default;
+        };
+
+        std::unordered_map<PipelineState, cache::GraphicsPipelineCache::CompiledPipeline, util::ObjectHash<PipelineState>> pipelineCache;
         vk::raii::ShaderModule vertexShaderModule;
         vk::raii::ShaderModule fragmentShaderModule;
 
@@ -31,9 +46,7 @@ namespace skyline::gpu {
          * @brief Returns a potentially cached pipeline built according to the supplied input state
          */
         cache::GraphicsPipelineCache::CompiledPipeline GetPipeline(GPU &gpu,
-                                                                   TextureView *colorAttachment, TextureView *depthStenilAttachment,
-                                                                   bool depthWrite, bool stencilWrite, u32 stencilValue,
-                                                                   vk::ColorComponentFlags colorWriteMask,
+                                                                   const PipelineState &state,
                                                                    span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges);
     };
 
