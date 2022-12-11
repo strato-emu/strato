@@ -150,6 +150,7 @@ namespace skyline::gpu {
             .dynamicState = dynamicState,
             .colorFormats = colorFormats,
             .depthStencilFormat = state.depthFormat,
+            .sampleCount = vk::SampleCountFlagBits::e1, //TODO: fix after MSAA support
         }, layoutBindings, pushConstantRanges, true)).first->second;
     }
 
