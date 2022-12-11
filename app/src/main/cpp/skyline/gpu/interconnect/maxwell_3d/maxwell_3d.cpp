@@ -294,6 +294,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
             {surfaceClip.horizontal.width, surfaceClip.vertical.height}
         };
 
+        auto colorAttachments{activeState.GetColorAttachments()};
+        auto depthStencilAttachment{activeState.GetDepthAttachment()};
+        auto depthStencilAttachmentSpan{depthStencilAttachment ? span<TextureView *>(depthStencilAttachment) : span<TextureView *>()};
+        for (auto attachment : ranges::views::concat(colorAttachments, depthStencilAttachmentSpan)) {
+            if (attachment) {
+                scissor.extent.width = std::min(scissor.extent.width, static_cast<u32>(static_cast<i32>(attachment->texture->dimensions.width) - scissor.offset.x));
+                scissor.extent.height = std::min(scissor.extent.height, static_cast<u32>(static_cast<i32>(attachment->texture->dimensions.height) - scissor.offset.y));
+            }
+        }
+
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
 
