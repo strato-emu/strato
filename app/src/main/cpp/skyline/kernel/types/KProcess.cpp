@@ -75,7 +75,8 @@ namespace skyline::kernel::type {
             mainThreadStack = std::make_shared<KPrivateMemory>(state, 0, span<u8>{state.process->memory.stack.data(), state.process->npdm.meta.mainThreadStackSize}, memory::Permission{true, true, false}, memory::states::Stack);
             stackTop = mainThreadStack->guest.end().base();
         }
-        auto thread{NewHandle<KThread>(this, threads.size(), entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};
+        size_t tid{threads.size() + 1}; //!< The first thread is HOS-1 rather than HOS-0, this is to match the HOS kernel's behaviour
+        auto thread{NewHandle<KThread>(this, tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};
         threads.push_back(thread);
         return thread;
     }
