@@ -480,7 +480,7 @@ namespace skyline::gpu {
                         level.dimensions,
                         guest->format->blockWidth, guest->format->blockHeight, guest->format->bpb,
                         level.blockHeight, level.blockDepth,
-                        outputLevel, inputLevel + (layer * level.linearSize)
+                        inputLevel + (layer * level.linearSize), outputLevel
                     );
 
                     outputLevel += level.blockLinearSize;
