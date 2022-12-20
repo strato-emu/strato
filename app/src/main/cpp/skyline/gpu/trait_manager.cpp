@@ -46,7 +46,8 @@ namespace skyline::gpu {
                 EXT_SET("VK_EXT_provoking_vertex", hasProvokingVertexExt);
                 EXT_SET("VK_EXT_vertex_attribute_divisor", hasVertexAttributeDivisorExt);
                 EXT_SET_COND("VK_KHR_push_descriptor", supportsPushDescriptors, !quirks.brokenPushDescriptors);
-                EXT_SET("VK_KHR_imageless_framebuffer", hasImagelessFramebuffersExt);
+                EXT_SET("VK_KHR_image_format_list", supportsImageFormatList);
+                EXT_SET_COND("VK_KHR_imageless_framebuffer", hasImagelessFramebuffersExt, supportsImageFormatList);
                 EXT_SET("VK_EXT_global_priority", supportsGlobalPriority);
                 EXT_SET("VK_EXT_shader_viewport_index_layer", supportsShaderViewportIndexLayer);
                 EXT_SET("VK_KHR_spirv_1_4", supportsSpirv14);
@@ -61,6 +62,7 @@ namespace skyline::gpu {
                 EXT_SET("VK_EXT_robustness2", hasRobustness2Ext);
             }
 
+            #undef EXT_SET_COND
             #undef EXT_SET
             #undef EXT_SET_V
         }
@@ -84,7 +86,6 @@ namespace skyline::gpu {
             FEAT_SET(vk::PhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8, supportsUint8Indices)
         else
             enabledFeatures2.unlink<vk::PhysicalDeviceIndexTypeUint8FeaturesEXT>();
-
 
         if (hasExtendedDynamicStateExt)
             FEAT_SET(vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, extendedDynamicState, supportsExtendedDynamicState)
@@ -156,9 +157,9 @@ namespace skyline::gpu {
         }
 
         if (hasImagelessFramebuffersExt) {
-            FEAT_SET(vk::PhysicalDeviceImagelessFramebufferFeatures, imagelessFramebuffer, supportsImagelessFramebuffers)
+            FEAT_SET(vk::PhysicalDeviceImagelessFramebufferFeaturesKHR, imagelessFramebuffer, supportsImagelessFramebuffers)
         } else {
-            enabledFeatures2.unlink<vk::PhysicalDeviceImagelessFramebufferFeatures>();
+            enabledFeatures2.unlink<vk::PhysicalDeviceImagelessFramebufferFeaturesKHR>();
         }
 
         if (hasTransformFeedbackExt) {

@@ -23,6 +23,7 @@ namespace skyline::gpu {
         bool supportsVertexAttributeDivisor{}; //!< If the device supports a divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsVertexAttributeZeroDivisor{}; //!< If the device supports a zero divisor for instance-rate vertex attributes (with VK_EXT_vertex_attribute_divisor)
         bool supportsPushDescriptors{}; //!< If the device supports push descriptors (with VK_KHR_push_descriptor)
+        bool supportsImageFormatList{}; //!< If the device supports providing a list of formats that can be used with an image (with VK_KHR_image_format_list)
         bool supportsImagelessFramebuffers{}; //!< If the device supports imageless framebuffers (with VK_KHR_imageless_framebuffer)
         bool supportsGlobalPriority{}; //!< If the device supports global priorities for queues (with VK_EXT_global_priority)
         bool supportsMultipleViewports{}; //!< If the device supports more than one viewport
@@ -112,7 +113,7 @@ namespace skyline::gpu {
             vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT,
             vk::PhysicalDeviceRobustness2FeaturesEXT>;
 
-        TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2, const vk::raii::PhysicalDevice& physicalDevice);
+        TraitManager(const DeviceFeatures2 &deviceFeatures2, DeviceFeatures2 &enabledFeatures2, const std::vector<vk::ExtensionProperties> &deviceExtensions, std::vector<std::array<char, VK_MAX_EXTENSION_NAME_SIZE>> &enabledExtensions, const DeviceProperties2 &deviceProperties2, const vk::raii::PhysicalDevice &physicalDevice);
 
         /**
          * @brief Applies driver specific binary patches to the driver (e.g. BCeNabler)
