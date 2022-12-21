@@ -34,9 +34,12 @@ android {
         }
 
         if (isBuildSigned)
-            manifestPlaceholders = [shouldSaveUserData: "true"]
+            manifestPlaceholders += [shouldSaveUserData: "true"]
         else
-            manifestPlaceholders = [shouldSaveUserData: "false"]
+            manifestPlaceholders += [shouldSaveUserData: "false"]
+
+        // Only enable separate process for release builds
+        manifestPlaceholders += [emulationProcess: ""]
     }
 
     /* JVM Bytecode Options */
@@ -71,6 +74,7 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
+            manifestPlaceholders += [emulationProcess: ":emulationProcess"]
         }
 
         reldebug {
@@ -97,14 +101,14 @@ android {
     productFlavors {
         full {
             dimension = "version"
-            manifestPlaceholders = [appLabel: "Skyline"]
+            manifestPlaceholders += [appLabel: "Skyline"]
         }
 
         dev {
             dimension = "version"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            manifestPlaceholders = [appLabel: "Skyline Dev"]
+            manifestPlaceholders += [appLabel: "Skyline Dev"]
         }
     }
 

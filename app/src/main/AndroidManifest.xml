@@ -68,7 +68,7 @@
             android:configChanges="orientation|screenSize|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
-            android:process=":emulationProcess"
+            android:process="${emulationProcess}"
             android:parentActivityName=".MainActivity">
 
             <intent-filter>
