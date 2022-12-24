@@ -16,7 +16,9 @@ import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import emu.skyline.databinding.SettingsActivityBinding
 import emu.skyline.preference.IntegerListPreference
+import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
+import emu.skyline.utils.sharedPreferences
 
 class SettingsActivity : AppCompatActivity() {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
@@ -107,6 +109,13 @@ class SettingsActivity : AppCompatActivity() {
             if (BuildConfig.BUILD_TYPE != "release")
                 findPreference<Preference>("category_debug")?.isVisible = true
 
+
+            if (!GpuDriverHelper.supportsForceMaxGpuClocks()) {
+                val forceMaxGpuClocksPref = findPreference<CheckBoxPreference>("force_max_gpu_clocks")!!
+                forceMaxGpuClocksPref.isSelectable = false
+                forceMaxGpuClocksPref.isChecked = false
+                forceMaxGpuClocksPref.summary = context!!.getString(R.string.force_max_gpu_clocks_desc_unsupported)
+            }
 
             resources.getStringArray(R.array.credits_entries).asIterable().shuffled().forEach {
                 findPreference<PreferenceCategory>("category_credits")?.addPreference(Preference(context!!).apply {

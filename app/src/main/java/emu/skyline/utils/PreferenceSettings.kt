@@ -40,6 +40,7 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER)
     var executorSlotCountScale by sharedPreferences(context, 6)
+    var forceMaxGpuClocks by sharedPreferences(context, false)
 
     // Hacks
     var enableFastGpuReadbackHack by sharedPreferences(context, false)

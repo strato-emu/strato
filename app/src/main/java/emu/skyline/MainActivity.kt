@@ -36,6 +36,7 @@ import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
 import emu.skyline.provider.DocumentsProvider
+import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.PreferenceSettings
 import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
@@ -277,6 +278,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        // Try to return to normal GPU clocks upon resuming back to main activity, to avoid GPU being stuck at max clocks after a crash
+        if (preferenceSettings.forceMaxGpuClocks)
+            GpuDriverHelper.forceMaxGpuClocks(false)
 
         var layoutTypeChanged = false
         for (appViewItem in adapter.allItems.filterIsInstance(AppViewItem::class.java)) {

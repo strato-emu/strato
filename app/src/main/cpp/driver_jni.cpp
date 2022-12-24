@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <vulkan/vulkan_raii.hpp>
+#include <adrenotools/driver.h>
 #include "skyline/common/signal.h"
 #include "skyline/common/utils.h"
 
@@ -28,9 +29,22 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_emu_skyline_utils_GpuDriverHelper
     return array;
 }
 
-extern "C" JNIEXPORT jboolean JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_supportsCustomDriverLoading(JNIEnv *env, jobject instance) {
-    // Check if the Qualcomm KGSL (Kernel Graphics Support Layer) device exists, this indicates that custom drivers can be loaded
+static bool CheckKgslPresent() {
     constexpr auto KgslPath{"/dev/kgsl-3d0"};
 
     return access(KgslPath, F_OK) == 0;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_supportsCustomDriverLoading(JNIEnv *env, jobject instance) {
+    // If the KGSL device exists custom drivers can be loaded using adrenotools
+    return CheckKgslPresent();
+}
+
+extern "C" JNIEXPORT jboolean JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_supportsForceMaxGpuClocks(JNIEnv *env, jobject instance) {
+    // If the KGSL device exists adrenotools can be used to set GPU turbo mode
+    return CheckKgslPresent();
+}
+
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_forceMaxGpuClocks(JNIEnv *env, jobject instance, jboolean enable) {
+    adrenotools_set_turbo(enable);
 }
