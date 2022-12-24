@@ -138,6 +138,14 @@
             app:key="executor_slot_count_scale"
             app:title="@string/executor_slot_count_scale"
             app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:min="0"
+            android:defaultValue="256"
+            android:max="1024"
+            android:summary="@string/executor_flush_threshold_desc"
+            app:key="executor_flush_threshold"
+            app:title="@string/executor_flush_threshold"
+            app:showSeekBarValue="true" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:summary="@string/force_max_gpu_clocks_desc"

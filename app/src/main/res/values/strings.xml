@@ -77,6 +77,8 @@
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
     <string name="executor_slot_count_scale">Executor Slot Count Scale</string>
     <string name="executor_slot_count_scale_desc">Scale controlling the maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
+    <string name="executor_flush_threshold">Executor Flush Threshold</string>
+    <string name="executor_flush_threshold_desc">Controls how frequently work is flushed to the GPU</string>
     <string name="force_max_gpu_clocks">Force Maximum GPU Clocks</string>
     <string name="force_max_gpu_clocks_desc">Forces the GPU to run at its maximum possible clock speed (May cause excessive heating and power usage)</string>
     <string name="force_max_gpu_clocks_desc_unsupported">Your device does not support forcing maximum GPU clocks</string>
