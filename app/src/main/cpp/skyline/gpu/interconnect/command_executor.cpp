@@ -140,6 +140,7 @@ namespace skyline::gpu::interconnect {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
 
             incoming.Process([this, renderDocApi, &gpu](Slot *slot) {
+                idle = false;
                 VkInstance instance{*gpu.vkInstance};
                 if (renderDocApi && slot->capture)
                     renderDocApi->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance), nullptr);
@@ -157,6 +158,7 @@ namespace skyline::gpu::interconnect {
                 }
 
                 outgoing.Push(slot);
+                idle = true;
             }, [] {});
         } catch (const signal::SignalException &e) {
             Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
@@ -171,6 +173,10 @@ namespace skyline::gpu::interconnect {
             else
                 std::rethrow_exception(std::current_exception());
         }
+    }
+
+    bool CommandRecordThread::IsIdle() const {
+        return idle;
     }
 
     CommandRecordThread::Slot *CommandRecordThread::AcquireSlot() {

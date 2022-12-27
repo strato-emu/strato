@@ -68,6 +68,7 @@ namespace skyline::gpu::interconnect {
         CircularQueue<Slot *> incoming; //!< Slots pending recording
         CircularQueue<Slot *> outgoing; //!< Slots that have been submitted, may still be active on the GPU
         std::list<Slot> slots;
+        std::atomic<bool> idle;
 
         std::thread thread;
 
@@ -77,6 +78,8 @@ namespace skyline::gpu::interconnect {
 
       public:
         CommandRecordThread(const DeviceState &state);
+
+        bool IsIdle() const;
 
         /**
          * @return A free slot, `Reset` needs to be called before accessing it
