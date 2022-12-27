@@ -304,6 +304,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }
 
+        constantBuffers.ResetQuickBind();
+
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
 
@@ -319,6 +321,5 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 commandBuffer.endTransformFeedbackEXT(0, {}, {});
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility);
 
-        constantBuffers.ResetQuickBind();
     }
 }
