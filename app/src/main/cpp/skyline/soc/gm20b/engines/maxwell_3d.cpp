@@ -219,8 +219,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             ENGINE_CASE(syncpointAction, {
                 Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.Submit([=, syncpoints = &this->syncpoints, index = syncpointAction.id]() {
-                    syncpoints->at(index).Increment();
+                    syncpoints->at(index).host.Increment();
                 });
+                syncpoints.at(syncpointAction.id).guest.Increment();
             })
 
             ENGINE_CASE(clearSurface, {

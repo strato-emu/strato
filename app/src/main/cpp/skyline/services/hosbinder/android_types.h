@@ -64,7 +64,7 @@ namespace skyline::service::hosbinder {
                 throw exception("Wait has larger fence count ({}) than storage size ({})", fenceCount, fences.size());
             for (auto it{fences.begin()}, end{fences.begin() + fenceCount}; it < end; it++)
                 if (it->id != InvalidFenceId)
-                    host1x.syncpoints.at(it->id).Wait(it->threshold, std::chrono::steady_clock::duration::max());
+                    host1x.syncpoints.at(it->id).host.Wait(it->threshold, std::chrono::steady_clock::duration::max());
         }
     };
 

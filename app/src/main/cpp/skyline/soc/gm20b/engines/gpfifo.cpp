@@ -20,8 +20,9 @@ namespace skyline::soc::gm20b::engine {
                 if (action.operation == Registers::Syncpoint::Operation::Incr) {
                     Logger::Debug("Increment syncpoint: {}", +action.index);
                     channelCtx.executor.Submit([=, syncpoints = &this->syncpoints, index = action.index]() {
-                        syncpoints->at(index).Increment();
+                        syncpoints->at(index).host.Increment();
                     });
+                    syncpoints.at(action.index).guest.Increment();
                 } else if (action.operation == Registers::Syncpoint::Operation::Wait) {
                     Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint->payload);
 
@@ -29,7 +30,7 @@ namespace skyline::soc::gm20b::engine {
 
                     channelCtx.executor.Submit();
                     channelCtx.Unlock();
-                    syncpoints.at(action.index).Wait(registers.syncpoint->payload, std::chrono::steady_clock::duration::max());
+                    syncpoints.at(action.index).host.Wait(registers.syncpoint->payload, std::chrono::steady_clock::duration::max());
                     channelCtx.Lock();
                 }
             })

@@ -30,7 +30,7 @@ namespace skyline::soc::host1x {
                 u32 syncpointId{static_cast<u8>(argument)};
                 Logger::Debug("Wait syncpoint: {}, thresh: {}", syncpointId, syncpointPayload);
 
-                syncpoints.at(syncpointId).Wait(syncpointPayload, std::chrono::steady_clock::duration::max());
+                syncpoints.at(syncpointId).host.Wait(syncpointPayload, std::chrono::steady_clock::duration::max());
                 break;
             }
 
