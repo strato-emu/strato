@@ -86,8 +86,7 @@ namespace skyline::service::hosbinder {
         void PushOptionalFlattenable(ObjectType *pointer) {
             Push<u32>(pointer != nullptr);
             if (pointer) {
-                Push<u32>(sizeof(ObjectType)); // Object Size
-                Push<u32>(0); // FD Count
+                Push<i64>(sizeof(ObjectType)); // Object Size
                 Push(*pointer);
             }
         }
@@ -96,8 +95,7 @@ namespace skyline::service::hosbinder {
         void PushOptionalFlattenable(std::optional<ObjectType> object) {
             Push<u32>(object.has_value());
             if (object) {
-                Push<u32>(sizeof(ObjectType));
-                Push<u32>(0);
+                Push<i64>(sizeof(ObjectType));
                 Push(*object);
             }
         }
