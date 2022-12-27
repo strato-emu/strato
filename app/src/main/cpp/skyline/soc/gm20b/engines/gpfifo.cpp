@@ -117,6 +117,12 @@ namespace skyline::soc::gm20b::engine {
                         break;
                 }
             })
+            ENGINE_CASE(wfi, {
+                channelCtx.executor.Submit();
+            })
+            ENGINE_CASE(setReference, {
+                channelCtx.executor.Submit();
+            })
         }
     };
 }
