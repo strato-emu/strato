@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/settings.h>
 #include <gpu.h>
 #include "buffer_manager.h"
 
@@ -54,11 +55,15 @@ namespace skyline::gpu {
     BufferManager::LockedBuffer BufferManager::CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag) {
         std::shared_ptr<FenceCycle> newBufferCycle{};
         for (auto &srcBuffer : srcBuffers) {
-            // Wait on all source buffers before we lock the recreation mutex as locking it may prevent submissions of the cycles and introduce a deadlock
-            // We can't chain cycles here as that may also introduce a deadlock since we have no way to determine what order to chain them in right now
-            if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty || srcBuffer->AllCpuBackingWritesBlocked() || (newBufferCycle && srcBuffer->cycle != newBufferCycle))
+            // Since new direct buffers will share the underlying backing of source buffers we don't need to wait for the GPU if they're dirty, for non direct buffers we do though as otherwise we won't be able to migrate their contents to the new backing
+            if (!*gpu.state.settings->useDirectMemoryImport && (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty || srcBuffer->AllCpuBackingWritesBlocked()))
                 srcBuffer->WaitOnFence();
-            else if (srcBuffer->cycle)
+
+            // We can't chain cycles here as that may also introduce a deadlock since we have no way to determine what order to chain them in right now
+            // Wait on all source buffers before we lock the recreation mutex as locking it may prevent submissions of the cycles and introduce a deadlock
+            if (newBufferCycle && srcBuffer->cycle != newBufferCycle)
+                srcBuffer->WaitOnFence();
+            else
                 newBufferCycle = srcBuffer->cycle;
         }
 
@@ -76,9 +81,9 @@ namespace skyline::gpu {
                 highestAddress = mapping.end().base();
         }
 
-        LockedBuffer newBuffer{std::make_shared<Buffer>(delegateAllocatorState, gpu, span<u8>{lowestAddress, highestAddress}, nextBufferId++), tag}; // If we don't lock the buffer prior to trapping it during synchronization, a race could occur with a guest trap acquiring the lock before we do and mutating the buffer prior to it being ready
+        LockedBuffer newBuffer{std::make_shared<Buffer>(delegateAllocatorState, gpu, span<u8>{lowestAddress, highestAddress}, nextBufferId++, *gpu.state.settings->useDirectMemoryImport), tag}; // If we don't lock the buffer prior to trapping it during synchronization, a race could occur with a guest trap acquiring the lock before we do and mutating the buffer prior to it being ready
 
-        newBuffer->SetupGuestMappings();
+        newBuffer->SetupStagedTraps();
         newBuffer->SynchronizeHost(false); // Overlaps don't necessarily fully cover the buffer so we have to perform a sync here to prevent any gaps
         newBuffer->cycle = newBufferCycle;
 
@@ -103,20 +108,31 @@ namespace skyline::gpu {
 
             newBuffer->everHadInlineUpdate |= srcBuffer->everHadInlineUpdate;
 
-            if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
-                if (srcBuffer.lock.IsFirstUsage() && newBuffer->dirtyState != Buffer::DirtyState::GpuDirty)
-                    copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->mirror.data(), srcBuffer->backing.data());
-                else
+            if (!*gpu.state.settings->useDirectMemoryImport) {
+                if (srcBuffer->dirtyState == Buffer::DirtyState::GpuDirty) {
+                    if (srcBuffer.lock.IsFirstUsage() && newBuffer->dirtyState != Buffer::DirtyState::GpuDirty)
+                        copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->mirror.data(), srcBuffer->backing->data());
+                    else
+                        newBuffer->MarkGpuDirty();
+
+                    // Since we don't synchost source buffers and the source buffers here are GPU dirty their mirrors will be out of date, meaning the backing contents of this source buffer's region in the new buffer from the initial synchost call will be incorrect. By copying backings directly here we can ensure that no writes are lost and that if the newly created buffer needs to turn GPU dirty during recreation no copies need to be done since the backing is as up to date as the mirror at a minimum.
+                    copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing->data(), srcBuffer->backing->data());
+                } else if (srcBuffer->AllCpuBackingWritesBlocked()) {
+                    if (srcBuffer->dirtyState == Buffer::DirtyState::CpuDirty)
+                        Logger::Error("Buffer (0x{}-0x{}) is marked as CPU dirty while CPU backing writes are blocked, this is not valid", srcBuffer->guest->begin().base(), srcBuffer->guest->end().base());
+
+                    // We need the backing to be stable so that any writes within this context are sequenced correctly, we can't use the source mirror here either since buffer writes within this context will update the mirror on CPU and backing on GPU
+                    copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing->data(), srcBuffer->backing->data());
+                }
+            } else {
+                if (srcBuffer->directGpuWritesActive) {
                     newBuffer->MarkGpuDirty();
-
-                // Since we don't synchost source buffers and the source buffers here are GPU dirty their mirrors will be out of date, meaning the backing contents of this source buffer's region in the new buffer from the initial synchost call will be incorrect. By copying backings directly here we can ensure that no writes are lost and that if the newly created buffer needs to turn GPU dirty during recreation no copies need to be done since the backing is as up to date as the mirror at a minimum.
-                copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing.data(), srcBuffer->backing.data());
-            } else if (srcBuffer->AllCpuBackingWritesBlocked()) {
-                if (srcBuffer->dirtyState == Buffer::DirtyState::CpuDirty)
-                    Logger::Error("Buffer (0x{}-0x{}) is marked as CPU dirty while CPU backing writes are blocked, this is not valid", srcBuffer->guest->begin().base(), srcBuffer->guest->end().base());
-
-                // We need the backing to be stable so that any writes within this context are sequenced correctly, we can't use the source mirror here either since buffer writes within this context will update the mirror on CPU and backing on GPU
-                copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing.data(), srcBuffer->backing.data());
+                } else if (srcBuffer->directTrackedShadowActive) {
+                    newBuffer->EnableTrackedShadowDirect();
+                    copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->directTrackedShadow.data(), srcBuffer->directTrackedShadow.data());
+                    for (const auto &interval : srcBuffer->directTrackedWrites)
+                        newBuffer->InsertWriteIntervalDirect(interval);
+                }
             }
 
             // Transfer all views from the overlapping buffer to the new buffer with the new buffer and updated offset, ensuring pointer stability
@@ -146,8 +162,8 @@ namespace skyline::gpu {
 
         if (overlaps.empty()) {
             // If we couldn't find any overlapping buffers, create a new buffer without coalescing
-            LockedBuffer buffer{std::make_shared<Buffer>(delegateAllocatorState, gpu, alignedGuestMapping, nextBufferId++), tag};
-            buffer->SetupGuestMappings();
+            LockedBuffer buffer{std::make_shared<Buffer>(delegateAllocatorState, gpu, alignedGuestMapping, nextBufferId++, *gpu.state.settings->useDirectMemoryImport), tag};
+            buffer->SetupStagedTraps();
             InsertBuffer(*buffer);
             return buffer->GetView(static_cast<vk::DeviceSize>(guestMapping.begin() - buffer->guest->begin()), guestMapping.size());
         } else {

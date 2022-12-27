@@ -18,7 +18,6 @@ namespace skyline::gpu {
     class BufferManager;
     class BufferDelegate;
 
-
     /**
      * @brief Represents a bound Vulkan buffer that can be used for state updates
      */
@@ -45,20 +44,34 @@ namespace skyline::gpu {
         GPU &gpu;
         RecursiveSpinLock mutex; //!< Synchronizes any mutations to the buffer or its backing
         std::atomic<ContextTag> tag{}; //!< The tag associated with the last lock call
-        memory::Buffer backing;
         std::optional<GuestBuffer> guest;
         std::shared_ptr<FenceCycle> cycle{}; //!< A fence cycle for when any host operation mutating the buffer has completed, it must be waited on prior to any mutations to the backing
         size_t id;
+        bool isDirect{}; //!< Indicates if a buffer is directly mapped from the guest
+
+        /**
+         * @brief Interval struct used to track which part of the buffer should be accessed through the shadow
+         */
+        struct WriteTrackingInterval {
+            size_t offset;
+            size_t end;
+        };
+        std::vector<WriteTrackingInterval> directTrackedWrites; //!< (Direct) A vector of write tracking intervals for the buffer, this is used to determine when to read from `directTrackedShadow`
+        std::vector<u8> directTrackedShadow; //!< (Direct) Temporary mirror used to track any CPU-side writes to the buffer while it's being read by the GPU
+        bool directTrackedShadowActive{}; //!< (Direct) If `directTrackedShadow` is currently being used to track writes
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
-        span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
-        std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< The handle of the traps for the guest mappings
+        std::optional<memory::Buffer> backing;
+        std::optional<memory::ImportedBuffer> directBacking;
+
+        std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< (Staged) The handle of the traps for the guest mappings
 
         enum class DirtyState {
             Clean, //!< The CPU mappings are in sync with the GPU buffer
             CpuDirty, //!< The CPU mappings have been modified but the GPU buffer is not up to date
             GpuDirty, //!< The GPU buffer has been modified but the CPU mappings have not been updated
-        } dirtyState{DirtyState::CpuDirty}; //!< The state of the CPU mappings with respect to the GPU buffer
+        } dirtyState{DirtyState::CpuDirty}; //!< (Staged) The state of the CPU mappings with respect to the GPU buffer
+        bool directGpuWritesActive{}; //!< (Direct) If the current/next GPU exection is writing to the buffer (basically GPU dirty)
 
         enum class BackingImmutability {
             None, //!< Backing can be freely written to and read from
@@ -87,13 +100,13 @@ namespace skyline::gpu {
         size_t megaBufferViewAccumulatedSize{};
         MegaBufferAllocator::Allocation unifiedMegaBuffer{}; //!< An optional full-size mirror of the buffer in the megabuffer for use when the buffer is frequently updated and *all* of the buffer is frequently used. Replaces all uses of the table when active
 
-        static constexpr size_t FrequentlyLockedThreshold{2}; //!< Threshold for the number of times a buffer can be locked (not from context locks, only normal) before it should be considered frequently locked
-        size_t accumulatedCpuLockCounter{}; //!< Number of times buffer has been locked through non-ContextLocks
+        static constexpr size_t FrequentlyLockedThreshold{2}; //!< (Staged) Threshold for the number of times a buffer can be locked (not from context locks, only normal) before it should be considered frequently locked
+        size_t accumulatedCpuLockCounter{}; //!< (Staged) Number of times buffer has been locked through non-ContextLocks
 
-        static constexpr size_t FastReadbackHackWaitCountThreshold{6}; //!< Threshold for the number of times a buffer can be waited on before it should be considered for the readback hack
-        static constexpr std::chrono::nanoseconds FastReadbackHackWaitTimeThreshold{constant::NsInSecond /4}; //!< Threshold for the amount of time buffer texture can be waited on before it should be considered for the readback hack, `SkipReadbackHackWaitCountThreshold` needs to be hit before this
-        size_t accumulatedGuestWaitCounter{}; //!< Total number of times the buffer has been waited on
-        std::chrono::nanoseconds accumulatedGuestWaitTime{}; //!< Amount of time the buffer has been waited on for since the `FastReadbackHackWaitTimeThreshold`th wait on it by the guest
+        static constexpr size_t FastReadbackHackWaitCountThreshold{6}; //!< (Staged) Threshold for the number of times a buffer can be waited on before it should be considered for the readback hack
+        static constexpr std::chrono::nanoseconds FastReadbackHackWaitTimeThreshold{constant::NsInSecond / 4}; //!< (Staged) Threshold for the amount of time buffer texture can be waited on before it should be considered for the readback hack, `SkipReadbackHackWaitCountThreshold` needs to be hit before this
+        size_t accumulatedGuestWaitCounter{}; //!< (Staged) Total number of times the buffer has been waited on
+        std::chrono::nanoseconds accumulatedGuestWaitTime{}; //!< (Staged) Amount of time the buffer has been waited on for since the `FastReadbackHackWaitTimeThreshold`th wait on it by the guest
 
         /**
          * @brief Resets all megabuffer tracking state
@@ -101,15 +114,73 @@ namespace skyline::gpu {
         void ResetMegabufferState();
 
       private:
+        struct QueryIntervalResult {
+            bool useShadow; //!< If the shadow should be used for buffer accesses within the interval
+            u64 size; //!< Size of the interval starting from the query offset
+        };
+
         BufferDelegate *delegate;
 
         friend BufferView;
         friend BufferManager;
 
+        void SetupStagedTraps();
+
         /**
-         * @brief Sets up mirror mappings for the guest mappings, this must be called after construction for the mirror to be valid
+         * @brief Forces future accesses to the given interval to use the shadow copy
          */
-        void SetupGuestMappings();
+        void InsertWriteIntervalDirect(WriteTrackingInterval interval);
+
+        /**
+         * @return A struct describing the interval containing `offset`
+         */
+        QueryIntervalResult QueryWriteIntervalDirect(u64 offset);
+
+        /**
+         * @brief Enables the shadow buffer used for sequencing buffer contents independently of the GPU on the CPU
+         */
+        void EnableTrackedShadowDirect();
+
+        /**
+         * @return A span for the requested region that can be used to as a destination for a CPU-side buffer write
+         */
+        span<u8> BeginWriteCpuSequencedDirect(size_t offset, size_t size);
+
+        /**
+         * @return If GPU reads could occur using the buffer at a given moment, when true is returned the backing must not be modified by CPU writes
+         */
+        bool RefreshGpuReadsActiveDirect();
+
+        /**
+         * @param wait Whether to wait until GPU writes are no longer active before returning
+         * @return If GPU writes of indeterminate contents could occur using the buffer at a given moment, when true is returned the backing must not be read/written on the CPU
+         */
+        bool RefreshGpuWritesActiveDirect(bool wait = false, const std::function<void()> &flushHostCallback = {});
+
+        bool ValidateMegaBufferViewImplDirect(vk::DeviceSize size);
+
+        bool ValidateMegaBufferViewImplStaged(vk::DeviceSize size);
+
+        /**
+         * @return True if megabuffering should occur for the given view, false otherwise
+         */
+        bool ValidateMegaBufferView(vk::DeviceSize size);
+
+        void CopyFromImplDirect(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback);
+
+        void CopyFromImplStaged(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback);
+
+        bool WriteImplDirect(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
+
+        bool WriteImplStaged(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
+
+        void ReadImplDirect(const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset);
+
+        void ReadImplStaged(bool isFirstUsage, const std::function<void()> &flushHostCallback, span<u8> data, vk::DeviceSize offset);
+
+        void MarkGpuDirtyImplDirect();
+
+        void MarkGpuDirtyImplStaged();
 
       public:
         void UpdateCycle(const std::shared_ptr<FenceCycle> &newCycle) {
@@ -118,7 +189,7 @@ namespace skyline::gpu {
         }
 
         constexpr vk::Buffer GetBacking() {
-            return backing.vkBuffer;
+            return backing ? backing->vkBuffer : *directBacking->vkBuffer;
         }
 
         /**
@@ -128,14 +199,14 @@ namespace skyline::gpu {
         span<u8> GetBackingSpan() {
             if (guest)
                 throw exception("Attempted to get a span of a guest-backed buffer");
-            return span<u8>(backing);
+            return backing ? span<u8>(*backing) : span<u8>(*directBacking);
         }
 
         /**
          * @brief Creates a buffer object wrapping the guest buffer with a backing that can represent the guest buffer data
          * @note The guest mappings will not be setup until SetupGuestMappings() is called
          */
-        Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, GuestBuffer guest, size_t id);
+        Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, GuestBuffer guest, size_t id, bool direct);
 
         /**
          * @brief Creates a host-only Buffer which isn't backed by any guest buffer
@@ -183,7 +254,10 @@ namespace skyline::gpu {
          * @note The buffer **must** be locked prior to calling this
          */
         void BlockSequencedCpuBackingWrites() {
-            std::scoped_lock lock{stateMutex};
+            std::unique_lock lock{stateMutex, std::defer_lock};
+            if (!isDirect)
+                lock.lock();
+
             if (backingImmutability == BackingImmutability::None)
                 backingImmutability = BackingImmutability::SequencedWrites;
         }
@@ -193,12 +267,18 @@ namespace skyline::gpu {
          * @note The buffer **must** be locked prior to calling this
          */
         void BlockAllCpuBackingWrites() {
-            std::scoped_lock lock{stateMutex};
+            std::unique_lock lock{stateMutex, std::defer_lock};
+            if (!isDirect)
+                lock.lock();
+
             backingImmutability = BackingImmutability::AllWrites;
         }
 
         void AllowAllBackingWrites() {
-            std::scoped_lock lock{stateMutex};
+            std::unique_lock lock{stateMutex, std::defer_lock};
+            if (!isDirect)
+                lock.lock();
+
             backingImmutability = BackingImmutability::None;
         }
 
@@ -207,7 +287,10 @@ namespace skyline::gpu {
          * @note The buffer **must** be locked prior to calling this
          */
         bool SequencedCpuBackingWritesBlocked() {
-            std::scoped_lock lock{stateMutex};
+            std::unique_lock lock{stateMutex, std::defer_lock};
+            if (!isDirect)
+                lock.lock();
+
             return backingImmutability == BackingImmutability::SequencedWrites || backingImmutability == BackingImmutability::AllWrites;
         }
 
@@ -216,7 +299,10 @@ namespace skyline::gpu {
          * @note The buffer **must** be locked prior to calling this
          */
         bool AllCpuBackingWritesBlocked() {
-            std::scoped_lock lock{stateMutex};
+            std::unique_lock lock{stateMutex, std::defer_lock};
+            if (!isDirect)
+                lock.lock();
+
             return backingImmutability == BackingImmutability::AllWrites;
         }
 

@@ -148,6 +148,11 @@
             app:showSeekBarValue="true" />
         <CheckBoxPreference
             android:defaultValue="false"
+            android:summary="@string/use_direct_memory_import_desc"
+            app:key="use_direct_memory_import"
+            app:title="@string/use_direct_memory_import" />
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:summary="@string/force_max_gpu_clocks_desc"
             app:key="force_max_gpu_clocks"
             app:title="@string/force_max_gpu_clocks" />
