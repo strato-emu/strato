@@ -93,6 +93,30 @@ namespace skyline::gpu::interconnect {
     };
 
     /**
+     * @brief Thread responsible for notifying the guest of the completion of GPU operations
+     */
+    class ExecutionWaiterThread {
+      private:
+        std::thread thread;
+        std::mutex mutex;
+        std::condition_variable condition;
+        std::queue<std::pair<std::shared_ptr<FenceCycle>, std::function<void()>>> pendingSignalQueue; //!< Queue of callbacks to be executed when their coressponding fence is signalled
+        std::atomic<bool> idle{};
+
+        void Run();
+
+      public:
+        ExecutionWaiterThread();
+
+        bool IsIdle() const;
+
+        /**
+         * @brief Queues `callback` to be executed when `cycle` is signalled, null values are valid for either, will null cycle representing an immediate callback (dep on previously queued cycles) and null callback representing a wait with no callback
+         */
+        void Queue(std::shared_ptr<FenceCycle> cycle, std::function<void()> &&callback);
+    };
+
+    /**
      * @brief Assembles a Vulkan command stream with various nodes and manages execution of the produced graph
      * @note This class is **NOT** thread-safe and should **ONLY** be utilized by a single thread
      */
@@ -102,6 +126,7 @@ namespace skyline::gpu::interconnect {
         GPU &gpu;
         CommandRecordThread recordThread;
         CommandRecordThread::Slot *slot{};
+        ExecutionWaiterThread waiterThread;
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
         u32 renderPassIndex{};
@@ -274,8 +299,9 @@ namespace skyline::gpu::interconnect {
 
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
+         * @param callback A function to call upon GPU completion of the submission
          */
-        void Submit();
+        void Submit(std::function<void()> &&callback = {});
 
         /**
          * @brief Locks all preserve attached buffers/textures

@@ -19,8 +19,9 @@ namespace skyline::soc::gm20b::engine {
             ENGINE_STRUCT_CASE(syncpoint, action, {
                 if (action.operation == Registers::Syncpoint::Operation::Incr) {
                     Logger::Debug("Increment syncpoint: {}", +action.index);
-                    channelCtx.executor.Submit();
-                    syncpoints.at(action.index).Increment();
+                    channelCtx.executor.Submit([=, syncpoints = &this->syncpoints, index = action.index]() {
+                        syncpoints->at(index).Increment();
+                    });
                 } else if (action.operation == Registers::Syncpoint::Operation::Wait) {
                     Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint->payload);
 
@@ -36,12 +37,6 @@ namespace skyline::soc::gm20b::engine {
             ENGINE_STRUCT_CASE(semaphore, action, {
                 u64 address{registers.semaphore->address};
 
-                // Write timestamp first to ensure ordering
-                if (action.releaseSize == Registers::Semaphore::ReleaseSize::SixteenBytes) {
-                    channelCtx.asCtx->gmmu.Write<u32>(address + 4, 0);
-                    channelCtx.asCtx->gmmu.Write(address + 8, GetGpuTimeTicks());
-                }
-
                 switch (action.operation) {
                     case Registers::Semaphore::Operation::Acquire:
                         Logger::Debug("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
@@ -54,7 +49,16 @@ namespace skyline::soc::gm20b::engine {
                         channelCtx.Lock();
                         break;
                     case Registers::Semaphore::Operation::Release:
-                        channelCtx.asCtx->gmmu.Write(address, registers.semaphore->payload);
+                        channelCtx.executor.Submit([this, action, address, payload = registers.semaphore->payload] () {
+                            // Write timestamp first to ensure ordering
+                            if (action.releaseSize == Registers::Semaphore::ReleaseSize::SixteenBytes) {
+                                channelCtx.asCtx->gmmu.Write<u32>(address + 4, 0);
+                                channelCtx.asCtx->gmmu.Write(address + 8, GetGpuTimeTicks());
+                            }
+
+                            channelCtx.asCtx->gmmu.Write(address, payload);
+                        });
+
                         Logger::Debug("SemaphoreRelease: address: 0x{:X} payload: {}", address, registers.semaphore->payload);
                         break;
                     case Registers::Semaphore::Operation::AcqGeq    :

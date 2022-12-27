@@ -78,12 +78,6 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
          */
         void HandleMethod(u32 method, u32 argument);
 
-        /**
-         * @brief Writes back a semaphore result to the guest with an auto-generated timestamp (if required)
-         * @note If the semaphore is OneWord then the result will be downcasted to a 32-bit unsigned integer
-         */
-        void WriteSemaphoreResult(u64 result);
-
       public:
         /**
          * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_3d.def
@@ -421,6 +415,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         static_assert(sizeof(Registers) == (EngineMethodsEnd * sizeof(u32)));
         #pragma pack(pop)
 
+      private:
+        /**
+         * @brief Writes back a semaphore result to the guest with an auto-generated timestamp (if required)
+         * @note If the semaphore is OneWord then the result will be downcasted to a 32-bit unsigned integer
+         */
+        void WriteSemaphoreResult(const Registers::Semaphore &semaphore, u64 result);
+
+      public:
         Registers registers{};
         Registers shadowRegisters{}; //!< A shadow-copy of the registers, their function is controlled by the 'shadowRamControl' register
 

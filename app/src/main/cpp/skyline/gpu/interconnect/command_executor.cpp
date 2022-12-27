@@ -192,6 +192,42 @@ namespace skyline::gpu::interconnect {
         incoming.Push(slot);
     }
 
+    void ExecutionWaiterThread::Run() {
+        signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
+
+        while (true) {
+            std::pair<std::shared_ptr<FenceCycle>, std::function<void()>> item{};
+            {
+                std::unique_lock lock{mutex};
+                idle = true;
+                condition.wait(lock, [this] { return !pendingSignalQueue.empty(); });
+                idle = false;
+                item = std::move(pendingSignalQueue.front());
+                pendingSignalQueue.pop();
+            }
+            {
+                TRACE_EVENT("gpu", "GPU");
+                if (item.first)
+                    item.first->Wait();
+            }
+
+            if (item.second)
+                item.second();
+        }
+    }
+
+    ExecutionWaiterThread::ExecutionWaiterThread() : thread{&ExecutionWaiterThread::Run, this} {}
+
+    bool ExecutionWaiterThread::IsIdle() const {
+        return idle;
+    }
+
+    void ExecutionWaiterThread::Queue(std::shared_ptr<FenceCycle> cycle, std::function<void()> &&callback) {
+        std::unique_lock lock{mutex};
+        pendingSignalQueue.push({std::move(cycle), std::move(callback)});
+        condition.notify_all();
+    }
+
     CommandExecutor::CommandExecutor(const DeviceState &state)
         : state{state},
           gpu{*state.gpu},
@@ -501,17 +537,30 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    void CommandExecutor::Submit() {
-        for (const auto &callback : flushCallbacks)
-            callback();
+    void CommandExecutor::Submit(std::function<void()> &&callback) {
+        for (const auto &flushCallback : flushCallbacks)
+            flushCallback();
 
         executionTag = AllocateTag();
 
         if (!slot->nodes.empty()) {
             TRACE_EVENT("gpu", "CommandExecutor::Submit");
+
+            if (callback && *state.settings->useDirectMemoryImport)
+                waiterThread.Queue(cycle, std::move(callback));
+            else
+                waiterThread.Queue(cycle, {});
+
             SubmitInternal();
             submissionNumber++;
+
+        } else {
+            if (callback && *state.settings->useDirectMemoryImport)
+                waiterThread.Queue(nullptr, std::move(callback));
         }
+
+        if (callback && !*state.settings->useDirectMemoryImport)
+            callback();
 
         ResetInternal();
     }
