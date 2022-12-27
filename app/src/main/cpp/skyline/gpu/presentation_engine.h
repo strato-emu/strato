@@ -52,6 +52,7 @@ namespace skyline::gpu {
         perfetto::Track presentationTrack; //!< Perfetto track used for presentation events
 
       public:
+        std::atomic<bool> skipSignal; //!< If true, the next signal will be skipped by the choreographer thread
         std::shared_ptr<kernel::type::KEvent> vsyncEvent; //!< Signalled every time a frame is drawn
 
       private:

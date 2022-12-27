@@ -61,7 +61,8 @@ namespace skyline::gpu {
 
         // Record the current cycle's timestamp and signal the V-Sync event to notify the game that a frame has been displayed
         engine->lastChoreographerTime = frameTimeNanos;
-        engine->vsyncEvent->Signal();
+        if (!engine->skipSignal.exchange(false))
+            engine->vsyncEvent->Signal();
 
         // Post the frame callback to be triggered on the next display refresh
         AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback64>(&ChoreographerCallback), engine);
@@ -237,6 +238,8 @@ namespace skyline::gpu {
             presentQueue.Process([this](const PresentableFrame &frame) {
                 PresentFrame(frame);
                 frame.presentCallback(); // We're calling the callback here as it's outside of all the locks in PresentFrame
+                skipSignal = true;
+                vsyncEvent->Signal();
             }, [] {});
         } catch (const signal::SignalException &e) {
             Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
