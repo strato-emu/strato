@@ -70,6 +70,9 @@
             app:key="username_value"
             app:limit="31"
             app:title="@string/username" />
+        <emu.skyline.preference.ProfilePicturePreference
+            app:key="profile_picture_value"
+            app:title="@string/profile_picture" />
         <emu.skyline.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/system_languages"

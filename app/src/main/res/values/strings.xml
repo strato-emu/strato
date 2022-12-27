@@ -47,6 +47,7 @@
     <string name="docked_enabled">The system will emulate being in docked mode</string>
     <string name="username">Username</string>
     <string name="username_default" translatable="false">@string/app_name</string>
+    <string name="profile_picture">Profile picture</string>
     <string name="system_language">System language</string>
     <string name="system_region">System region</string>
     <!-- Settings - Keys -->

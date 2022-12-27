@@ -33,6 +33,7 @@ namespace skyline {
         void Update() override {
             isDocked = ktSettings.GetBool("isDocked");
             usernameValue = std::move(ktSettings.GetString("usernameValue"));
+            profilePictureValue = ktSettings.GetString("profilePictureValue");
             systemLanguage = ktSettings.GetInt<skyline::language::SystemLanguage>("systemLanguage");
             systemRegion = ktSettings.GetInt<skyline::region::RegionCode>("systemRegion");
             forceTripleBuffering = ktSettings.GetBool("forceTripleBuffering");

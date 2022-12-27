@@ -25,6 +25,7 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     // System
     var isDocked by sharedPreferences(context, true)
     var usernameValue by sharedPreferences(context, context.getString(R.string.username_default))
+    var profilePictureValue by sharedPreferences(context, "")
     var systemLanguage by sharedPreferences(context, 1)
     var systemRegion by sharedPreferences(context, -1)
 
