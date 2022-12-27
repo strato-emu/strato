@@ -300,33 +300,20 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.SetLogicOp(engine->logicOp.func);
 
         for (u32 i{}; i < engine::ColorTargetCount; i++) {
-            bool rtEnabled{packedState.IsColorRenderTargetEnabled(packedState.ctSelect[i])};
-            enabledRts.set(i, rtEnabled);
             auto ctWrite{[&]() {
-                if (!rtEnabled)
-                    return engine::CtWrite{};
-
                 if (engine->singleCtWriteControl)
                     return engine->ctWrites[0];
                 else
                     return engine->ctWrites[i];
             }()};
 
-            bool enable{engine->blend.enable[i] != 0 && rtEnabled};
+            bool enable{engine->blend.enable[i] != 0};
 
             if (engine->blendStatePerTargetEnable)
                 packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blendPerTargets[i]);
             else
                 packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blend);
         }
-    }
-
-    bool ColorBlendState::Refresh(PackedPipelineState &packedState) {
-        for (u32 i{}; i < engine::ColorTargetCount; i++)
-            if (enabledRts.test(i) != packedState.IsColorRenderTargetEnabled(packedState.ctSelect[i]))
-                return true;
-
-        return false;
     }
 
     /* Transform Feedback State */
@@ -404,12 +391,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         colorAttachments.clear();
-        for (size_t i{}; i < ctSelect.count; i++) {
-            const auto &view{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState).view.get()};
-            colorAttachments.push_back(view);
+        for (size_t i{}; i < engine::ColorTargetCount; i++) {
+            if (i < ctSelect.count) {
+                const auto &view{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState).view.get()};
+                colorAttachments.push_back(view);
 
-            if (view)
-                ctx.executor.AttachTexture(view);
+                if (view)
+                    ctx.executor.AttachTexture(view);
+            } else {
+                colorAttachments.push_back({});
+            }
         }
 
         depthAttachment = depthRenderTarget.UpdateGet(ctx, packedState).view.get();

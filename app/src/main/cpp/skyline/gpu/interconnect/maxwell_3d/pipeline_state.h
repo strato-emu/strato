@@ -212,7 +212,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Flush(PackedPipelineState &packedState);
     };
 
-    class ColorBlendState : dirty::RefreshableManualDirty {
+    class ColorBlendState : dirty::ManualDirty {
       public:
         struct EngineRegisters {
             const engine::LogicOp &logicOp;
@@ -227,14 +227,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
       private:
         dirty::BoundSubresource<EngineRegisters> engine;
-        std::bitset<engine::ColorTargetCount> enabledRts{};
 
       public:
         ColorBlendState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
         void Flush(PackedPipelineState &packedState);
-
-        bool Refresh(PackedPipelineState &packedState);
     };
 
     class TransformFeedbackState : dirty::ManualDirty {

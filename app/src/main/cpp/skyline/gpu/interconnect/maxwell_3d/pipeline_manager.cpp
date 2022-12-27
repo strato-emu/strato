@@ -530,10 +530,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
         boost::container::static_vector<vk::PipelineColorBlendAttachmentState, engine::ColorTargetCount> attachmentBlendStates;
         boost::container::static_vector<vk::Format, engine::ColorTargetCount> colorAttachmentFormats;
 
-        for (u32 i{}; i < packedState.GetColorRenderTargetCount(); i++) {
-            attachmentBlendStates.push_back(packedState.GetAttachmentBlendState(i));
-            texture::Format format{packedState.GetColorRenderTargetFormat(packedState.ctSelect[i])};
-            colorAttachmentFormats.push_back(format ? format->vkFormat : vk::Format::eUndefined);
+        for (u32 i{}; i < engine::ColorTargetCount; i++) {
+            if (i < packedState.GetColorRenderTargetCount()) {
+                attachmentBlendStates.push_back(packedState.GetAttachmentBlendState(i));
+                texture::Format format{packedState.GetColorRenderTargetFormat(packedState.ctSelect[i])};
+                colorAttachmentFormats.push_back(format ? format->vkFormat : vk::Format::eUndefined);
+            } else {
+                colorAttachmentFormats.push_back(vk::Format::eUndefined);
+            }
         }
 
         vk::PipelineColorBlendStateCreateInfo colorBlendState{
