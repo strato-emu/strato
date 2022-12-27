@@ -141,7 +141,7 @@ namespace skyline::service::hosbinder {
         }
 
         buffer->state = BufferState::Dequeued;
-        fence = AndroidFence{}; // We just let the presentation engine return a buffer which is ready to be written into, there is no need for further synchronization
+        fence = buffer->fence; // We just let the presentation engine return a buffer which is ready to be written into, there is no need for further synchronization
 
         Logger::Debug("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}, Is Async: {}", slot, width, height, ToString(format), usage, async);
         return AndroidStatus::Ok;
@@ -385,6 +385,7 @@ namespace skyline::service::hosbinder {
 
         buffer.state = BufferState::Queued;
         buffer.frameNumber = ++frameNumber;
+        buffer.fence = fence;
 
         width = defaultWidth;
         height = defaultHeight;
