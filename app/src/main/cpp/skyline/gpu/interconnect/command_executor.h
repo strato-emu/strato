@@ -97,6 +97,7 @@ namespace skyline::gpu::interconnect {
      */
     class ExecutionWaiterThread {
       private:
+        const DeviceState &state;
         std::thread thread;
         std::mutex mutex;
         std::condition_variable condition;
@@ -106,7 +107,7 @@ namespace skyline::gpu::interconnect {
         void Run();
 
       public:
-        ExecutionWaiterThread();
+        ExecutionWaiterThread(const DeviceState &state);
 
         bool IsIdle() const;
 

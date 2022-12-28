@@ -2,6 +2,7 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <range/v3/view.hpp>
+#include <adrenotools/driver.h>
 #include <common/settings.h>
 #include <loader/loader.h>
 #include <gpu.h>
@@ -195,13 +196,29 @@ namespace skyline::gpu::interconnect {
     void ExecutionWaiterThread::Run() {
         signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
 
+        // Enable turbo clocks to begin with if requested
+        if (*state.settings->forceMaxGpuClocks)
+            adrenotools_set_turbo(true);
+
         while (true) {
             std::pair<std::shared_ptr<FenceCycle>, std::function<void()>> item{};
             {
                 std::unique_lock lock{mutex};
-                idle = true;
-                condition.wait(lock, [this] { return !pendingSignalQueue.empty(); });
-                idle = false;
+                if (pendingSignalQueue.empty()) {
+                    idle = true;
+
+                    // Don't force turbo clocks when the GPU is idle
+                    if (*state.settings->forceMaxGpuClocks)
+                        adrenotools_set_turbo(false);
+
+                    condition.wait(lock, [this] { return !pendingSignalQueue.empty(); });
+
+                    // Once we have work to do, force turbo clocks is enabled
+                    if (*state.settings->forceMaxGpuClocks)
+                        adrenotools_set_turbo(true);
+
+                    idle = false;
+                }
                 item = std::move(pendingSignalQueue.front());
                 pendingSignalQueue.pop();
             }
@@ -216,7 +233,7 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    ExecutionWaiterThread::ExecutionWaiterThread() : thread{&ExecutionWaiterThread::Run, this} {}
+    ExecutionWaiterThread::ExecutionWaiterThread(const DeviceState &state) : state{state}, thread{&ExecutionWaiterThread::Run, this} {}
 
     bool ExecutionWaiterThread::IsIdle() const {
         return idle;
@@ -232,6 +249,7 @@ namespace skyline::gpu::interconnect {
         : state{state},
           gpu{*state.gpu},
           recordThread{state},
+          waiterThread{state},
           tag{AllocateTag()} {
         RotateRecordSlot();
     }

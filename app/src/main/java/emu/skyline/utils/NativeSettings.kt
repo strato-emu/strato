@@ -29,6 +29,7 @@ class NativeSettings(context : Context, pref : PreferenceSettings) {
     var executorSlotCountScale : Int = pref.executorSlotCountScale
     var executorFlushThreshold : Int = pref.executorFlushThreshold
     var useDirectMemoryImport : Boolean = pref.useDirectMemoryImport
+    var forceMaxGpuClocks : Boolean = pref.forceMaxGpuClocks
 
     // Hacks
     var enableFastGpuReadbackHack : Boolean = pref.enableFastGpuReadbackHack
