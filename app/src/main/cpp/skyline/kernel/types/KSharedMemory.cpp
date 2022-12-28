@@ -58,7 +58,7 @@ namespace skyline::kernel::type {
         if (guest.data() != map.data() && guest.size() != map.size())
             throw exception("Unmapping KSharedMemory partially is not supported: Requested Unmap: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
 
-        if (mmap(map.data(), map.size(), PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(map.data() - memoryManager.base.data())) == MAP_FAILED)
+        if (mmap(map.data(), map.size(), PROT_NONE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) == MAP_FAILED)
             throw exception("An error occurred while unmapping shared memory in guest: {}", strerror(errno));
 
         guest = span<u8>{};
@@ -95,7 +95,7 @@ namespace skyline::kernel::type {
         if (state.process && guest.valid()) {
             auto &memoryManager{state.process->memory};
             if (objectType != KType::KTransferMemory) {
-                if (mmap(guest.data(), guest.size(), PROT_NONE, MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.data() - memoryManager.base.data())) == MAP_FAILED)
+                if (mmap(guest.data(), guest.size(), PROT_NONE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) == MAP_FAILED)
                     Logger::Warn("An error occurred while unmapping shared memory: {}", strerror(errno));
 
                 state.process->memory.InsertChunk(ChunkDescriptor{
@@ -107,7 +107,7 @@ namespace skyline::kernel::type {
                 // KTransferMemory remaps the region with R/W permissions during destruction
                 constexpr memory::Permission UnborrowPermission{true, true, false};
 
-                if (mmap(guest.data(), guest.size(), UnborrowPermission.Get(), MAP_SHARED | MAP_FIXED, memoryManager.memoryFd, reinterpret_cast<off_t>(guest.data() - memoryManager.base.data())) == MAP_FAILED)
+                if (mmap(guest.data(), guest.size(), UnborrowPermission.Get(), MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) == MAP_FAILED)
                     Logger::Warn("An error occurred while remapping transfer memory: {}", strerror(errno));
                 else if (!host.valid())
                     Logger::Warn("Expected host mapping of transfer memory to be valid during KTransferMemory destruction");

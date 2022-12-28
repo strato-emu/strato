@@ -225,9 +225,6 @@ namespace skyline {
             span<u8> stack{};
             span<u8> tlsIo{}; //!< TLS/IO
 
-            FileDescriptor memoryFd{}; //!< The file descriptor of the memory backing for the entire guest address space
-            FileDescriptor code36BitFd{}; //!< The file descriptor of the memory backing for in the lower 36 bits of the address space for mapping code and stack on 36-bit guests
-
             std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it's locked in shared mode by readers and exclusive mode by writers
 
             MemoryManager(const DeviceState &state);
@@ -258,7 +255,7 @@ namespace skyline {
             span<u8> CreateMirrors(const std::vector<span<u8>> &regions);
 
             /**
-             * @brief Frees the underlying physical memory for a page-aligned mapping in the guest address space
+             * @brief Frees the underlying physical memory for all full pages in the contained mapping
              * @note All subsequent accesses to freed memory will return 0s
              */
             void FreeMemory(span<u8> memory);

@@ -151,13 +151,6 @@ namespace skyline::nce {
         void TrapRegions(TrapHandle handle, bool writeOnly);
 
         /**
-         * @brief Pages out the supplied trap region of memory (except border pages), any future accesses will return 0s
-         * @note This function is intended to be used after trapping reads to a region where the callback pages back in the data
-         * @note If the region is determined to be too small, this function will not do anything and is not meant to deterministically page out the region
-         */
-        void PageOutRegions(TrapHandle handle);
-
-        /**
          * @brief Removes protections from a region of memory
          */
         void RemoveTrap(TrapHandle handle);

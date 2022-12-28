@@ -736,19 +736,6 @@ namespace skyline::nce {
         ReprotectIntervals(handle->intervals, protection);
     }
 
-    void NCE::PageOutRegions(TrapHandle handle) {
-        TRACE_EVENT("host", "NCE::PageOutRegions");
-        std::scoped_lock lock{trapMutex};
-        for (auto region : handle->intervals) {
-            auto freeStart{util::AlignUp(region.start, constant::PageSize)}, freeEnd{util::AlignDown(region.end, constant::PageSize)}; // We want to avoid the first and last page as they may contain unrelated data
-            ssize_t freeSize{freeEnd - freeStart};
-
-            constexpr ssize_t MinimumPageoutSize{constant::PageSize}; //!< The minimum size to page out, we don't want to page out small intervals for performance reasons
-            if (freeSize > MinimumPageoutSize)
-                state.process->memory.FreeMemory(span<u8>{freeStart, static_cast<size_t>(freeSize)});
-        }
-    }
-
     void NCE::RemoveTrap(TrapHandle handle) {
         TRACE_EVENT("host", "NCE::RemoveTrap");
         std::scoped_lock lock{trapMutex};

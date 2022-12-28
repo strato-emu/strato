@@ -17,7 +17,7 @@ namespace skyline::kernel {
     constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
     constexpr size_t CodeRegionSize{4ULL * 1024 * 1024 * 1024}; //!< The assumed maximum size of the code region (4GiB)
 
-    static std::pair<span<u8>, FileDescriptor> AllocateMappedRange(size_t minSize, size_t align, size_t minAddress, size_t maxAddress, bool findLargest) {
+    static span<u8> AllocateMappedRange(size_t minSize, size_t align, size_t minAddress, size_t maxAddress, bool findLargest) {
         span<u8> region{};
         size_t size{minSize};
 
@@ -47,18 +47,11 @@ namespace skyline::kernel {
         if (!region.valid())
             throw exception("Allocation failed");
 
-        FileDescriptor memoryFd{static_cast<int>(syscall(__NR_memfd_create, "HOS-AS", MFD_CLOEXEC))}; // We need to use memfd directly as ASharedMemory doesn't always use it while we depend on it for FreeMemory (using FALLOC_FL_PUNCH_HOLE) to work
-        if (memoryFd == -1)
-            throw exception("Failed to create memfd for guest address space: {}", strerror(errno));
-
-        if (ftruncate(memoryFd, static_cast<off_t>(size)) == -1)
-            throw exception("Failed to resize memfd for guest address space: {}", strerror(errno));
-
-        auto result{mmap(reinterpret_cast<void *>(region.data()), size, PROT_WRITE, MAP_FIXED | MAP_SHARED, memoryFd, 0)};
+        auto result{mmap(reinterpret_cast<void *>(region.data()), size, PROT_WRITE, MAP_FIXED | MAP_ANONYMOUS | MAP_SHARED, -1, 0)};
         if (result == MAP_FAILED)
             throw exception("Failed to mmap guest address space: {}", strerror(errno));
 
-        return {region, memoryFd};
+        return region;
     }
 
     void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {
@@ -88,7 +81,7 @@ namespace skyline::kernel {
         // Qualcomm KGSL (Kernel Graphic Support Layer/Kernel GPU driver) maps below 35-bits, reserving it causes KGSL to go OOM
         static constexpr size_t KgslReservedRegionSize{1ULL << 35};
         if (type != memory::AddressSpaceType::AddressSpace36Bit) {
-            std::tie(base, memoryFd) = AllocateMappedRange(baseSize, RegionAlignment, KgslReservedRegionSize, addressSpace.size(), false);
+            base = AllocateMappedRange(baseSize, RegionAlignment, KgslReservedRegionSize, addressSpace.size(), false);
 
             chunks = {
                 ChunkDescriptor{
@@ -110,8 +103,8 @@ namespace skyline::kernel {
             code = base;
 
         } else {
-            std::tie(base, memoryFd) = AllocateMappedRange(baseSize, 1ULL << 36, KgslReservedRegionSize, addressSpace.size(), false);
-            std::tie(codeBase36Bit, code36BitFd) = AllocateMappedRange(0x32000000, RegionAlignment, 0xC000000, 0x78000000ULL + reinterpret_cast<size_t>(addressSpace.data()), true);
+            base = AllocateMappedRange(baseSize, 1ULL << 36, KgslReservedRegionSize, addressSpace.size(), false);
+            codeBase36Bit = AllocateMappedRange(0x32000000, RegionAlignment, 0xC000000, 0x78000000ULL + reinterpret_cast<size_t>(addressSpace.data()), true);
 
             chunks = {
                 ChunkDescriptor{
@@ -191,9 +184,11 @@ namespace skyline::kernel {
         if (!util::IsPageAligned(offset) || !util::IsPageAligned(mapping.size()))
             throw exception("Mapping is not aligned to a page: 0x{:X}-0x{:X} (0x{:X})", mapping.data(), mapping.end().base(), offset);
 
-        auto mirror{mmap(nullptr, mapping.size(), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, memoryFd, static_cast<off_t>(offset))};
+        auto mirror{mremap(mapping.data(), 0, mapping.size(), MREMAP_MAYMOVE)};
         if (mirror == MAP_FAILED)
             throw exception("Failed to create mirror mapping at 0x{:X}-0x{:X} (0x{:X}): {}", mapping.data(), mapping.end().base(), offset, strerror(errno));
+
+        mprotect(mirror, mapping.size(), PROT_READ | PROT_WRITE | PROT_EXEC);
 
         return span<u8>{reinterpret_cast<u8 *>(mirror), mapping.size()};
     }
@@ -216,9 +211,11 @@ namespace skyline::kernel {
             if (!util::IsPageAligned(offset) || !util::IsPageAligned(region.size()))
                 throw exception("Mapping is not aligned to a page: 0x{:X}-0x{:X} (0x{:X})", region.data(), region.end().base(), offset);
 
-            auto mirror{mmap(reinterpret_cast<u8 *>(mirrorBase) + mirrorOffset, region.size(), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED | MAP_FIXED, memoryFd, static_cast<off_t>(offset))};
+            auto mirror{mremap(region.data(), 0, region.size(), MREMAP_FIXED | MREMAP_MAYMOVE, reinterpret_cast<u8 *>(mirrorBase) + mirrorOffset)};
             if (mirror == MAP_FAILED)
                 throw exception("Failed to create mirror mapping at 0x{:X}-0x{:X} (0x{:X}): {}", region.data(), region.end().base(), offset, strerror(errno));
+
+            mprotect(mirror, region.size(), PROT_READ | PROT_WRITE | PROT_EXEC);
 
             mirrorOffset += region.size();
         }
@@ -230,16 +227,12 @@ namespace skyline::kernel {
     }
 
     void MemoryManager::FreeMemory(span<u8> memory) {
-        if (!base.contains(memory))
-            throw exception("Mapping is outside of VMM base: 0x{:X} - 0x{:X}", memory.data(), memory.end().base());
+        u8 *alignedStart{util::AlignUp(memory.data(), constant::PageSize)};
+        u8 *alignedEnd{util::AlignDown(memory.end().base(), constant::PageSize)};
 
-        auto offset{static_cast<size_t>(memory.data() - base.data())};
-        if (!util::IsPageAligned(offset) || !util::IsPageAligned(memory.size()))
-            throw exception("Mapping is not aligned to a page: 0x{:X}-0x{:X} (0x{:X})", memory.data(), memory.end().base(), offset);
-
-        // We need to use fallocate(FALLOC_FL_PUNCH_HOLE) to free the backing memory rather than madvise(MADV_REMOVE) as the latter fails when the memory doesn't have write permissions, we generally need to free memory after reprotecting it to disallow accesses between the two calls which would cause UB
-        if (fallocate(*memoryFd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, static_cast<off_t>(offset), static_cast<off_t>(memory.size())) != 0)
-            throw exception("Failed to free memory at 0x{:X}-0x{:X} (0x{:X}): {}", memory.data(), memory.end().base(), offset, strerror(errno));
+        if (alignedStart < alignedEnd)
+            if (madvise(alignedStart, static_cast<size_t>(alignedEnd - alignedStart), MADV_REMOVE) == -1)
+                throw exception("Failed to free memory: {}", strerror(errno))   ;
     }
 
     void MemoryManager::InsertChunk(const ChunkDescriptor &chunk) {

@@ -387,7 +387,7 @@ namespace skyline::gpu {
             SynchronizeHost(true); // Will transition the Buffer to Clean
 
         dirtyState = DirtyState::GpuDirty;
-        gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
+        gpu.state.process->memory.FreeMemory(mirror); // All data can be paged out from the guest as the guest mirror won't be used
 
         BlockAllCpuBackingWrites();
         AdvanceSequence(); // The GPU will modify buffer contents so advance to the next sequence

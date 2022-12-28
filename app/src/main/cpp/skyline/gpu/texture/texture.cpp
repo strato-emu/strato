@@ -728,7 +728,7 @@ namespace skyline::gpu {
                 // If a texture is Clean then we can just transition it to being GPU dirty and retrap it
                 dirtyState = DirtyState::GpuDirty;
                 gpu.state.nce->TrapRegions(*trapHandle, false);
-                gpu.state.nce->PageOutRegions(*trapHandle);
+                gpu.state.process->memory.FreeMemory(mirror);
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return; // If the texture has not been modified on the CPU, there is no need to synchronize it
@@ -756,7 +756,7 @@ namespace skyline::gpu {
             std::scoped_lock lock{stateMutex};
 
             if (dirtyState != DirtyState::CpuDirty && gpuDirty)
-                gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
+                gpu.state.process->memory.FreeMemory(mirror); // All data can be paged out from the guest as the guest mirror won't be used
         }
     }
 
@@ -771,7 +771,7 @@ namespace skyline::gpu {
             if (gpuDirty && dirtyState == DirtyState::Clean) {
                 dirtyState = DirtyState::GpuDirty;
                 gpu.state.nce->TrapRegions(*trapHandle, false);
-                gpu.state.nce->PageOutRegions(*trapHandle);
+                gpu.state.process->memory.FreeMemory(mirror);
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return;
@@ -793,7 +793,7 @@ namespace skyline::gpu {
             std::scoped_lock lock{stateMutex};
 
             if (dirtyState != DirtyState::CpuDirty && gpuDirty)
-                gpu.state.nce->PageOutRegions(*trapHandle); // All data can be paged out from the guest as the guest mirror won't be used
+                gpu.state.process->memory.FreeMemory(mirror); // All data can be paged out from the guest as the guest mirror won't be used
         }
     }
 
