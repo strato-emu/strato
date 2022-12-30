@@ -3,6 +3,7 @@
 
 #include <kernel/types/KProcess.h>
 #include "IAddOnContentManager.h"
+#include "IPurchaseEventManager.h"
 
 namespace skyline::service::aocsrv {
     IAddOnContentManager::IAddOnContentManager(const DeviceState &state, ServiceManager &manager)
@@ -36,6 +37,11 @@ namespace skyline::service::aocsrv {
     }
 
     Result IAddOnContentManager::CheckAddOnContentMountStatus(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IAddOnContentManager::CreateEcPurchasedEventManager(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(IPurchaseEventManager), session, response);
         return {};
     }
 }

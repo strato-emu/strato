@@ -356,6 +356,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/visrv/ISystemDisplayService.cpp
         ${source_DIR}/skyline/services/pl/IPlatformServiceManager.cpp
         ${source_DIR}/skyline/services/aocsrv/IAddOnContentManager.cpp
+        ${source_DIR}/skyline/services/aocsrv/IPurchaseEventManager.cpp
         ${source_DIR}/skyline/services/pctl/IParentalControlServiceFactory.cpp
         ${source_DIR}/skyline/services/pctl/IParentalControlService.cpp
         ${source_DIR}/skyline/services/lm/ILogService.cpp

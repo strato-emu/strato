@@ -4,7 +4,7 @@
 #pragma once
 
 #include <kernel/types/KEvent.h>
-#include <services/base_service.h>
+#include <services/serviceman.h>
 
 namespace skyline::service::aocsrv {
     /**
@@ -28,12 +28,15 @@ namespace skyline::service::aocsrv {
 
         Result CheckAddOnContentMountStatus(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result CreateEcPurchasedEventManager(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x2, IAddOnContentManager, CountAddOnContent),
             SFUNC(0x3, IAddOnContentManager, ListAddOnContent),
             SFUNC(0x8, IAddOnContentManager, GetAddOnContentListChangedEvent),
             SFUNC(0xA, IAddOnContentManager, GetAddOnContentListChangedEventWithProcessId),
-            SFUNC(0x32, IAddOnContentManager, CheckAddOnContentMountStatus)
+            SFUNC(0x32, IAddOnContentManager, CheckAddOnContentMountStatus),
+            SFUNC(0x64, IAddOnContentManager, CreateEcPurchasedEventManager)
         )
     };
 }
