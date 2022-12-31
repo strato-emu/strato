@@ -29,8 +29,8 @@ namespace skyline::gpu::interconnect {
         };
 
         tsl::robin_map<u8 *, std::unique_ptr<MirrorEntry>> mirrorMap;
-        std::mutex trapMutex; //!< Protects accesses from trap handlers to the mirror map
-        std::optional<std::scoped_lock<std::mutex>> trapExecutionLock; //!< Persistently held lock over an execution to avoid frequent relocking
+        std::recursive_mutex trapMutex; //!< Protects accesses from trap handlers to the mirror map
+        std::optional<std::scoped_lock<std::recursive_mutex>> trapExecutionLock; //!< Persistently held lock over an execution to avoid frequent relocking
         MirrorEntry *entry{};
         span<u8> mirrorBlock{}; //!< Guest mapped memory block corresponding to `entry`
         u64 lastProgramBase{};
