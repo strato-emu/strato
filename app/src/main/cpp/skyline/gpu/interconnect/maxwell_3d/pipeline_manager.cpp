@@ -762,6 +762,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
                                  return GetStorageBufferBinding(ctx, desc, constantBuffers[i][desc.cbuf_index], storageBufferViews[storageBufferIdx++]);
                              });
 
+            bindingIdx += stageDescInfo.uniformTexelBufferDescCount;
+            bindingIdx += stageDescInfo.storageTexelBufferDescCount;
+
             writeImageDescs(vk::DescriptorType::eCombinedImageSampler, stage.info.texture_descriptors, stageDescInfo.combinedImageSamplerDescCount,
                             [&](const Shader::TextureDescriptor &desc, size_t arrayIdx) {
                                 BindlessHandle handle{ReadBindlessHandle(ctx, constantBuffers[i], desc, arrayIdx)};
@@ -769,6 +772,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
                                 sampledImages[combinedImageSamplerIdx++] = binding.second;
                                 return binding.first;
                             }, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites);
+
+            bindingIdx += stageDescInfo.storageImageDescCount;
         }
 
         // Since we don't implement all descriptor types the number of writes might not match what's expected
