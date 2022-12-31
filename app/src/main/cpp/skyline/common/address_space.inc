@@ -287,7 +287,7 @@ namespace skyline {
     MM_MEMBER(void)::Read(u8 *destination, VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
         TRACE_EVENT("containers", "FlatMemoryManager::Read");
 
-        std::scoped_lock lock(this->blockMutex);
+        std::shared_lock lock(this->blockMutex);
 
         auto successor{std::upper_bound(this->blocks.begin(), this->blocks.end(), virt, [] (auto virt, const auto &block) {
             return virt < block.virt;
@@ -327,7 +327,7 @@ namespace skyline {
     MM_MEMBER(void)::Write(VaType virt, u8 *source, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
         TRACE_EVENT("containers", "FlatMemoryManager::Write");
 
-        std::scoped_lock lock(this->blockMutex);
+        std::shared_lock lock(this->blockMutex);
 
         VaType virtEnd{virt + size};
 
@@ -367,7 +367,7 @@ namespace skyline {
     MM_MEMBER(void)::Copy(VaType dst, VaType src, VaType size, std::function<void(span<u8>)> cpuAccessCallback) {
         TRACE_EVENT("containers", "FlatMemoryManager::Copy");
 
-        std::scoped_lock lock(this->blockMutex);
+        std::shared_lock lock(this->blockMutex);
 
         VaType srcEnd{src + size};
         VaType dstEnd{dst + size};

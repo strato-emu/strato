@@ -55,7 +55,7 @@ namespace skyline {
             }
         };
 
-        SpinLock blockMutex;
+        std::shared_mutex blockMutex;
         std::vector<Block> blocks{Block{}};
 
         /**
@@ -141,7 +141,7 @@ namespace skyline {
          * @return A span of the mapped region and the offset of the input VA in the region
          */
         __attribute__((always_inline)) std::pair<span<u8>, VaType> LookupBlock(VaType virt, std::function<void(span<u8>)> cpuAccessCallback = {}) {
-            std::scoped_lock lock{this->blockMutex};
+            std::shared_lock lock{this->blockMutex};
             return LookupBlockLocked(virt, cpuAccessCallback);
         }
 
@@ -149,7 +149,7 @@ namespace skyline {
          * @brief Translates a region in the VA space to a corresponding set of regions in the PA space
          */
         TranslatedAddressRange TranslateRange(VaType virt, VaType size, std::function<void(span<u8>)> cpuAccessCallback = {}) {
-            std::scoped_lock lock{this->blockMutex};
+            std::shared_lock lock{this->blockMutex};
 
             // Fast path for when the range is mapped in a single block
             auto [blockSpan, rangeOffset]{LookupBlockLocked(virt, cpuAccessCallback)};
@@ -188,7 +188,7 @@ namespace skyline {
         span<u8> ReadTill(Container& destination, VaType virt, Function function, std::function<void(span<u8>)> cpuAccessCallback = {}) {
             //TRACE_EVENT("containers", "FlatMemoryManager::ReadTill");
 
-            std::scoped_lock lock(this->blockMutex);
+            std::shared_lock lock(this->blockMutex);
 
             auto successor{std::upper_bound(this->blocks.begin(), this->blocks.end(), virt, [](auto virt, const auto &block) {
                 return virt < block.virt;
