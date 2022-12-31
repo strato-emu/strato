@@ -51,6 +51,7 @@ namespace skyline::gpu {
         bool supportsNullDescriptor{}; //!< If the device supports the null descriptor feature in the 'VK_EXT_robustness2' Vulkan extension
         u32 subgroupSize{}; //!< Size of a subgroup on the host GPU
         u32 hostVisibleCoherentCachedMemoryType{std::numeric_limits<u32>::max()};
+        u32 minimumStorageBufferAlignment{}; //!< Minimum alignment for storage buffers passed to shaders
 
         std::bitset<7> bcnSupport{}; //!< Bitmask of BCn texture formats supported, it is ordered as BC1, BC2, BC3, BC4, BC5, BC6H and BC7
         bool supportsAdrenoDirectMemoryImport{};

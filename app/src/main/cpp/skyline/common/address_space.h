@@ -113,10 +113,11 @@ namespace skyline {
 
         std::pair<span<u8>, size_t> LookupBlockLocked(VaType virt, std::function<void(span<u8>)> cpuAccessCallback = {}) {
             const auto &blockEntry{this->blockSegmentTable[virt]};
-            if (blockEntry.phys == nullptr)
-                return {span<u8>{}, 0};
-
             VaType segmentOffset{virt - blockEntry.virt};
+
+            if (blockEntry.extraInfo.sparseMapped || blockEntry.phys == nullptr)
+                return {span<u8>{static_cast<u8*>(nullptr), blockEntry.extent}, segmentOffset};
+
             span<u8> blockSpan{blockEntry.phys, blockEntry.extent};
             if (cpuAccessCallback)
                 cpuAccessCallback(blockSpan);

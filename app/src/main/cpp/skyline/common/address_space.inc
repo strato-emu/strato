@@ -238,16 +238,7 @@ namespace skyline {
         u8 *blockPhys{predecessor->phys + (virt - predecessor->virt)};
         VaType blockSize{std::min(successor->virt - virt, size)};
 
-
         while (size) {
-            // Return a zeroed out map to emulate sparse mappings
-            if (predecessor->extraInfo.sparseMapped) {
-                if (blockSize > SparseMapSize)
-                    throw exception("Size of the sparse map is too small to fit block of size: 0x{:X}", blockSize);
-
-                blockPhys = sparseMap;
-            }
-
             if (predecessor->phys) {
                 span cpuBlock{blockPhys, blockSize};
                 if (cpuAccessCallback)

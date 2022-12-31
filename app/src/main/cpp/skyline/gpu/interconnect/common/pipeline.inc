@@ -37,14 +37,12 @@ namespace skyline::gpu::interconnect {
             u64 address;
             u32 size;
         };
-        static constexpr size_t MinAlignment{0x40};
-
         auto ssbo{cbuf.Read<SsboDescriptor>(ctx.executor, desc.cbuf_offset)};
         if (ssbo.size == 0)
             return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, PAGE_SIZE).buffer, 0, PAGE_SIZE};
 
-        size_t padding{ssbo.address & (MinAlignment - 1)};
-        cachedView.Update(ctx, ssbo.address - padding, util::AlignUp(ssbo.size + padding, MinAlignment));
+        size_t padding{ssbo.address & (ctx.gpu.traits.minimumStorageBufferAlignment - 1)};
+        cachedView.Update(ctx, ssbo.address - padding, util::AlignUp(ssbo.size + padding, ctx.gpu.traits.minimumStorageBufferAlignment));
 
         auto view{cachedView.view};
         ctx.executor.AttachBuffer(view);

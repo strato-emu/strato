@@ -210,6 +210,9 @@ namespace skyline::gpu {
         for (u32 i{}; i < memoryProps.memoryProperties.memoryTypeCount; i++)
             if ((memoryProps.memoryProperties.memoryTypes[i].propertyFlags & ReqMemFlags) == ReqMemFlags)
                 hostVisibleCoherentCachedMemoryType = i;
+
+
+        minimumStorageBufferAlignment = static_cast<u32>(deviceProperties2.get().properties.limits.minStorageBufferOffsetAlignment);
     }
 
     std::string TraitManager::Summary() {
