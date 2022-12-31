@@ -620,9 +620,13 @@ namespace skyline::gpu {
     }
 
     span<u8> Buffer::GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback) {
-        std::scoped_lock lock{stateMutex};
-        if (dirtyState == DirtyState::GpuDirty)
-            SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
+        if (!isDirect) {
+            std::unique_lock lock{stateMutex};
+            if (dirtyState == DirtyState::GpuDirty)
+                SynchronizeGuestImmediate(isFirstUsage, flushHostCallback);
+        } else {
+            RefreshGpuWritesActiveDirect(true, flushHostCallback);
+        }
 
         return mirror;
     }
