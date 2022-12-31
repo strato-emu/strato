@@ -46,6 +46,11 @@ namespace skyline::gpu {
          */
         Shader::IR::Program CombineVertexShaders(Shader::IR::Program &vertexA, Shader::IR::Program &vertexB, span<u8> vertexBBinary);
 
+        /**
+         * @brief Generates a passthrough geometry shader to write gl_Layer on devices that don't support VK_EXT_shader_viewport_index_layer
+         */
+        Shader::IR::Program GenerateGeometryPassthroughShader(Shader::IR::Program &layerSource, Shader::OutputTopology topology);
+
         Shader::IR::Program ParseComputeShader(span<u8> binary, u32 baseOffset, u32 textureConstantBufferIndex, u32 localMemorySize, u32 sharedMemorySize, std::array<u32, 3> workgroupDimensions, const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType);
 
         vk::ShaderModule CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings);

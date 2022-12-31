@@ -32,7 +32,10 @@ namespace skyline::gpu {
             .support_float16 = traits.supportsFloat16,
             .support_int64 = traits.supportsInt64,
             .needs_demote_reorder = false,
-            .support_snorm_render_buffer = true
+            .support_snorm_render_buffer = true,
+            .support_viewport_index_layer = gpu.traits.supportsShaderViewportIndexLayer,
+            .min_ssbo_alignment = traits.minimumStorageBufferAlignment,
+            .support_geometry_passthrough = false
         };
 
         constexpr u32 TegraX1WarpSize{32}; //!< The amount of threads in a warp on the Tegra X1
@@ -63,10 +66,13 @@ namespace skyline::gpu {
             .support_int64_atomics = traits.supportsAtomicInt64,
             .support_derivative_control = true,
             .support_geometry_shader_passthrough = false,
+            .support_native_ndc = false,
             .warp_size_potentially_larger_than_guest = TegraX1WarpSize < traits.subgroupSize,
             .lower_left_origin_mode = false,
             .need_declared_frag_colors = false,
-            .has_broken_spirv_position_input = traits.quirks.brokenSpirvPositionInput
+            .has_broken_spirv_position_input = traits.quirks.brokenSpirvPositionInput,
+            .has_broken_spirv_subgroup_mask_vector_extract_dynamic = traits.quirks.brokenSubgroupMaskExtractDynamic,
+            .has_broken_spirv_subgroup_shuffle = traits.quirks.brokenSubgroupShuffle,
         };
 
         Shader::Settings::values = {
@@ -299,6 +305,12 @@ namespace skyline::gpu {
         return Shader::Maxwell::MergeDualVertexPrograms(vertexA, vertexB, env);
     }
 
+    Shader::IR::Program ShaderManager::GenerateGeometryPassthroughShader(Shader::IR::Program &layerSource, Shader::OutputTopology topology) {
+        std::scoped_lock lock{poolMutex};
+
+        return Shader::Maxwell::GenerateGeometryPassthrough(instructionPool, blockPool, hostTranslateInfo, layerSource, topology);
+    }
+
     Shader::IR::Program ShaderManager::ParseComputeShader(span<u8> binary, u32 baseOffset,
                                                           u32 textureConstantBufferIndex,
                                                           u32 localMemorySize, u32 sharedMemorySize,
@@ -310,7 +322,6 @@ namespace skyline::gpu {
         Shader::Maxwell::Flow::CFG cfg{environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset)}};
         return  Shader::Maxwell::TranslateProgram(instructionPool, blockPool, environment, cfg, hostTranslateInfo);
     }
-
 
     vk::ShaderModule ShaderManager::CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
         std::scoped_lock lock{poolMutex};

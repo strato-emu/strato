@@ -240,6 +240,10 @@ namespace skyline::gpu {
                 if (deviceProperties.driverVersion >= VK_MAKE_VERSION(512, 615, 0) && deviceProperties.driverVersion <= VK_MAKE_VERSION(512, 615, 512))
                     brokenMultithreadedPipelineCompilation = true;
 
+                if (deviceProperties.driverVersion < VK_MAKE_VERSION(512, 672, 0))
+                    brokenSubgroupMaskExtractDynamic = true;
+
+                brokenSubgroupShuffle = true;
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
                 break;
             }
