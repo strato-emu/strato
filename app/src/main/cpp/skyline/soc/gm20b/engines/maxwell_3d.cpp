@@ -348,13 +348,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     case type::SemaphoreInfo::Op::Counter: {
                         switch (info.counterType) {
                             case type::SemaphoreInfo::CounterType::Zero:
-                                channelCtx.executor.Submit([=, this, semaphore = *registers.semaphore]() {
-                                    WriteSemaphoreResult(semaphore, semaphore.payload);
-                                });
+                                WriteSemaphoreResult(*registers.semaphore, registers.semaphore->payload);
+                                break;
+                            case type::SemaphoreInfo::CounterType::SamplesPassed:
+                                // Return a fake result for now
+                                WriteSemaphoreResult(*registers.semaphore, 0xffffff);
                                 break;
 
                             default:
-                                //Logger::Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
+                                Logger::Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
                                 break;
                         }
                         break;
