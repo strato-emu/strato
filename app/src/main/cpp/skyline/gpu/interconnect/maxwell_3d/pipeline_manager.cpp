@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+// Copyright © 2022 yuzu Team and Contributors (https://github.com/yuzu-emu/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <gpu/texture/texture.h>
@@ -93,6 +94,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
+    static Shader::OutputTopology ConvertShaderOutputTopology(engine::DrawTopology topology) {
+        switch (topology) {
+            case engine::DrawTopology::Points:
+                return Shader::OutputTopology::PointList;
+            case engine::DrawTopology::LineStrip:
+                return Shader::OutputTopology::LineStrip;
+            default:
+                return Shader::OutputTopology::TriangleStrip;
+        }
+    }
     /**
      * @notes Roughly based on https://github.com/yuzu-emu/yuzu/blob/4ffbbc534884841f9a5536e57539bf3d1642af26/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp#L127
      */
@@ -183,11 +194,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto stageIdx{[](PipelineStage stage) { return static_cast<u8>(stage); }};
 
         std::array<Shader::IR::Program, engine::PipelineCount> programs;
+        Shader::IR::Program *layerConversionSourceProgram{};
         bool ignoreVertexCullBeforeFetch{};
 
         for (u32 i{}; i < engine::PipelineCount; i++) {
-            if (!packedState.shaderHashes[i])
+            if (!packedState.shaderHashes[i]) {
+                if (i == stageIdx(PipelineStage::Geometry) && layerConversionSourceProgram)
+                    programs[i] = gpu.shader.GenerateGeometryPassthroughShader(*layerConversionSourceProgram, ConvertShaderOutputTopology(packedState.topology));
+
                 continue;
+            }
 
             auto binary{accessor.GetShaderBinary(i)};
             auto program{gpu.shader.ParseGraphicsShader(
@@ -208,16 +224,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
             } else {
                 programs[i] = program;
             }
+
+            if (programs[i].info.requires_layer_emulation)
+                layerConversionSourceProgram = &programs[i];
         }
 
-        bool hasGeometry{packedState.shaderHashes[stageIdx(PipelineStage::Geometry)] && programs[stageIdx(PipelineStage::Geometry)].is_geometry_passthrough};
+        bool hasGeometry{packedState.shaderHashes[stageIdx(PipelineStage::Geometry)] && !programs[stageIdx(PipelineStage::Geometry)].is_geometry_passthrough};
         Shader::Backend::Bindings bindings{};
         Shader::IR::Program *lastProgram{};
 
         std::array<Pipeline::ShaderStage, engine::ShaderStageCount> shaderStages{};
 
         for (u32 i{stageIdx(ignoreVertexCullBeforeFetch ? PipelineStage::Vertex : PipelineStage::VertexCullBeforeFetch)}; i < engine::PipelineCount; i++) {
-            if (!packedState.shaderHashes[i])
+            if (!packedState.shaderHashes[i] && !(i == stageIdx(PipelineStage::Geometry) && layerConversionSourceProgram))
                 continue;
 
             auto runtimeInfo{MakeRuntimeInfo(packedState, programs[i], lastProgram, hasGeometry)};
