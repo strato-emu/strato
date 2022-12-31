@@ -18,6 +18,7 @@ namespace skyline {
             if (!locked.test_and_set(std::memory_order_acquire))
                 return;
 
+            attempt++;
             if (attempt % LockAttemptsPerSleep == 0)
                 std::this_thread::sleep_for(std::chrono::microseconds(100));
             else if (attempt % LockAttemptsPerYield == 0)
