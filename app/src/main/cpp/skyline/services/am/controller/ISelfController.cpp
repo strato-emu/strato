@@ -9,7 +9,7 @@
 namespace skyline::service::am {
     ISelfController::ISelfController(const DeviceState &state, ServiceManager &manager)
         : libraryAppletLaunchableEvent(std::make_shared<type::KEvent>(state, false)),
-          accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, false)),
+          accumulatedSuspendedTickChangedEvent(std::make_shared<type::KEvent>(state, true)),
           hosbinder(manager.CreateOrGetService<hosbinder::IHOSBinderDriver>("dispdrv")),
           BaseService(state, manager) {}
 
