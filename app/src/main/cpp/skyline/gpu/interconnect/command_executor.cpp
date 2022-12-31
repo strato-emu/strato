@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <condition_variable>
+#include <mutex>
 #include <range/v3/view.hpp>
 #include <adrenotools/driver.h>
 #include <common/settings.h>
@@ -555,7 +557,7 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    void CommandExecutor::Submit(std::function<void()> &&callback) {
+    void CommandExecutor::Submit(std::function<void()> &&callback, bool wait) {
         for (const auto &flushCallback : flushCallbacks)
             flushCallback();
 
@@ -581,6 +583,21 @@ namespace skyline::gpu::interconnect {
             callback();
 
         ResetInternal();
+
+        if (wait) {
+            std::condition_variable cv;
+            std::mutex mutex;
+            bool gpuDone{};
+
+            waiterThread.Queue(nullptr, [&cv, &mutex, &gpuDone] {
+                std::scoped_lock lock{mutex};
+                gpuDone = true;
+                cv.notify_one();
+            });
+
+            std::unique_lock lock{mutex};
+            cv.wait(lock, [&gpuDone] { return gpuDone; });
+        }
     }
 
     void CommandExecutor::LockPreserve() {

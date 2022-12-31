@@ -301,8 +301,9 @@ namespace skyline::gpu::interconnect {
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU
          * @param callback A function to call upon GPU completion of the submission
+         * @param wait Whether to wait synchronously for GPU completion of the submit
          */
-        void Submit(std::function<void()> &&callback = {});
+        void Submit(std::function<void()> &&callback = {}, bool wait = false);
 
         /**
          * @brief Locks all preserve attached buffers/textures

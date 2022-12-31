@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <gpu.h>
 #include <common/signal.h>
+#include <common/settings.h>
 #include <loader/loader.h>
 #include <kernel/types/KProcess.h>
 #include <soc.h>
@@ -156,7 +158,7 @@ namespace skyline::soc::gm20b {
     void ChannelGpfifo::Process(GpEntry gpEntry) {
         // Submit if required by the GpEntry, this is needed as some games dynamically generate pushbuffer contents
         if (gpEntry.sync == GpEntry::Sync::Wait)
-            channelCtx.executor.Submit();
+            channelCtx.executor.Submit({}, *state.settings->useDirectMemoryImport);
 
         if (!gpEntry.size) {
             // This is a GPFIFO control entry, all control entries have a zero length and contain no pushbuffers
