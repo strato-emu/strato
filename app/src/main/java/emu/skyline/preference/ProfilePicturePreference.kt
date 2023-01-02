@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.util.AttributeSet
 import androidx.activity.ComponentActivity
@@ -26,12 +27,12 @@ import java.io.FileOutputStream
 import java.io.InputStream
 
 class ProfilePicturePreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
+    private val profilePictureDir = SkylineApplication.instance.getPublicFilesDir().canonicalPath + "/switch/nand/system/save/8000000000000010/su/avators"
+    private val profilePicture = "$profilePictureDir/profile_picture.jpeg"
     private val pickMedia = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        val profilePictureDir = SkylineApplication.instance.getPublicFilesDir().canonicalPath + "/switch/nand/system/save/8000000000000010/su/avators"
-        val profilePictureName = "profile_picture.jpeg"
         try {
             if (uri != null) { // The user selected a picture
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, "$profilePictureDir/$profilePictureName").apply()
+                PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, profilePicture).apply()
                 File(profilePictureDir).mkdirs()
                 context.applicationContext.contentResolver.let { contentResolver : ContentResolver ->
                     val readUriPermission : Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -40,15 +41,16 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
                         var bitmap = BitmapFactory.decodeStream(inputStream)
                         // Compress the picture
                         bitmap = Bitmap.createScaledBitmap(bitmap, 256, 256, false)
-                        StoreBitmap(bitmap, "$profilePictureDir/$profilePictureName")
+                        storeBitmap(bitmap, profilePicture)
                     }
                 }
             } else { // No picture was selected, clear the profile picture if one was already set
-                if (File("$profilePictureDir/$profilePictureName").exists()) {
-                    File("$profilePictureDir/$profilePictureName").delete()
+                if (File(profilePicture).exists()) {
+                    File(profilePicture).delete()
                 }
                 PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, "No picture selected").apply()
             }
+            updatePreview()
             notifyChanged()
         } catch (e : Exception) {
             e.printStackTrace()
@@ -59,14 +61,26 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
         summaryProvider = SummaryProvider<ProfilePicturePreference> { preference ->
             Uri.decode(preference.getPersistedString("No picture selected"))
         }
+        updatePreview()
     }
 
     override fun onClick() = pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
 
+    private fun updatePreview() {
+        var drawable: BitmapDrawable? = null
+        if (File(profilePicture).exists()) {
+            val preview = BitmapFactory.decodeFile(profilePicture)
+            if (preview != null) {
+                drawable = BitmapDrawable(context.resources, preview)
+            }
+        }
+        icon = drawable
+    }
+
     /**
      * Given a bitmap, saves it in the specified location
      */
-    private fun StoreBitmap(bitmap : Bitmap, filePath : String) {
+    private fun storeBitmap(bitmap : Bitmap, filePath : String) {
         try {
             // Create the file where the bitmap will be stored
             val file = File(filePath)
@@ -78,6 +92,8 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
             outputFile.close()
         } catch (e : Exception) {
             e.printStackTrace()
+        } finally {
+            bitmap.recycle()
         }
     }
 }
