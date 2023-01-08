@@ -258,8 +258,9 @@ namespace skyline::gpu {
             },
             GetPipeline(gpu,
                         {dstImageView->format->vkFormat,
-                         vk::Format::eUndefined, false, false, 0,
-                         VkColorComponentFlags{vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA}},
+                         vk::Format::eUndefined, 0,
+                         VkColorComponentFlags{vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA},
+                         false, false},
                         {blit::SamplerLayoutBinding}, blit::PushConstantRanges),
             dstImageDimensions
         )};
@@ -358,9 +359,9 @@ namespace skyline::gpu {
             GetPipeline(gpu,
                         {writeColor ? dstImageView->format->vkFormat : vk::Format::eUndefined,
                          (writeDepth || writeStencil) ? dstImageView->format->vkFormat : vk::Format::eUndefined,
-                         writeDepth, writeStencil,
                          value.depthStencil.stencil,
-                         VkColorComponentFlags{components}},
+                         VkColorComponentFlags{components},
+                         writeDepth, writeStencil},
                          {}, clear::PushConstantRanges),
             dstImageView->texture->dimensions
         )};

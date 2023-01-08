@@ -26,12 +26,14 @@ namespace skyline::gpu {
         struct PipelineState {
             vk::Format colorFormat;
             vk::Format depthFormat;
-            bool depthWrite;
-            bool stencilWrite;
             u32 stencilValue;
             VkColorComponentFlags colorWriteMask;
+            bool depthWrite;
+            bool stencilWrite;
 
-            bool operator<=>(const PipelineState &) const = default;
+            bool operator==(const PipelineState &input) const {
+                return std::memcmp(this, &input, sizeof(PipelineState)) == 0;
+            }
         };
 
         std::unordered_map<PipelineState, cache::GraphicsPipelineCache::CompiledPipeline, util::ObjectHash<PipelineState>> pipelineCache;
