@@ -15,6 +15,7 @@
 #include <string>
 #include <memory>
 #include <compare>
+#include <condition_variable>
 #include <boost/container/small_vector.hpp>
 #include <common/exception.h>
 #include <common/span.h>
