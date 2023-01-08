@@ -90,7 +90,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::array<ShaderStage, engine::ShaderStageCount> shaderStages;
         DescriptorInfo descriptorInfo;
 
-        std::array<Pipeline *, 4> transitionCache{};
+        std::array<Pipeline *, 6> transitionCache{};
         size_t transitionCacheNextIdx{};
 
         tsl::robin_map<Pipeline *, bool> bindingMatchCache; //!< Cache of which pipelines have bindings that match this pipeline
