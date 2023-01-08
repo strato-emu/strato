@@ -83,7 +83,7 @@ namespace skyline::gpu {
             .support_snorm_render_buffer = true,
             .support_viewport_index_layer = gpu.traits.supportsShaderViewportIndexLayer,
             .min_ssbo_alignment = traits.minimumStorageBufferAlignment,
-            .support_geometry_passthrough = false
+            .support_geometry_shader_passthrough = false
         };
 
         constexpr u32 TegraX1WarpSize{32}; //!< The amount of threads in a warp on the Tegra X1
@@ -121,6 +121,7 @@ namespace skyline::gpu {
             .has_broken_spirv_position_input = traits.quirks.brokenSpirvPositionInput,
             .has_broken_spirv_subgroup_mask_vector_extract_dynamic = traits.quirks.brokenSubgroupMaskExtractDynamic,
             .has_broken_spirv_subgroup_shuffle = traits.quirks.brokenSubgroupShuffle,
+            .max_subgroup_size = traits.subgroupSize,
         };
 
         Shader::Settings::values = {
@@ -164,6 +165,7 @@ namespace skyline::gpu {
             stage = pStage;
             sph = *reinterpret_cast<Shader::ProgramHeader *>(binary.data());
             start_address = baseOffset;
+            is_propietary_driver = textureBufferIndex == 2;
         }
 
         [[nodiscard]] u64 ReadInstruction(u32 address) final {
@@ -205,6 +207,14 @@ namespace skyline::gpu {
             return {0, 0, 0}; // Only relevant for compute shaders
         }
 
+        [[nodiscard]] bool HasHLEMacroState() const final {
+            return false;
+        }
+
+        [[nodiscard]] std::optional<Shader::ReplaceConstant> GetReplaceConstBuffer(u32 bank, u32 offset) final {
+            return std::nullopt;
+        }
+
         void Dump(u64 hash) final {}
     };
 
@@ -239,6 +249,7 @@ namespace skyline::gpu {
               getTextureType{std::move(getTextureType)} {
             stage = Shader::Stage::Compute;
             start_address = baseOffset;
+            is_propietary_driver = textureBufferIndex == 2;
         }
 
         [[nodiscard]] u64 ReadInstruction(u32 address) final {
@@ -278,6 +289,14 @@ namespace skyline::gpu {
 
         [[nodiscard]] std::array<u32, 3> WorkgroupSize() const final {
             return workgroupDimensions;
+        }
+
+        [[nodiscard]] bool HasHLEMacroState() const final {
+            return false;
+        }
+
+        [[nodiscard]] std::optional<Shader::ReplaceConstant> GetReplaceConstBuffer(u32 bank, u32 offset) final {
+            return std::nullopt;
         }
 
         void Dump(u64 hash) final {}
@@ -383,13 +402,13 @@ namespace skyline::gpu {
         return  Shader::Maxwell::TranslateProgram(instructionPool, blockPool, environment, cfg, hostTranslateInfo);
     }
 
-    vk::ShaderModule ShaderManager::CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings) {
+    vk::ShaderModule ShaderManager::CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings, u64 hash) {
         std::scoped_lock lock{poolMutex};
 
         if (program.info.loads.Legacy() || program.info.stores.Legacy())
             Shader::Maxwell::ConvertLegacyToGeneric(program, runtimeInfo);
 
-        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
+        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings, fmt::format("shader_{:016X}", hash))};
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),

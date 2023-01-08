@@ -68,7 +68,7 @@ namespace skyline::gpu {
 
         Shader::IR::Program ParseComputeShader(u64 hash, span<u8> binary, u32 baseOffset, u32 textureConstantBufferIndex, u32 localMemorySize, u32 sharedMemorySize, std::array<u32, 3> workgroupDimensions, const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType);
 
-        vk::ShaderModule CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings);
+        vk::ShaderModule CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings, u64 hash = 0);
 
         void ResetPools();
     };

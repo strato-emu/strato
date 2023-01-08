@@ -8,7 +8,7 @@
 namespace skyline::gpu {
     struct PipelineCacheFileHeader {
         static constexpr u32 Magic{util::MakeMagic<u32>("PCHE")}; //!< The magic value used to identify a pipeline cache file
-        static constexpr u32 Version{1}; //!< The version of the pipeline cache file format, MUST be incremented for any format changes
+        static constexpr u32 Version{2}; //!< The version of the pipeline cache file format, MUST be incremented for any format changes
 
         u32 magic{Magic};
         u32 version{Version};
