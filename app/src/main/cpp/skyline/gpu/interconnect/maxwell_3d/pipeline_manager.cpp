@@ -552,8 +552,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         boost::container::static_vector<vk::Format, engine::ColorTargetCount> colorAttachmentFormats;
 
         for (u32 i{}; i < engine::ColorTargetCount; i++) {
+            attachmentBlendStates.push_back(packedState.GetAttachmentBlendState(i));
             if (i < packedState.GetColorRenderTargetCount()) {
-                attachmentBlendStates.push_back(packedState.GetAttachmentBlendState(i));
                 texture::Format format{packedState.GetColorRenderTargetFormat(packedState.ctSelect[i])};
                 colorAttachmentFormats.push_back(format ? format->vkFormat : vk::Format::eUndefined);
             } else {
