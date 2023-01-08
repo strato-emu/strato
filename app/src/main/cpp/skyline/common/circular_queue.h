@@ -119,6 +119,9 @@ namespace skyline {
 
         }
 
+        /**
+         * @note The appended elements may not necessarily be directly contiguous as another thread could push elements in between those in the span
+         */
         void Append(span<Type> buffer) {
             for (const auto &item : buffer)
                 Push(item);
