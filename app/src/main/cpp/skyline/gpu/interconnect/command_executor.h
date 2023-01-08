@@ -8,6 +8,7 @@
 #include <common/linear_allocator.h>
 #include <gpu/megabuffer.h>
 #include "command_nodes.h"
+#include "common/spin_lock.h"
 
 namespace skyline::gpu::interconnect {
     /*
@@ -99,8 +100,8 @@ namespace skyline::gpu::interconnect {
       private:
         const DeviceState &state;
         std::thread thread;
-        std::mutex mutex;
-        std::condition_variable condition;
+        SpinLock mutex;
+        std::condition_variable_any condition;
         std::queue<std::pair<std::shared_ptr<FenceCycle>, std::function<void()>>> pendingSignalQueue; //!< Queue of callbacks to be executed when their coressponding fence is signalled
         std::atomic<bool> idle{};
 
