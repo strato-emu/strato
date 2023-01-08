@@ -13,6 +13,17 @@ namespace skyline::service::irs {
         auto id{request.Pop<NpadId>()};
         if (id > NpadId::Player8 && id != NpadId::Handheld && id != NpadId::Unknown)
             return result::InvalidNpadId;
+
+        struct IrCameraHandle {
+            u8 npadIndex;
+            u8 npadType;
+            u8 _pad0_[2];
+        } handle{
+            .npadIndex = static_cast<u8>(state.input->npad.NpadIdToIndex(id)),
+        };
+
+        response.Push(handle);
+
         return {};
     }
 

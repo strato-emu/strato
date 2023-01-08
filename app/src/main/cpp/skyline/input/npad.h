@@ -26,22 +26,6 @@ namespace skyline::input {
 
         friend NpadDevice;
 
-        /**
-         * @brief Translates an NPad's ID into its index in the array
-         * @param id The ID of the NPad to translate
-         * @return The corresponding index of the NPad in the array
-         */
-        static constexpr size_t Translate(NpadId id) {
-            switch (id) {
-                case NpadId::Handheld:
-                    return 8;
-                case NpadId::Unknown:
-                    return 9;
-                default:
-                    return static_cast<size_t>(id);
-            }
-        }
-
       public:
         std::recursive_mutex mutex; //!< This mutex must be locked before any modifications to class members
         std::array<NpadDevice, constant::NpadCount> npads;
@@ -57,17 +41,32 @@ namespace skyline::input {
         NpadManager(const DeviceState &state, input::HidSharedMemory *hid);
 
         /**
+         * @brief Translates an NPad's ID into its index in the npad array
+         * @param id The ID of the NPad to translate
+         */
+        static constexpr size_t NpadIdToIndex(NpadId id) {
+            switch (id) {
+                case NpadId::Handheld:
+                    return 8;
+                case NpadId::Unknown:
+                    return 9;
+                default:
+                    return static_cast<size_t>(id);
+            }
+        }
+
+        /**
          * @return A reference to the NPad with the specified ID
          */
         constexpr NpadDevice &at(NpadId id) {
-            return npads.at(Translate(id));
+            return npads.at(NpadIdToIndex(id));
         }
 
         /**
          * @return A reference to the NPad with the specified ID
          */
         constexpr NpadDevice &operator[](NpadId id) noexcept {
-            return npads.operator[](Translate(id));
+            return npads.operator[](NpadIdToIndex(id));
         }
 
         /**
