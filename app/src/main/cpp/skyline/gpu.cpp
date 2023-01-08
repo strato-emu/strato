@@ -400,14 +400,18 @@ namespace skyline::gpu {
           buffer(*this),
           megaBufferAllocator(*this),
           descriptor(*this),
-          shader(state, *this),
           helperShaders(*this, state.os->assetFileSystem),
           graphicsPipelineCache(*this),
           renderPassCache(*this),
           framebufferCache(*this) {}
 
     void GPU::Initialise() {
-        graphicsPipelineCacheManager.emplace(state, state.os->publicAppFilesPath + "graphics_pipeline_cache/" + state.loader->nacp->GetSaveDataOwnerId());
+        std::string titleId{state.loader->nacp->GetSaveDataOwnerId()};
+        shader.emplace(state, *this,
+                       state.os->publicAppFilesPath + "shader_replacements/" + titleId,
+                       state.os->publicAppFilesPath + "shader_dumps/" + titleId);
+        graphicsPipelineCacheManager.emplace(state,
+                                             state.os->publicAppFilesPath + "graphics_pipeline_cache/" + titleId);
         graphicsPipelineManager.emplace(*this);
     }
 }

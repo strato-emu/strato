@@ -55,7 +55,7 @@ namespace skyline::gpu {
         MegaBufferAllocator megaBufferAllocator;
 
         DescriptorAllocator descriptor;
-        ShaderManager shader;
+        std::optional<ShaderManager> shader;
 
         HelperShaders helperShaders;
 

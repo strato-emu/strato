@@ -11,6 +11,8 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "shader_manager.h"
 
+static constexpr bool DumpShaders{false};
+
 namespace Shader::Log {
     void Debug(const std::string &message) {
         skyline::Logger::Write(skyline::Logger::LogLevel::Debug, message);
@@ -26,7 +28,53 @@ namespace Shader::Log {
 }
 
 namespace skyline::gpu {
-    ShaderManager::ShaderManager(const DeviceState &state, GPU &gpu) : gpu{gpu} {
+    void ShaderManager::LoadShaderReplacements(std::string_view replacementDir) {
+        std::filesystem::path replacementDirPath{replacementDir};
+        if (std::filesystem::exists(replacementDirPath)) {
+            for (const auto &entry : std::filesystem::directory_iterator{replacementDirPath}) {
+                if (entry.is_regular_file()) {
+                    // Parse hash from filename
+                    u64 hash{std::stoull(entry.path().filename().string(), nullptr, 16)};
+                    auto it{shaderReplacements.insert({hash, {}})};
+
+                    // Read file into map entry
+                    std::ifstream file{entry.path(), std::ios::binary | std::ios::ate};
+                    it.first->second.resize(static_cast<size_t>(file.tellg()));
+                    file.seekg(0, std::ios::beg);
+                    file.read(reinterpret_cast<char *>(it.first->second.data()), static_cast<std::streamsize>(it.first->second.size()));
+                }
+            }
+        }
+    }
+
+    span<u8> ShaderManager::ProcessShaderBinary(u64 hash, span<u8> binary) {
+        auto it{shaderReplacements.find(hash)};
+        if (it != shaderReplacements.end()) {
+            Logger::Info("Replacing shader with hash: 0x{:X}", hash);
+            return it->second;
+        }
+
+        if (DumpShaders) {
+            std::scoped_lock lock{dumpMutex};
+
+            auto shaderPath{dumpPath / fmt::format("{:016X}", hash)};
+            if (!std::filesystem::exists(shaderPath)) {
+                std::ofstream file{shaderPath, std::ios::binary};
+                file.write(reinterpret_cast<const char *>(binary.data()), static_cast<std::streamsize>(binary.size()));
+            }
+        }
+
+        return binary;
+    }
+
+    ShaderManager::ShaderManager(const DeviceState &state, GPU &gpu, std::string_view replacementDir, std::string_view dumpDir) : gpu{gpu}, dumpPath{dumpDir} {
+        LoadShaderReplacements(replacementDir);
+
+        if constexpr (DumpShaders) {
+            if (!std::filesystem::exists(dumpPath))
+                std::filesystem::create_directories(dumpPath);
+        }
+
         auto &traits{gpu.traits};
         hostTranslateInfo = Shader::HostTranslateInfo{
             .support_float16 = traits.supportsFloat16,
@@ -282,15 +330,25 @@ namespace skyline::gpu {
             return {0, 0, 0}; // Only relevant for compute shaders
         }
 
+        [[nodiscard]] bool HasHLEMacroState() const final {
+            return false;
+        }
+
+        [[nodiscard]] std::optional<Shader::ReplaceConstant> GetReplaceConstBuffer(u32 bank, u32 offset) final {
+            return std::nullopt;
+        }
+
         void Dump(u64 hash) final {}
     };
 
     Shader::IR::Program ShaderManager::ParseGraphicsShader(const std::array<u32, 8> &postVtgShaderAttributeSkipMask,
                                                            Shader::Stage stage,
-                                                           span<u8> binary, u32 baseOffset,
+                                                           u64 hash, span<u8> binary, u32 baseOffset,
                                                            u32 textureConstantBufferIndex,
                                                            bool viewportTransformEnabled,
                                                            const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
+        binary = ProcessShaderBinary(hash, binary);
+
         std::scoped_lock lock{poolMutex};
 
         GraphicsEnvironment environment{postVtgShaderAttributeSkipMask, stage, binary, baseOffset, textureConstantBufferIndex, viewportTransformEnabled, constantBufferRead, getTextureType};
@@ -311,11 +369,13 @@ namespace skyline::gpu {
         return Shader::Maxwell::GenerateGeometryPassthrough(instructionPool, blockPool, hostTranslateInfo, layerSource, topology);
     }
 
-    Shader::IR::Program ShaderManager::ParseComputeShader(span<u8> binary, u32 baseOffset,
+    Shader::IR::Program ShaderManager::ParseComputeShader(u64 hash, span<u8> binary, u32 baseOffset,
                                                           u32 textureConstantBufferIndex,
                                                           u32 localMemorySize, u32 sharedMemorySize,
                                                           std::array<u32, 3> workgroupDimensions,
                                                           const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
+        binary = ProcessShaderBinary(hash, binary);
+
         std::scoped_lock lock{poolMutex};
 
         ComputeEnvironment environment{binary, baseOffset, textureConstantBufferIndex, localMemorySize, sharedMemorySize, workgroupDimensions, constantBufferRead, getTextureType};

@@ -10,10 +10,10 @@
 
 namespace skyline::gpu::interconnect::kepler_compute {
     static Pipeline::ShaderStage MakePipelineShader(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const ShaderBinary &shaderBinary) {
-        ctx.gpu.shader.ResetPools();
+        ctx.gpu.shader->ResetPools();
 
-        auto program{ctx.gpu.shader.ParseComputeShader(
-            shaderBinary.binary, shaderBinary.baseOffset,
+        auto program{ctx.gpu.shader->ParseComputeShader(
+            packedState.shaderHash, shaderBinary.binary, shaderBinary.baseOffset,
             packedState.bindlessTextureConstantBufferSlotSelect,
             packedState.localMemorySize, packedState.sharedMemorySize,
             packedState.dimensions,
@@ -25,7 +25,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
 
         Shader::Backend::Bindings bindings{};
 
-        return {ctx.gpu.shader.CompileShader({}, program, bindings), program.info};
+        return {ctx.gpu.shader->CompileShader({}, program, bindings), program.info};
     }
 
     static Pipeline::DescriptorInfo MakePipelineDescriptorInfo(const Pipeline::ShaderStage &stage) {

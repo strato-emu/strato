@@ -187,7 +187,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     static std::array<Pipeline::ShaderStage, engine::ShaderStageCount> MakePipelineShaders(GPU &gpu, const PipelineStateAccessor &accessor, const PackedPipelineState &packedState) {
-        gpu.shader.ResetPools();
+        gpu.shader->ResetPools();
 
         using PipelineStage = engine::Pipeline::Shader::Type;
         auto pipelineStage{[](u32 i) { return static_cast<PipelineStage>(i); }};
@@ -200,16 +200,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
         for (u32 i{}; i < engine::PipelineCount; i++) {
             if (!packedState.shaderHashes[i]) {
                 if (i == stageIdx(PipelineStage::Geometry) && layerConversionSourceProgram)
-                    programs[i] = gpu.shader.GenerateGeometryPassthroughShader(*layerConversionSourceProgram, ConvertShaderOutputTopology(packedState.topology));
+                    programs[i] = gpu.shader->GenerateGeometryPassthroughShader(*layerConversionSourceProgram, ConvertShaderOutputTopology(packedState.topology));
 
                 continue;
             }
 
             auto binary{accessor.GetShaderBinary(i)};
-            auto program{gpu.shader.ParseGraphicsShader(
+            auto program{gpu.shader->ParseGraphicsShader(
                 packedState.postVtgShaderAttributeSkipMask,
                 ConvertCompilerShaderStage(static_cast<PipelineStage>(i)),
-                binary.binary, binary.baseOffset,
+                packedState.shaderHashes[i], binary.binary, binary.baseOffset,
                 packedState.bindlessTextureConstantBufferSlotSelect,
                 packedState.viewportTransformEnable,
                 [&](u32 index, u32 offset) {
@@ -220,7 +220,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 })};
             if (i == stageIdx(PipelineStage::Vertex) && packedState.shaderHashes[stageIdx(PipelineStage::VertexCullBeforeFetch)]) {
                 ignoreVertexCullBeforeFetch = true;
-                programs[i] = gpu.shader.CombineVertexShaders(programs[stageIdx(PipelineStage::VertexCullBeforeFetch)], program, binary.binary);
+                programs[i] = gpu.shader->CombineVertexShaders(programs[stageIdx(PipelineStage::VertexCullBeforeFetch)], program, binary.binary);
             } else {
                 programs[i] = program;
             }
@@ -240,7 +240,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 continue;
 
             auto runtimeInfo{MakeRuntimeInfo(packedState, programs[i], lastProgram, hasGeometry)};
-            shaderStages[i - (i >= 1 ? 1 : 0)] = {ConvertVkShaderStage(pipelineStage(i)), gpu.shader.CompileShader(runtimeInfo, programs[i], bindings), programs[i].info};
+            shaderStages[i - (i >= 1 ? 1 : 0)] = {ConvertVkShaderStage(pipelineStage(i)),
+                                                  gpu.shader->CompileShader(runtimeInfo, programs[i], bindings, packedState.shaderHashes[i]),
+                                                  programs[i].info};
 
             lastProgram = &programs[i];
         }
