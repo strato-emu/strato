@@ -35,8 +35,8 @@ namespace skyline::gpu::interconnect {
             vk::raii::Fence fence;
             vk::raii::Semaphore semaphore;
             std::shared_ptr<FenceCycle> cycle;
-            boost::container::stable_vector<node::NodeVariant> nodes;
             LinearAllocatorState<> allocator;
+            std::list<node::NodeVariant, LinearAllocator<node::NodeVariant>> nodes;
             std::mutex beginLock;
             std::condition_variable beginCondition;
             ContextTag executionTag;

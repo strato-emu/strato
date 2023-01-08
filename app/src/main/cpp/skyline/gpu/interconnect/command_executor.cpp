@@ -45,7 +45,8 @@ namespace skyline::gpu::interconnect {
           commandBuffer{AllocateRaiiCommandBuffer(gpu, commandPool)},
           fence{gpu.vkDevice, vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }},
           semaphore{gpu.vkDevice, vk::SemaphoreCreateInfo{}},
-          cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)} {
+          cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)},
+          nodes{allocator} {
         Begin();
     }
 
@@ -55,6 +56,8 @@ namespace skyline::gpu::interconnect {
           fence{std::move(other.fence)},
           semaphore{std::move(other.semaphore)},
           cycle{std::move(other.cycle)},
+          allocator{std::move(other.allocator)},
+          nodes{std::move(other.nodes)},
           ready{other.ready} {}
 
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
