@@ -73,6 +73,7 @@ namespace skyline::gpu::interconnect {
         span<u8> blockMappingMirror{blockMapping.data() - mirrorBlock.data() + entry->mirror.data(), blockMapping.size()};
 
         ShaderBinary binary{};
+        auto shaderSubmapping{blockMappingMirror.subspan(blockOffset)};
         // If nothing was in the cache then do a full shader parse
         binary.binary = [](span<u8> mapping) {
             // We attempt to find the shader size by looking for "BRA $" (Infinite Loop) which is used as padding at the end of the shader
@@ -87,8 +88,22 @@ namespace skyline::gpu::interconnect {
                     return span{shaderInstructions.begin(), it}.cast<u8>();
             }
 
-            return mapping;
-        }(blockMappingMirror.subspan(blockOffset));
+            return span<u8>{};
+        }(shaderSubmapping);
+
+        if (!binary.binary.valid()) {
+            static constexpr size_t FallbackSize{0x10000}; //!< Fallback shader size for when we can't detect it with the BRA $ pattern
+            if (shaderSubmapping.size() > FallbackSize) {
+                binary.binary = shaderSubmapping;
+            } else {
+                // If the shader is split across multiple mappings then read into an internal vector to store the binary
+                size_t storageOffset{splitBinaryStorage.size()};
+                splitBinaryStorage.resize(storageOffset + FallbackSize);
+                auto shaderStorage{span{splitBinaryStorage}.subspan(storageOffset, FallbackSize)};
+                ctx.channelCtx.asCtx->gmmu.Read(shaderStorage, programBase + programOffset);
+                binary.binary = shaderStorage;
+            }
+        }
 
         binary.baseOffset = programOffset;
 

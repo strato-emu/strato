@@ -35,6 +35,7 @@ namespace skyline::gpu::interconnect {
         span<u8> mirrorBlock{}; //!< Guest mapped memory block corresponding to `entry`
         u64 lastProgramBase{};
         u32 lastProgramOffset{};
+        std::vector<u8> splitBinaryStorage;
 
       public:
         /**
