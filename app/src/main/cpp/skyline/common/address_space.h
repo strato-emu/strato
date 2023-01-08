@@ -156,7 +156,7 @@ namespace skyline {
             auto [blockSpan, rangeOffset]{LookupBlockLocked(virt, cpuAccessCallback)};
             if (blockSpan.size() - rangeOffset >= size) {
                 TranslatedAddressRange ranges;
-                ranges.push_back(blockSpan.subspan(rangeOffset, size));
+                ranges.push_back(blockSpan.subspan(blockSpan.valid() ? rangeOffset : 0, size));
                 return ranges;
             }
 
