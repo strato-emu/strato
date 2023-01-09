@@ -1,0 +1,232 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Common -->
+    <string name="search">検索</string>
+    <string name="error">エラーが発生しました</string>
+    <string name="copied_to_clipboard">クリップボードにコピーされました</string>
+    <!-- Toolbar Main -->
+    <string name="settings">設定</string>
+    <string name="share_logs">ログを共有</string>
+    <string name="refresh">更新</string>
+    <!-- Toolbar - Share Logs -->
+    <string name="log_share_prompt">ログファイルを共有</string>
+    <string name="logs_not_found">前回の実行ではログが作成されませんでした</string>
+    <!-- Main -->
+    <string name="all">全て</string>
+    <string name="metadata_missing">メタデータが見つかりません</string>
+    <string name="icon">アイコン</string>
+    <string name="no_rom">ROMを見つけませんでした</string>
+    <string name="pin">固定</string>
+    <string name="play">プレイ</string>
+    <string name="searching_roms">ROMを検出中</string>
+    <string name="invalid_file">無効なファイル</string>
+    <string name="missing_title_key">Title Keysが不足しています</string>
+    <string name="incomplete_prod_keys">Production Keysが不足しています</string>
+    <!-- Settings - Emulator -->
+    <string name="emulator">エミュレータ</string>
+    <string name="search_location">検索する場所</string>
+    <string name="open_data_directory">内蔵ディレクトリを見る</string>
+    <string name="open_data_directory_summary">ファイル管理アプリでスカイラインの内蔵ディレクトリを確認します</string>
+    <string name="failed_open_directory">スカイライン内蔵ディレクトリを開ける外部のファイル管理アプリが見つかりませんでした</string>
+    <string name="theme">テーマ</string>
+    <string name="layout_type">ゲーム画面のレイアウト</string>
+    <string name="select_action">常にゲーム情報を表示</string>
+    <string name="select_action_desc_on">ゲームをタップすると、ゲームの情報が表示されます</string>
+    <string name="select_action_desc_off">ゲームを長タップする時のみ、ゲーム情報が表示されます</string>
+    <string name="perf_stats">パフォーマンス統計を表示</string>
+    <string name="perf_stats_desc_off">パフォーマンス統計は表示されません</string>
+    <string name="perf_stats_desc_on">左上にパフォーマンス統計が表示されます</string>
+    <string name="log_level">ログレベル</string>
+    <string name="gpu_driver_config">GPUドライバー設定</string>
+    <string name="gpu_driver_config_desc">使用中のドライバー: %1$s</string>
+    <string name="gpu_driver_config_desc_unsupported">お持ちの端末はカスタムドライバーを対応していません</string>
+    <!-- Settings - System -->
+    <string name="system">システム</string>
+    <string name="use_docked">ドッケモードを使用</string>
+    <string name="handheld_enabled">システムは携帯モードでエミュレートされます</string>
+    <string name="docked_enabled">システムはドックモードでエミュレートされます</string>
+    <string name="username">ユーザー名</string>
+    <string name="profile_picture">プロフィール写真</string>
+    <string name="system_language">システム言語</string>
+    <string name="system_region">地域</string>
+    <!-- Settings - Keys -->
+    <string name="keys">キー</string>
+    <string name="prod_keys">Production Keys</string>
+    <string name="title_keys">Title Keys</string>
+    <string name="import_keys_success">キーをインポートしました</string>
+    <string name="import_keys_invalid_input_path">キーへのファイルパスが無効です</string>
+    <string name="import_keys_invalid_keys">輸入しようとしたキーが無効です</string>
+    <string name="import_keys_delete_previous_failed">インストール済みのキーを削除できませんでした</string>
+    <string name="import_keys_move_failed">キーを内部ディレクトリへ移動できませんでした</string>
+    <!-- Settings - Display -->
+    <string name="display">ディスプレイ</string>
+    <string name="screen_orientation">画面の向き</string>
+    <string name="force_triple_buffering">トリプルバッファリングを強制</string>
+    <string name="triple_buffering_enabled">少なくとも3つのスワップチェーンバッファを使用する
+ （FPSは高くなりますが、入力の遅延が大きくなる場合があります）</string>
+    <string name="triple_buffering_disabled">少なくとも2つのスワップチェーンバッファを使用する
+（FPSは低くなりますが、入力の遅延が小さくなります）</string>
+    <string name="disable_frame_throttling">FPSスロットルを無効にする</string>
+    <string name="disable_frame_throttling_enabled">ゲームは可能な限り速くフレームを処理します（ベンチマーク用）
+有効にした場合、FPSは通常とは別の方法で測定されるため、無効時との比較は推奨しません</string>
+    <string name="disable_frame_throttling_disabled">画面のリフレッシュレートに合わせてフレームを処理する</string>
+    <string name="max_refresh_rate">画面の最大リフレッシュレートを使用</string>
+    <string name="max_refresh_rate_enabled">画面リフレッシュレートを最大値まで指定
+（ほとんどのゲームが動作しなくなります）</string>
+    <string name="max_refresh_rate_disabled">画面リフレッシュレートを60hzにする</string>
+    <string name="aspect_ratio">アスペクト比</string>
+    <string name="respect_display_cutout">ゲームが映る画面内のみでレンダリング</string>
+    <string name="respect_display_cutout_enabled">UI要素が画面外に映ることを許可しない</string>
+    <string name="respect_display_cutout_disabled">UI要素が画面外に映ることを許可する</string>
+    <string name="executor_slot_count_scale">Executorスロットの数</string>
+    <string name="executor_slot_count_scale_desc">同期GPU処理数の最大値
+（高いほどパフォーマンスが向上する場合がありますが、より多くのRAMを消費します）</string>
+    <string name="executor_flush_threshold">Executor Flush Threshold</string>
+    <string name="executor_flush_threshold_desc">これは、GPUへの作業を送信する頻度を制御するものです。</string>
+    <string name="use_direct_memory_import">直接メモリのインポートを使用してください</string>
+    <string name="use_direct_memory_import_desc">いくつかのゲームで、パフォーマンスや安定性を変更することがあります\n  
+<b>注意してください：</b>
+このオプションは、プロプライエタリ Adreno ドライバーでのみ動作します。</string>
+    <string name="force_max_gpu_clocks">GPUの最大クロックを強制する</string>
+    <string name="force_max_gpu_clocks_desc">GPUを最大可能なクロックスピードで実行するよう強制します
+（過剰な発熱や電力使用の原因になる可能性があります）</string>
+    <string name="force_max_gpu_clocks_desc_unsupported">お使いのデバイスは、GPUの最大クロックの強制をサポートしていません</string>
+    <!-- Settings - Hacks -->
+    <string name="hacks">チート</string>
+    <string name="enable_fast_gpu_readback">早いGPUリードバックを有効にする </string>
+    <string name="enable_fast_gpu_readback_enabled">テクスチャーリードバックハックが有効です
+（いくつかのゲームは正しく動作しなくなりますが、他のゲームでは高いパフォーマンスが得られます）</string>
+    <string name="enable_fast_gpu_readback_disabled">高速 GPU リードバックハックが無効になっています
+（エミュレーション精度を高めます）</string>
+    <!-- Settings - Audio -->
+    <string name="audio">オーディオ</string>
+    <string name="disable_audio_output">オーディオ出力を無効にする</string>
+    <string name="disable_audio_output_enabled">オーディオ出力が無効になっています</string>
+    <string name="disable_audio_output_disabled">オーディオ出力が有効になっています</string>
+    <!-- Settings - Debug -->
+    <string name="debug">デバッグ</string>
+    <string name="validation_layer">Vulkan 検証レイヤーを有効にする</string>
+    <string name="validation_layer_enabled">Vulkan 検証レイヤーが有効です。パフォーマンスに大きく影響するかもしれません</string>
+    <string name="validation_layer_disabled">Vulkan 検証レイヤーが無効です</string>
+    <!-- Gpu Driver Activity -->
+    <string name="gpu_driver">GPUドライバー</string>
+    <string name="add_gpu_driver">追加</string>
+    <string name="delete_gpu_driver">削除</string>
+    <string name="system_driver">システムドライバー</string>
+    <string name="system_driver_desc">システムのGPUドライバー</string>
+    <string name="install">インストール</string>
+    <string name="gpu_driver_install_inprogress">GPUドライバーをインストール中…</string>
+    <string name="gpu_driver_install_success">インストールに成功しました</string>
+    <string name="gpu_driver_install_invalid_archive">ドライバーパッケージの解凍に失敗しました</string>
+    <string name="gpu_driver_install_missing_metadata">メタデータが欠損しているため、指定のドライバーパッケージは使用できません</string>
+    <string name="gpu_driver_install_invalid_metadata">指定されたドライバーパッケージに無効なメタデータが含まれています。おそらくパッケージが壊れています</string>
+    <string name="gpu_driver_install_unsupported_android_version">お持ちの端末は、指定されたドライバーが対応する最低限のAndroidバージョンに達していません</string>
+    <string name="gpu_driver_install_already_installed">指定したドライバーパッケージは既にインストールされています</string>
+    <!-- Input -->
+    <string name="input">入力</string>
+    <string name="osc">画面上のコントローラー</string>
+    <string name="osc_enable">画面上のコントローラーを有効にする</string>
+    <string name="osc_not_shown">画面上にコントローラーは表示されません</string>
+    <string name="osc_shown">コントローラーが表示されます</string>
+    <string name="osc_feedback">ハプティックフィードバックを有効にする</string>
+    <string name="osc_feedback_description">これは、ジョイスティックやハードウェアコントロールを除外しています。</string>
+    <string name="osc_edit">画面上コントローラーのレイアウトを編集する</string>
+    <string name="setup_guide">セットアップガイド</string>
+    <string name="setup_guide_description">コントローラーのスティックとボタンを順番に設定します</string>
+    <string name="joystick">ジョイスティック</string>
+    <string name="confirm">確認</string>
+    <string name="cancel">キャンセル</string>
+    <string name="osc_recenter_sticks">タッチした場所をジョイスティックの中心にする</string>
+    <string name="controller">コントローラー</string>
+    <string name="config_controller">コントローラーの設定</string>
+    <string name="controller_type">コントローラーのタイプ</string>
+    <string name="none">なし</string>
+    <string name="handheld_procon">ハンドヘルド + プロコントローラー</string>
+    <string name="procon">プロコントローラー</string>
+    <string name="ljoycon">左ジョイコン</string>
+    <string name="rjoycon">右ジョイコン</string>
+    <string name="general">一般</string>
+    <string name="partner_joycon">相手のジョイコン</string>
+    <string name="rumble_device">振動デバイス</string>
+    <string name="supported">対応</string>
+    <string name="not_supported">未対応</string>
+    <string name="press_any_button">コントローラーの任意のボタンを押して下さい</string>
+    <string name="confirm_button_again">ボタンをもう一度押して、選択を確認して下さい</string>
+    <string name="builtin">内蔵</string>
+    <string name="builtin_vibrator">内蔵バイブレータ</string>
+    <string name="reset">リセット</string>
+    <string name="buttons">ボタン</string>
+    <string name="use_button_axis">任意のボタンまたはジョイスティックを使用して下さい</string>
+    <string name="release_confirm">ボタンを離して確認</string>
+    <string name="hold_confirm">ボタンを長押しで確認</string>
+    <string name="sticks">スティック</string>
+    <string name="stick_button">スティックボタン</string>
+    <string name="next">次へ</string>
+    <string name="x_plus">ジョイスティック（右）</string>
+    <string name="y_plus">ジョイスティック（上）</string>
+    <string name="x_minus">ジョイスティック（左）</string>
+    <string name="y_minus">ジョイスティック（下）</string>
+    <string name="a_button">A</string>
+    <string name="b_button">B</string>
+    <string name="x_button">X</string>
+    <string name="y_button">Y</string>
+    <string name="left_shoulder">Lボタン</string>
+    <string name="right_shoulder">Rボタン</string>
+    <string name="left_trigger">ZLトリガー</string>
+    <string name="right_trigger">ZRトリガー</string>
+    <string name="plus_button">+ボタン</string>
+    <string name="minus_button">-ボタン</string>
+    <string name="emu_menu_button">エミュレーターメニュー</string>
+    <string name="stick_preview">スティックを表示</string>
+    <string name="done">終了</string>
+    <string name="use_non_stick">未割り当てのボタンを押して終了</string>
+    <string name="button">ボタン</string>
+    <string name="up">上</string>
+    <string name="down">下</string>
+    <string name="left">左</string>
+    <string name="right">右</string>
+    <string name="dpad">十字キー</string>
+    <string name="left_stick">左スティック</string>
+    <string name="right_stick">右スティック</string>
+    <string name="face_buttons">前面ボタン</string>
+    <string name="shoulder_trigger">上部ボタン</string>
+    <string name="shoulder_rail">ジョイコンのSL/SRボタン</string>
+    <string name="misc_buttons">その他のボタン</string>
+    <!-- Credits -->
+    <string name="credits">クレジット</string>
+    <!-- Licenses -->
+    <string name="licenses">ライセンス</string>
+    <string name="skyline_license_description">スカイラインはMozilla Public License 2.0下でライセンスされています</string>
+    <string name="ryujinx_description">スカイラインは高精度なRyujinxを参考に作られています
+注意：スカイラインはRyujinxに基づいているわけではありません</string>
+    <string name="shader_compiler_description">スカイラインのシェーダーコンパイラは、yuzuのシェーダーコンパイラをスカイラインに最適化したものです。両方のエミュレータに共通する部分は、お互いにシェアし、各エミュレータの開発を支え合うようにしています。
+スカイラインで使用できるのは、yuzuチームに特別にライセンス免除させて頂いているからです</string>
+    <string name="sirit_description">スカイラインのシェーダーコンパイラは、内部でSiritを使用して効率的にSPIR-Vを発行します</string>
+    <string name="vkhpp_description">Vulkan-HppはVulkan用のC++ APIです</string>
+    <string name="vkma_description">VulkanメモリーアロケータはUMA対応の高品質なGPUメモリーアロケータです</string>
+    <string name="khvkval_description">KhronosのVulkan検証レイヤーは、デバッグビルドでのVulkan API 呼び出しのエラーチェックに使われています</string>
+    <string name="oboe_description">Oboeは高性能なオーディオ出力に使われています</string>
+    <string name="perfetto_description">Perfetto は、詳細なトレースを使用してプロファイリングとデバッグを行うために使用されます</string>
+    <string name="fmtlib_description">{fmt} は最新の C++ 文字列フォーマット API です</string>
+    <string name="boost_description">Boost は、コンテナやその他の便利な関数の高品質な実装を C++ で提供します</string>
+    <string name="rangev3_description">Range v3 は、ISO C++ 20 範囲のリファレンス実装です。これにより、LLVM の libc++ で開発された範囲を使用できます</string>
+    <string name="frozen_description">Frozen は、検索を高速化するための完全なハッシュ関数を備えたコンパイル時の不変ハッシュ マップを提供します</string>
+    <string name="pugixml_description">pugixml は設定 XML を解析して C++ から設定を取得するために使用されます</string>
+    <string name="opus_description">Opus オーディオ コーデックは、ゲストの Opus オーディオをデコードするために使用される高品質の Opus デコーダーです</string>
+    <string name="mbedtls_description">Mbed TLSは AES暗号化されたNCAの復号化に使用されます</string>
+    <string name="lz4_description">LZ4は、LZ4形式で圧縮されたELF部分をNSOから解凍するのに使用されます</string>
+    <string name="tzcode_description">tzcodeは、タイムゾーンをtzdbから取得するためのC言語APIです</string>
+    <string name="jssim_description">Java String Similarityはスカイラインの検索機能を提供します</string>
+    <string name="andx_description">AndroidXによって様々なアンドロイドバージョンを通して、見た目と操作感を調和しています</string>
+    <string name="amat_description">Android Material Componentsによって、一貫性のあるMaterial Design UIがアプリ中に適用できます</string>
+    <string name="ktstd_description">Kotlinの標準ライブラリーは、Kotlinにおいて便利な機能を提供します</string>
+    <string name="dagger_description">Daggerはコンパイル時の依存性注入フレームワークです</string>
+    <string name="mtico_description">Material Design Iconsは、アプリケーション全体に一貫したアイコンのデザインを提供しています</string>
+    <string name="noto_sans_description">Noto Sansは、ラテン語、日本語、および(繁体字)中国語のFOSS共有フォントの代替として使用されます</string>
+    <string name="roboto_description">Roboto は、韓国語および任天堂の拡張文字セットのFOSS共有フォントの代替として使用されます</string>
+    <!-- Software Keyboard -->
+    <string name="input_hint">入力</string>
+    <!-- Misc -->
+    <!--suppress AndroidLintUnusedResources -->
+    <string name="expand_button_title" tools:override="true">拡大</string>
+    <string name="undo">元に戻す</string>
+</resources>
