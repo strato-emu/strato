@@ -118,7 +118,7 @@ namespace skyline::soc::gm20b::engine {
                 }
             })
             ENGINE_CASE(wfi, {
-                channelCtx.executor.Submit();
+                channelCtx.executor.AddFullBarrier();
             })
             ENGINE_CASE(setReference, {
                 channelCtx.executor.Submit();

@@ -285,6 +285,11 @@ namespace skyline::gpu::interconnect {
         void AddOutsideRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
 
         /**
+         * @brief Adds a full pipeline barrier to the command buffer
+         */
+        void AddFullBarrier();
+
+        /**
          * @brief Adds a persistent callback that will be called at the start of Execute in order to flush data required for recording
          */
         void AddFlushCallback(std::function<void()> &&callback);
