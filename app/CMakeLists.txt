@@ -332,6 +332,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/glue/IStaticService.cpp
         ${source_DIR}/skyline/services/glue/ITimeZoneService.cpp
         ${source_DIR}/skyline/services/glue/IWriterForSystem.cpp
+        ${source_DIR}/skyline/services/glue/INotificationServicesForApplication.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystemProxy.cpp
         ${source_DIR}/skyline/services/fssrv/IFileSystem.cpp
         ${source_DIR}/skyline/services/fssrv/IFile.cpp
