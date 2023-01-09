@@ -13,5 +13,25 @@ namespace skyline::service::bcat {
     class IDeliveryCacheStorageService : public BaseService {
       public:
         IDeliveryCacheStorageService(const DeviceState &state, ServiceManager &manager);
+
+        /**
+         * @brief Returns #IDeliveryCacheFileService
+         * @url https://switchbrew.org/wiki/BCAT_services#IDeliveryCacheStorageService
+         */
+        Result CreateFileService (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Returns #IDeliveryCacheDirectoryService
+         * @url https://switchbrew.org/wiki/BCAT_services#IDeliveryCacheStorageService
+         */
+        Result CreateDirectoryService (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        Result EnumerateDeliveryCacheDirectory (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x0, IDeliveryCacheStorageService, CreateFileService),
+            SFUNC(0x1, IDeliveryCacheStorageService, CreateDirectoryService),
+            SFUNC(0xA, IDeliveryCacheStorageService, EnumerateDeliveryCacheDirectory)
+        )
     };
 }
