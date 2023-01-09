@@ -20,18 +20,71 @@ namespace skyline {
 
       public:
         void lock() {
-            if (!locked.test_and_set(std::memory_order_acquire)) [[likely]]
+            if (try_lock()) [[likely]]
                 return;
 
             LockSlow();
         }
 
         bool try_lock() {
-            return !locked.test_and_set(std::memory_order_acquire);
+            return !locked.test_and_set(std::memory_order_acq_rel);
         }
 
         void unlock() {
             locked.clear(std::memory_order_release);
+        }
+    };
+
+    /**
+     * @brief Spinlock variant of std::shared_mutex
+     * @note This is loosely based on https://github.com/facebook/folly/blob/224350ea8c7c183312bec653e0d95a2b1e356ed7/folly/synchronization/RWSpinLock.h
+     */
+    class SharedSpinLock {
+      private:
+        static constexpr u32 StateReader{2};
+        static constexpr u32 StateWriter{1};
+
+        std::atomic<u32> state{};
+
+        void LockSlow();
+
+        void LockSlowShared();
+
+      public:
+        void lock() {
+            if (try_lock()) [[likely]]
+                return;
+
+            LockSlow();
+        }
+
+        void lock_shared() {
+            if (try_lock_shared()) [[likely]]
+                return;
+
+            LockSlowShared();
+        }
+
+        bool try_lock() {
+            u32 expected{};
+            return state.compare_exchange_strong(expected, StateWriter, std::memory_order_acq_rel);
+        }
+
+        bool try_lock_shared() {
+            u32 value{state.fetch_add(StateReader, std::memory_order_acquire)};
+            if (value & StateWriter) {
+                state.fetch_add(-StateReader, std::memory_order_release);
+                return false;
+            }
+            return true;
+        }
+
+        void unlock() {
+            state.fetch_and(~StateWriter, std::memory_order_release);
+        }
+
+        void unlock_shared() {
+            state.fetch_add(-StateReader, std::memory_order_release);
         }
     };
 

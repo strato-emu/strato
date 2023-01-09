@@ -55,7 +55,7 @@ namespace skyline {
             }
         };
 
-        std::shared_mutex blockMutex;
+        SharedSpinLock blockMutex;
         std::vector<Block> blocks{Block{}};
 
         /**
