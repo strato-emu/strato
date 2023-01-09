@@ -14,7 +14,8 @@ namespace skyline::service::am {
     IApplicationFunctions::IApplicationFunctions(const DeviceState &state, ServiceManager &manager)
         : BaseService(state, manager),
           gpuErrorEvent(std::make_shared<type::KEvent>(state, false)),
-          friendInvitationStorageChannelEvent(std::make_shared<type::KEvent>(state, false)) {}
+          friendInvitationStorageChannelEvent(std::make_shared<type::KEvent>(state, false)),
+          notificationStorageChannelEvent(std::make_shared<type::KEvent>(state, false)) {}
 
     Result IApplicationFunctions::PopLaunchParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         constexpr u32 LaunchParameterMagic{0xC79497CA}; //!< The magic of the application launch parameters
@@ -181,5 +182,12 @@ namespace skyline::service::am {
 
     Result IApplicationFunctions::TryPopFromFriendInvitationStorageChannel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return result::NotAvailable;
+    }
+
+    Result IApplicationFunctions::GetNotificationStorageChannelEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto handle{state.process->InsertItem(notificationStorageChannelEvent)};
+        Logger::Warn("Notification Storage Channel Event Handle: 0x{:X}", handle);
+        response.copyHandles.push_back(handle);
+        return {};
     }
 }
