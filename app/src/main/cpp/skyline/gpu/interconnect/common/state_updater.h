@@ -66,9 +66,10 @@ namespace skyline::gpu::interconnect {
     struct SetVertexBuffersDynamicCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
             for (u32 i{base.firstBinding}; i < base.firstBinding + base.bindingCount; i++) {
-                base.buffers[i] = views[i].GetBuffer()->GetBacking();
-                base.offsets[i] = views[i].GetOffset();
-                base.sizes[i] = views[i].size;
+                auto binding{views[i].GetBinding(gpu)};
+                base.buffers[i] = binding.buffer;
+                base.offsets[i] = binding.offset;
+                base.sizes[i] = binding.size;
             }
 
             base.Record(gpu, commandBuffer);
@@ -92,8 +93,9 @@ namespace skyline::gpu::interconnect {
 
     struct SetIndexBufferDynamicCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
-            base.buffer = view.GetBuffer()->GetBacking();
-            base.offset = view.GetOffset();
+            auto binding{view.GetBinding(gpu)};
+            base.buffer = binding.buffer;
+            base.offset = binding.offset;
             base.Record(gpu, commandBuffer);
         }
 
@@ -116,9 +118,10 @@ namespace skyline::gpu::interconnect {
 
     struct SetTransformFeedbackBufferDynamicCmdImpl {
         void Record(GPU &gpu, vk::raii::CommandBuffer &commandBuffer) {
-            base.buffer = view.GetBuffer()->GetBacking();
-            base.offset = view.GetOffset();
-            base.size = view.size;
+            auto binding{view.GetBinding(gpu)};
+            base.buffer = binding.buffer;
+            base.offset = binding.offset;
+            base.size = binding.size;
             base.Record(gpu, commandBuffer);
         }
 
@@ -206,19 +209,20 @@ namespace skyline::gpu::interconnect {
             // Resolve descriptor infos from dynamic bindings
             for (size_t i{}; i < updateInfo->bufferDescDynamicBindings.size(); i++) {
                 auto &dynamicBinding{updateInfo->bufferDescDynamicBindings[i]};
-                if (auto view{std::get_if<BufferView>(&dynamicBinding)}) {
-                    updateInfo->bufferDescs[i] = vk::DescriptorBufferInfo{
-                        .buffer = view->GetBuffer()->GetBacking(),
-                        .offset = view->GetOffset(),
-                        .range = view->size
-                    };
-                } else if (auto binding{std::get_if<BufferBinding>(&dynamicBinding)}) {
-                    updateInfo->bufferDescs[i] = vk::DescriptorBufferInfo{
-                        .buffer = binding->buffer,
-                        .offset = binding->offset,
-                        .range = binding->size
-                    };
-                }
+                BufferBinding binding{[&dynamicBinding, &gpu]() {
+                    if (auto view{std::get_if<BufferView>(&dynamicBinding)})
+                        return view->GetBinding(gpu);
+                    else if (auto binding{std::get_if<BufferBinding>(&dynamicBinding)})
+                        return *binding;
+                    else
+                        return BufferBinding{};
+                }()};
+
+                updateInfo->bufferDescs[i] = vk::DescriptorBufferInfo{
+                    .buffer = binding.buffer,
+                    .offset = binding.offset,
+                    .range = binding.size
+                };
             }
 
             if constexpr (PushDescriptor) {

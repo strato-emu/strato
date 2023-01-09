@@ -28,13 +28,14 @@ namespace skyline::gpu::interconnect {
             dstBuf.GetBuffer()->BlockAllCpuBackingWrites();
 
             auto srcGpuAllocation{gpu.megaBufferAllocator.Push(executor.cycle, src)};
-            executor.AddOutsideRpCommand([srcGpuAllocation, dstBuf, src](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+            executor.AddOutsideRpCommand([srcGpuAllocation, dstBuf, src](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &pGpu) {
+                auto dstBufBinding{dstBuf.GetBinding(pGpu)};
                 vk::BufferCopy copyRegion{
                     .size = src.size_bytes(),
                     .srcOffset = srcGpuAllocation.offset,
-                    .dstOffset = dstBuf.GetOffset()
+                    .dstOffset = dstBufBinding.offset,
                 };
-                commandBuffer.copyBuffer(srcGpuAllocation.buffer, dstBuf.GetBuffer()->GetBacking(), copyRegion);
+                commandBuffer.copyBuffer(srcGpuAllocation.buffer, dstBufBinding.buffer, copyRegion);
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
                     .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
                     .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite

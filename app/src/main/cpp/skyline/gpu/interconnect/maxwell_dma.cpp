@@ -40,17 +40,19 @@ namespace skyline::gpu::interconnect {
             srcBuf.GetBuffer()->BlockAllCpuBackingWrites();
             dstBuf.GetBuffer()->BlockAllCpuBackingWrites();
 
-            executor.AddOutsideRpCommand([srcBuf, dstBuf](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+            executor.AddOutsideRpCommand([srcBuf, dstBuf](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu) {
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eTransfer, {}, vk::MemoryBarrier{
                     .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
                     .dstAccessMask = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite
                 }, {}, {});
+                auto srcBufBinding{srcBuf.GetBinding(gpu)};
+                auto dstBufBinding{dstBuf.GetBinding(gpu)};
                 vk::BufferCopy copyRegion{
                     .size = srcBuf.size,
-                    .srcOffset = srcBuf.GetOffset(),
-                    .dstOffset = dstBuf.GetOffset()
+                    .srcOffset = srcBufBinding.offset,
+                    .dstOffset = dstBufBinding.offset
                 };
-                commandBuffer.copyBuffer(srcBuf.GetBuffer()->GetBacking(), dstBuf.GetBuffer()->GetBacking(), copyRegion);
+                commandBuffer.copyBuffer(srcBufBinding.buffer, dstBufBinding.buffer, copyRegion);
                 commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
                     .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
                     .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,

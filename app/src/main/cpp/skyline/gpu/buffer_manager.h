@@ -69,7 +69,7 @@ namespace skyline::gpu {
         static bool BufferLessThan(const std::shared_ptr<Buffer> &it, u8 *pointer);
 
       public:
-        std::mutex recreationMutex;
+        SpinLock recreationMutex;
 
         BufferManager(GPU &gpu);
 

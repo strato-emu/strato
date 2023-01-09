@@ -62,13 +62,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 callbackData.view.GetBuffer()->BlockAllCpuBackingWrites();
 
                 auto srcGpuAllocation{callbackData.ctx.gpu.megaBufferAllocator.Push(callbackData.ctx.executor.cycle, callbackData.srcCpuBuf)};
-                callbackData.ctx.executor.AddOutsideRpCommand([=, srcCpuBuf = callbackData.srcCpuBuf, view = callbackData.view, offset = callbackData.offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
+                callbackData.ctx.executor.AddOutsideRpCommand([=, srcCpuBuf = callbackData.srcCpuBuf, view = callbackData.view, offset = callbackData.offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu) {
+                    auto binding{view.GetBinding(gpu)};
                     vk::BufferCopy copyRegion{
                         .size = srcCpuBuf.size_bytes(),
                         .srcOffset = srcGpuAllocation.offset,
-                        .dstOffset = view.GetOffset() + offset
+                        .dstOffset = binding.offset + offset
                     };
-                    commandBuffer.copyBuffer(srcGpuAllocation.buffer, view.GetBuffer()->GetBacking(), copyRegion);
+                    commandBuffer.copyBuffer(srcGpuAllocation.buffer, binding.buffer, copyRegion);
                     commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
                         .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
                         .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite

@@ -697,6 +697,11 @@ namespace skyline::gpu {
         return delegate->GetBuffer();
     }
 
+    BufferBinding BufferView::GetBinding(GPU &gpu) const {
+        std::scoped_lock lock{gpu.buffer.recreationMutex};
+        return {delegate->GetBuffer()->GetBacking(), offset + delegate->GetOffset(), size};
+    }
+
     vk::DeviceSize BufferView::GetOffset() const {
         return offset + delegate->GetOffset();
     }

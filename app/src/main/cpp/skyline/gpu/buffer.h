@@ -493,6 +493,13 @@ namespace skyline::gpu {
         vk::DeviceSize GetOffset() const;
 
         /**
+         * @return A binding describing the underlying buffer state at a given moment in time
+         * @note The view **must** be locked prior to calling this
+         * @note This is the **ONLY** function in BufferView that can be called from non-GPFIFO threads
+         */
+        BufferBinding GetBinding(GPU &gpu) const;
+
+        /**
          * @note The buffer manager **MUST** be locked prior to calling this
          */
         void lock() {

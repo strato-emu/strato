@@ -94,7 +94,6 @@ namespace skyline::gpu::interconnect {
         vk::RenderPass lRenderPass;
         u32 subpassIndex;
 
-        std::scoped_lock bufferLock{gpu.buffer.recreationMutex};
         using namespace node;
         for (NodeVariant &node : slot->nodes) {
             #define NODE(name) [&](name& node) { node(slot->commandBuffer, slot->cycle, gpu); }
