@@ -607,10 +607,10 @@ namespace skyline::kernel::svc {
     }
 
     void WaitSynchronization(const DeviceState &state) {
-        constexpr u8 maxSyncHandles{0x40}; // The total amount of handles that can be passed to WaitSynchronization
+        constexpr u8 MaxSyncHandles{0x40}; // The total amount of handles that can be passed to WaitSynchronization
 
         u32 numHandles{state.ctx->gpr.w2};
-        if (numHandles > maxSyncHandles) {
+        if (numHandles > MaxSyncHandles) {
             state.ctx->gpr.w0 = result::OutOfRange;
             return;
         }
@@ -850,7 +850,7 @@ namespace skyline::kernel::svc {
         KHandle handle{state.ctx->gpr.w1};
         size_t tid{state.process->GetHandle<type::KThread>(handle)->id};
 
-        Logger::Debug("Handle: 0x{:X}, TID: {}", handle, tid);
+        Logger::Debug("0x{:X} -> #{}", handle, tid);
 
         state.ctx->gpr.x1 = tid;
         state.ctx->gpr.w0 = Result{};
@@ -1128,7 +1128,7 @@ namespace skyline::kernel::svc {
             std::scoped_lock guard{thread->coreMigrationMutex};
             if (activity == ThreadActivity::Runnable) {
                 if (thread->running && thread->isPaused) {
-                    Logger::Debug("Resuming Thread: 0x{:X}", threadHandle);
+                    Logger::Debug("Resuming Thread #{}", thread->id);
                     state.scheduler->ResumeThread(thread);
                 } else {
                     Logger::Warn("Attempting to resume thread which is already runnable (Thread: 0x{:X})", threadHandle);
@@ -1137,7 +1137,7 @@ namespace skyline::kernel::svc {
                 }
             } else if (activity == ThreadActivity::Paused) {
                 if (thread->running && !thread->isPaused) {
-                    Logger::Debug("Pausing Thread: 0x{:X}", threadHandle);
+                    Logger::Debug("Pausing Thread #{}", thread->id);
                     state.scheduler->PauseThread(thread);
                 } else {
                     Logger::Warn("Attempting to pause thread which is already paused (Thread: 0x{:X})", threadHandle);
@@ -1158,14 +1158,14 @@ namespace skyline::kernel::svc {
         try {
             auto thread{state.process->GetHandle<type::KThread>(threadHandle)};
             if (thread == state.thread) {
-                Logger::Warn("Thread attempting to retrieve own context: 0x{:X}", threadHandle);
+                Logger::Warn("Thread attempting to retrieve own context");
                 state.ctx->gpr.w0 = result::Busy;
                 return;
             }
 
             std::scoped_lock guard{thread->coreMigrationMutex};
             if (!thread->isPaused) {
-                Logger::Warn("Attemping to get context of running thread: 0x{:X}", threadHandle);
+                Logger::Warn("Attemping to get context of running thread #{}", thread->id);
                 state.ctx->gpr.w0 = result::InvalidState;
                 return;
             }
@@ -1201,7 +1201,7 @@ namespace skyline::kernel::svc {
             context.tpidr = reinterpret_cast<u64>(targetContext.tpidrEl0);
 
             // Note: We don't write the whole context as we only store the parts required according to the ARMv8 ABI for syscall handling
-            Logger::Debug("Written partial context for thread 0x{:X}", threadHandle);
+            Logger::Debug("Written partial context for thread #{}", thread->id);
 
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
