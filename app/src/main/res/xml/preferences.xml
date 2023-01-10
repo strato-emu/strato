@@ -23,6 +23,20 @@
             app:title="@string/layout_type"
             app:useSimpleSummaryProvider="true" />
         <CheckBoxPreference
+            android:defaultValue="true"
+            android:summaryOff="@string/group_by_format_desc_off"
+            android:summaryOn="@string/group_by_format_desc_on"
+            app:key="group_by_format"
+            app:refreshRequired="true"
+            app:title="@string/group_by_format" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/sort_apps_by"
+            app:key="sort_apps_by"
+            app:refreshRequired="true"
+            app:title="@string/sort_apps_by"
+            app:useSimpleSummaryProvider="true" />
+        <CheckBoxPreference
             android:defaultValue="false"
             android:summaryOff="@string/select_action_desc_off"
             android:summaryOn="@string/select_action_desc_on"

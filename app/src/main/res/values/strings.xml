@@ -30,6 +30,10 @@
     <string name="failed_open_directory">Cannot find an external file manager to open Skyline\'s internal directory</string>
     <string name="theme">Theme</string>
     <string name="layout_type">Game Display Layout</string>
+    <string name="group_by_format">Group Games By Format</string>
+    <string name="group_by_format_desc_off">Games will be shown as a single list</string>
+    <string name="group_by_format_desc_on">Games will be shown grouped by format</string>
+    <string name="sort_apps_by">Games Sorting Order</string>
     <string name="select_action">Always Show Game Information</string>
     <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>

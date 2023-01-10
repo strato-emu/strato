@@ -217,15 +217,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getDataItems() = mutableListOf<DataItem>().apply {
-        appEntries?.let { entries ->
-            val formats = formatFilter?.let { listOf(it) } ?: formatOrder
-            for (format in formats) {
-                entries[format]?.let {
-                    add(HeaderItem(format.name))
-                    it.forEach { entry -> add(AppItem(entry)) }
+        if (preferenceSettings.groupByFormat) {
+            appEntries?.let { entries ->
+                val formats = formatFilter?.let { listOf(it) } ?: formatOrder
+                for (format in formats) {
+                    entries[format]?.let {
+                        add(HeaderItem(format.name))
+                        for (entry in sortGameList(it)) {
+                            add(AppItem(entry))
+                        }
+                    }
                 }
             }
+        } else {
+            val gameList = mutableListOf<AppEntry>()
+            appEntries?.let { entries ->
+                val formats = formatFilter?.let { listOf(it) } ?: formatOrder
+                for (format in formats) {
+                    entries[format]?.let {
+                        it.forEach { entry -> gameList.add(entry) }
+                    }
+                }
+            }
+            for (entry in sortGameList(gameList.toList())) {
+                add(AppItem(entry))
+            }
         }
+    }
+
+    private fun sortGameList(gameList : List<AppEntry>) : MutableList<AppEntry> {
+        val sortedApps : MutableList<AppEntry> = mutableListOf<AppEntry>()
+        gameList.forEach { entry -> sortedApps.add(entry) }
+        when (preferenceSettings.sortAppsBy) {
+            1 -> sortedApps.sortByDescending { it.name }
+            else -> sortedApps.sortBy { it.name }
+        }
+        return sortedApps
     }
 
     private fun handleState(state : MainState) = when (state) {

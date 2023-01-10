@@ -12,6 +12,10 @@
         <item>Grid</item>
         <item>Grid Compact</item>
     </string-array>
+    <string-array name="sort_apps_by">
+        <item>A-Z</item>
+        <item>Z-A</item>
+    </string-array>
     <string-array name="app_theme">
         <item>Light</item>
         <item>Dark</item>

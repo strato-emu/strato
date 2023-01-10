@@ -18,6 +18,8 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     var searchLocation by sharedPreferences(context, "")
     var appTheme by sharedPreferences(context, 2)
     var layoutType by sharedPreferences(context, 1)
+    var groupByFormat by sharedPreferences(context, true)
+    var sortAppsBy by sharedPreferences(context, 0)
     var selectAction by sharedPreferences(context, false)
     var perfStats by sharedPreferences(context, false)
     var logLevel by sharedPreferences(context, 3)
