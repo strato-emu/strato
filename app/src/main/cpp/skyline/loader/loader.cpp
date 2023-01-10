@@ -34,38 +34,57 @@ namespace skyline::loader {
         std::vector<nce::NCE::HookedSymbolEntry> executableSymbols;
         size_t hookSize{};
         if (dynamicallyLinked) {
-            for (auto &symbol : dynsym) {
-                if (symbol.st_name == 0 || symbol.st_value == 0)
-                    continue;
+            if constexpr (!hle::HookedSymbols.empty()) {
+                for (auto &symbol : dynsym) {
+                    if (symbol.st_name == 0 || symbol.st_value == 0)
+                        continue;
 
-                if (ELF64_ST_TYPE(symbol.st_info) != STT_FUNC || ELF64_ST_BIND(symbol.st_info) != STB_GLOBAL || symbol.st_shndx == SHN_UNDEF)
-                    continue;
+                    if (ELF64_ST_TYPE(symbol.st_info) != STT_FUNC || ELF64_ST_BIND(symbol.st_info) != STB_GLOBAL || symbol.st_shndx == SHN_UNDEF)
+                        continue;
 
-                std::string_view symbolName{dynstr.data() + symbol.st_name};
+                    std::string_view symbolName{dynstr.data() + symbol.st_name};
 
-                auto item{std::find_if(hle::HookedSymbols.begin(), hle::HookedSymbols.end(), [&symbolName](const auto &item) {
-                    return item.name == symbolName;
-                })};
-                if (item != hle::HookedSymbols.end()) {
-                    executableSymbols.emplace_back(std::string{symbolName}, item->hook, &symbol.st_value);
-                    continue;
+                    auto item{std::find_if(hle::HookedSymbols.begin(), hle::HookedSymbols.end(), [&symbolName](const auto &item) {
+                        return item.name == symbolName;
+                    })};
+                    if (item != hle::HookedSymbols.end()) {
+                        executableSymbols.emplace_back(std::string{symbolName}, item->hook, &symbol.st_value);
+                        continue;
+                    }
+
+                    #ifdef PRINT_HOOK_ALL
+                    if (symbolName == "memcpy" || symbolName == "memcmp" || symbolName == "memset" || symbolName == "strcmp" ||  symbolName == "strlen")
+                        // If symbol is from libc (such as memcpy, strcmp, strlen, etc), we don't need to hook it
+                        continue;
+
+                    executableSymbols.emplace_back(std::string{symbolName}, hle::EntryExitHook{
+                        .entry = [](const DeviceState &, const hle::HookedSymbol &symbol) {
+                            Logger::Error("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
+                        },
+                        .exit = [](const DeviceState &, const hle::HookedSymbol &symbol) {
+                            Logger::Error("Exiting \"{}\"", symbol.prettyName);
+                        },
+                    }, &symbol.st_value);
+                    #endif
                 }
-
-                #ifdef PRINT_HOOK_ALL
-                if (symbolName == "memcpy" || symbolName == "memcmp" || symbolName == "memset" || symbolName == "strcmp" ||  symbolName == "strlen")
-                    // If symbol is from libc (such as memcpy, strcmp, strlen, etc), we don't need to hook it
-                    continue;
-
-                executableSymbols.emplace_back(std::string{symbolName}, hle::EntryExitHook{
-                    .entry = [](const DeviceState &, const hle::HookedSymbol &symbol) {
-                        Logger::Error("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
-                    },
-                    .exit = [](const DeviceState &, const hle::HookedSymbol &symbol) {
-                        Logger::Error("Exiting \"{}\"", symbol.prettyName);
-                    },
-                }, &symbol.st_value);
-                #endif
             }
+
+            #ifdef PRINT_HOOK_ALL
+            for (auto &symbol : dynsym) {
+                if (symbolName == "memcpy" || symbolName == "memcmp" || symbolName == "memset" || symbolName == "strcmp" ||  symbolName == "strlen")
+                        // If symbol is from libc (such as memcpy, strcmp, strlen, etc), we don't need to hook it
+                        continue;
+
+                    executableSymbols.emplace_back(std::string{symbolName}, hle::EntryExitHook{
+                        .entry = [](const DeviceState &, const hle::HookedSymbol &symbol) {
+                            Logger::Error("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
+                        },
+                        .exit = [](const DeviceState &, const hle::HookedSymbol &symbol) {
+                            Logger::Error("Exiting \"{}\"", symbol.prettyName);
+                        },
+                    }, &symbol.st_value);
+            }
+            #endif
 
             hookSize = util::AlignUp(state.nce->GetHookSectionSize(executableSymbols), PAGE_SIZE);
         }

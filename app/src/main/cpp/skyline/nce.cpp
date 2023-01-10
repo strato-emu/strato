@@ -515,6 +515,9 @@ namespace skyline::nce {
     }
 
     size_t NCE::GetHookSectionSize(span<HookedSymbolEntry> entries) {
+        if (entries.empty())
+            return 0;
+
         size_t size{guest::SaveCtxSize + guest::LoadCtxSize + TrampolineSize};
         for (const auto &entry : entries) {
             constexpr size_t EmitTrampolineSize{10};
