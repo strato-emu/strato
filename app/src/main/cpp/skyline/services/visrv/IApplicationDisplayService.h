@@ -18,7 +18,7 @@ namespace skyline::service::visrv {
         /**
          * @brief Specifies the method to scale up the layer content to its bounds
          */
-        enum class ScalingMode {
+        enum class ScalingMode : u64 {
             Freeze = 0,
             ScaleToLayer = 1,
             ScaleAndCrop = 2,
@@ -112,6 +112,7 @@ namespace skyline::service::visrv {
           SFUNC_BASE(0x7EE, IApplicationDisplayService, IDisplayService, CreateStrayLayer),
           SFUNC_BASE(0x7EF, IApplicationDisplayService, IDisplayService, DestroyStrayLayer),
           SFUNC(0x835, IApplicationDisplayService, SetLayerScalingMode),
+          SFUNC(0x836, IApplicationDisplayService, ConvertScalingMode),
           SFUNC(0x1452, IApplicationDisplayService, GetDisplayVsyncEvent)
       )
     };
