@@ -7,6 +7,7 @@
 #include <nce/guest.h>
 #include <kernel/scheduler.h>
 #include <common/signal.h>
+#include <common/spin_lock.h>
 #include "KSyncObject.h"
 #include "KPrivateMemory.h"
 #include "KSharedMemory.h"
@@ -62,7 +63,7 @@ namespace skyline {
             bool pendingYield{}; //!< If the thread has been yielded and hasn't been acted upon it yet
             bool forceYield{}; //!< If the thread has been forcefully yielded by another thread
 
-            std::recursive_mutex waiterMutex; //!< Synchronizes operations on mutation of the waiter members
+            RecursiveSpinLock waiterMutex; //!< Synchronizes operations on mutation of the waiter members
             u32 *waitMutex; //!< The key of the mutex which this thread is waiting on
             KHandle waitTag; //!< The handle of the thread which requested the mutex lock
             std::shared_ptr<KThread> waitThread; //!< The thread which this thread is waiting on
