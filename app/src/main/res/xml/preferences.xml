@@ -22,7 +22,7 @@
             app:key="layout_type"
             app:title="@string/layout_type"
             app:useSimpleSummaryProvider="true" />
-        <CheckBoxPreference
+        <emu.skyline.preference.ChkBoxPreference
             android:defaultValue="true"
             android:summaryOff="@string/group_by_format_desc_off"
             android:summaryOn="@string/group_by_format_desc_on"
