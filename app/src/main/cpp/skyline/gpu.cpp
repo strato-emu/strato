@@ -213,7 +213,10 @@ namespace skyline::gpu {
     }
 
     static vk::raii::PhysicalDevice CreatePhysicalDevice(const vk::raii::Instance &instance) {
-        return std::move(vk::raii::PhysicalDevices(instance).front()); // We just select the first device as we aren't expecting multiple GPUs
+        auto devices{vk::raii::PhysicalDevices(instance)};
+        if (devices.empty())
+            throw exception("No Vulkan physical devices found");
+        return std::move(devices.front()); // We just select the first device as we aren't expecting multiple GPUs
     }
 
     static vk::raii::Device CreateDevice(const vk::raii::Context &context,
