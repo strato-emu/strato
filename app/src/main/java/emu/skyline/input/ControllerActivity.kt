@@ -317,7 +317,7 @@ class ControllerActivity : AppCompatActivity() {
             GeneralType.SetupGuide -> {
                 var dialogFragment : BottomSheetDialogFragment? = null
 
-                for (buttonItem in buttonItems.reversed())
+                for (buttonItem in buttonItems.reversed().filter { it.button != ButtonId.Menu })
                     dialogFragment = ButtonDialog(buttonItem, dialogFragment)
 
                 for (stickItem in stickItems.reversed())
