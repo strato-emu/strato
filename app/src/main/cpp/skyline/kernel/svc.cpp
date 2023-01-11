@@ -1084,6 +1084,9 @@ namespace skyline::kernel::svc {
                         }
                     } else if (memory->guest.data() < pointer) {
                         memory->Resize(static_cast<size_t>(pointer - memory->guest.data()));
+
+                        if (memory->guest.data() + initialSize > end)
+                            state.process->NewHandle<type::KPrivateMemory>(span<u8>{end, static_cast<size_t>(memory->guest.data() + initialSize - end)}, memory::Permission{true, true, false}, memory::states::Heap);
                     }
                 }
                 pointer += initialSize;
