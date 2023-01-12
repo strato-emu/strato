@@ -1,6 +1,6 @@
 /*
  * SPDX-License-Identifier: MPL-2.0
- * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+ * Copyright © 2023 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
 package emu.skyline.preference
@@ -14,8 +14,7 @@ import emu.skyline.di.getSettings
 /**
  * This preference is used with checkboxes that need to refresh the main activity when changed
  */
-class ChkBoxPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.checkBoxPreferenceStyle) : CheckBoxPreference(context, attrs, defStyleAttr) {
-
+class RefreshCheckBoxPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.checkBoxPreferenceStyle) : CheckBoxPreference(context, attrs, defStyleAttr) {
     override fun onClick() {
         context?.getSettings()?.refreshRequired = true
         super.onClick()
