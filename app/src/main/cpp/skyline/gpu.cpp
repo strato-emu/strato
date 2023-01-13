@@ -400,6 +400,7 @@ namespace skyline::gpu {
           buffer(*this),
           megaBufferAllocator(*this),
           descriptor(*this),
+          shader(state, *this),
           helperShaders(*this, state.os->assetFileSystem),
           graphicsPipelineCache(*this),
           renderPassCache(*this),
@@ -410,8 +411,9 @@ namespace skyline::gpu {
         shader.emplace(state, *this,
                        state.os->publicAppFilesPath + "shader_replacements/" + titleId,
                        state.os->publicAppFilesPath + "shader_dumps/" + titleId);
-        graphicsPipelineCacheManager.emplace(state,
-                                             state.os->publicAppFilesPath + "graphics_pipeline_cache/" + titleId);
+        if (!*state.settings->disableShaderCache)
+            graphicsPipelineCacheManager.emplace(state,
+                                                 state.os->publicAppFilesPath + "graphics_pipeline_cache/" + titleId);
         graphicsPipelineManager.emplace(*this);
     }
 }

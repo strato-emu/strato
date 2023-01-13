@@ -881,6 +881,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     PipelineManager::PipelineManager(GPU &gpu) {
+        if (!gpu.graphicsPipelineCacheManager)
+            return;
+
         std::ifstream stream{gpu.graphicsPipelineCacheManager->OpenReadStream()};
         i64 lastKnownGoodOffset{stream.tellg()};
         try {

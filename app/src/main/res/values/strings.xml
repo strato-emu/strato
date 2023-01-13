@@ -38,8 +38,11 @@
     <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
     <string name="perf_stats">Show Performance Statistics</string>
+    <string name="shader_cache">Disable shader cache</string>
     <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
     <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
+    <string name="shader_cache_disabled">Cached shaders won\'t be loaded, will cause stutters</string>
+    <string name="shader_cache_enabled">Cached shaders will be loaded, can heavily reduce stuttering</string>
     <string name="log_level">Log Level</string>
     <string name="gpu_driver_config">GPU Driver Configuration</string>
     <string name="gpu_driver_config_desc">Active driver: %1$s</string>

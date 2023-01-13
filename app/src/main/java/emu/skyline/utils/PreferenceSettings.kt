@@ -38,6 +38,7 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
     var aspectRatio by sharedPreferences(context, 0)
     var orientation by sharedPreferences(context, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
     var respectDisplayCutout by sharedPreferences(context, false)
+    var disableShaderCache by sharedPreferences(context, false)
 
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER)

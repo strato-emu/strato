@@ -22,6 +22,7 @@ class NativeSettings(context : Context, pref : PreferenceSettings) {
     // Display
     var forceTripleBuffering : Boolean = pref.forceTripleBuffering
     var disableFrameThrottling : Boolean = pref.disableFrameThrottling
+    var disableShaderCache : Boolean = pref.disableShaderCache
 
     // GPU
     var gpuDriver : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver

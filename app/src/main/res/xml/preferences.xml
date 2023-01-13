@@ -170,6 +170,12 @@
             android:summary="@string/force_max_gpu_clocks_desc"
             app:key="force_max_gpu_clocks"
             app:title="@string/force_max_gpu_clocks" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/shader_cache_enabled"
+            android:summaryOn="@string/shader_cache_disabled"
+            app:key="disable_shader_cache"
+            app:title="@string/shader_cache" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_hacks"

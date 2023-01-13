@@ -120,6 +120,7 @@
                     android:textColor="?attr/colorAccent"
                     app:icon="@drawable/ic_add_home"
                     app:iconGravity="textStart"
+                    android:padding="0dp"
                     app:iconPadding="0dp" />
             </com.google.android.flexbox.FlexboxLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>

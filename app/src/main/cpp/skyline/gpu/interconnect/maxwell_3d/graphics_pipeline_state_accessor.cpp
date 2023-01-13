@@ -32,6 +32,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void RuntimeGraphicsPipelineStateAccessor::MarkComplete() {
-        ctx.gpu.graphicsPipelineCacheManager->QueueWrite(std::move(bundle));
+        if (ctx.gpu.graphicsPipelineCacheManager)
+            ctx.gpu.graphicsPipelineCacheManager->QueueWrite(std::move(bundle));
     }
 }
