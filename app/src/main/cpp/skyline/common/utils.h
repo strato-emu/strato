@@ -38,6 +38,8 @@ namespace skyline::util {
                 frequency = 26000000;
             else if (board == "exynos9810")     // Exynos 9810
                 frequency = 26000000;
+            else if (board == "s5e8825")        // Exynos 1280
+                frequency = 26000000;
             else
                 asm volatile("MRS %0, CNTFRQ_EL0" : "=r"(frequency));
 
