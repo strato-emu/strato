@@ -28,6 +28,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ColorRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, size_t index);
 
         std::shared_ptr<TextureView> view;
+        engine::ColorTarget::Format format{engine::ColorTarget::Format::Disabled};
 
         void Flush(InterconnectContext &ctx, PackedPipelineState &packedState);
     };

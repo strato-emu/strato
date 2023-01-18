@@ -35,6 +35,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void ColorRenderTargetState::Flush(InterconnectContext &ctx, PackedPipelineState &packedState) {
         auto &target{engine->colorTarget};
+        format = target.format;
         packedState.SetColorRenderTargetFormat(index, target.format);
 
         if (target.format == engine::ColorTarget::Format::Disabled) {
@@ -78,6 +79,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
             view = ctx.gpu.texture.FindOrCreate(guest, ctx.executor.tag);
         } else {
+            format = engine::ColorTarget::Format::Disabled;
             packedState.SetColorRenderTargetFormat(index, engine::ColorTarget::Format::Disabled);
             view = {};
         }
@@ -391,9 +393,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         colorAttachments.clear();
+        packedState.colorRenderTargetFormats = {};
         for (size_t i{}; i < engine::ColorTargetCount; i++) {
             if (i < ctSelect.count) {
-                const auto &view{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState).view.get()};
+                const auto &rt{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState)};
+                const auto view{rt.view.get()};
+                packedState.SetColorRenderTargetFormat(ctSelect[i], rt.format);
                 colorAttachments.push_back(view);
 
                 if (view)
