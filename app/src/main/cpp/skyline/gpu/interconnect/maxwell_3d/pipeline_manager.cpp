@@ -933,7 +933,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 #endif
             }
 
+            gpu.graphicsPipelineAssembler->WaitIdle();
             Logger::Info("Loaded {} graphics pipelines in {}ms", map.size(), (util::GetTimeNs() - startTime) / constant::NsInMillisecond);
+
+            gpu.graphicsPipelineAssembler->SavePipelineCache();
 
             #ifdef PIPELINE_STATS
             for (auto &[key, list] : sharedPipelines) {
