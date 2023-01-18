@@ -175,7 +175,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
         writeBufferDescs(vk::DescriptorType::eUniformBuffer, shaderStage.info.constant_buffer_descriptors,
                          [&](const Shader::ConstantBufferDescriptor &desc, size_t arrayIdx) {
                              size_t cbufIdx{desc.index + arrayIdx};
-                             return GetConstantBufferBinding(ctx, shaderStage.info, constantBuffers[cbufIdx].view, cbufIdx);
+                             return GetConstantBufferBinding(ctx, shaderStage.info.constant_buffer_used_sizes, constantBuffers[cbufIdx].view, cbufIdx);
                          });
 
         writeBufferDescs(vk::DescriptorType::eStorageBuffer, shaderStage.info.storage_buffers_descriptors,

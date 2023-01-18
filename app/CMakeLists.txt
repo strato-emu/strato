@@ -186,7 +186,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/gpu/presentation_engine.cpp
         ${source_DIR}/skyline/gpu/shader_manager.cpp
         ${source_DIR}/skyline/gpu/pipeline_cache_manager.cpp
-        ${source_DIR}/skyline/gpu/cache/graphics_pipeline_cache.cpp
+        ${source_DIR}/skyline/gpu/graphics_pipeline_assembler.cpp
         ${source_DIR}/skyline/gpu/cache/renderpass_cache.cpp
         ${source_DIR}/skyline/gpu/cache/framebuffer_cache.cpp
         ${source_DIR}/skyline/gpu/interconnect/fermi_2d.cpp

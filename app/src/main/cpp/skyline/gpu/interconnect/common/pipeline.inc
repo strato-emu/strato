@@ -17,13 +17,13 @@ namespace skyline::gpu::interconnect {
         };
     };
 
-    static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, const Shader::Info &info, BufferView view, size_t idx) {
+    static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, span<const u32, Shader::Info::MAX_CBUFS> cbufSizes, BufferView view, size_t idx) {
         if (!view) // Return a dummy buffer if the constant buffer isn't bound
             return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, PAGE_SIZE).buffer, 0, PAGE_SIZE};
 
         ctx.executor.AttachBuffer(view);
 
-        size_t sizeOverride{std::min<size_t>(info.constant_buffer_used_sizes[idx], view.size)};
+        size_t sizeOverride{std::min<size_t>(cbufSizes[idx], view.size)};
         if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag, sizeOverride)}) {
             return megaBufferBinding;
         } else {
@@ -32,7 +32,7 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    static DynamicBufferBinding GetStorageBufferBinding(InterconnectContext &ctx, const Shader::StorageBufferDescriptor &desc, ConstantBuffer &cbuf, CachedMappedBufferView &cachedView) {
+    static DynamicBufferBinding GetStorageBufferBinding(InterconnectContext &ctx, const auto &desc, ConstantBuffer &cbuf, CachedMappedBufferView &cachedView) {
         struct SsboDescriptor {
             u64 address;
             u32 size;
@@ -59,8 +59,7 @@ namespace skyline::gpu::interconnect {
         return view;
     }
 
-    template<typename CbufSetT>
-    static BindlessHandle ReadBindlessHandle(InterconnectContext &ctx, CbufSetT &constantBuffers, const auto &desc, size_t arrayIdx) {
+    static BindlessHandle ReadBindlessHandle(InterconnectContext &ctx, auto &constantBuffers, const auto &desc, size_t arrayIdx) {
         ConstantBuffer &primaryCbuf{constantBuffers[desc.cbuf_index]};
         size_t elemOffset{arrayIdx << desc.size_shift};
         size_t primaryCbufOffset{desc.cbuf_offset + elemOffset};
@@ -78,7 +77,7 @@ namespace skyline::gpu::interconnect {
         return {.raw = primaryVal};
     }
 
-    static std::pair<vk::DescriptorImageInfo, TextureView *> GetTextureBinding(InterconnectContext &ctx, const Shader::TextureDescriptor &desc, Samplers &samplers, Textures &textures, BindlessHandle handle) {
+    static std::pair<vk::DescriptorImageInfo, TextureView *> GetTextureBinding(InterconnectContext &ctx, const auto &desc, Samplers &samplers, Textures &textures, BindlessHandle handle) {
         auto sampler{samplers.GetSampler(ctx, handle.samplerIndex, handle.textureIndex)};
         auto texture{textures.GetTexture(ctx, handle.textureIndex, desc.type)};
         ctx.executor.AttachTexture(texture);
