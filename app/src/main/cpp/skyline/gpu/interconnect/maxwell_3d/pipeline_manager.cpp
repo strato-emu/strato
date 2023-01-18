@@ -667,6 +667,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     Pipeline *Pipeline::LookupNext(const PackedPipelineState &packedState) {
+        if (packedState == sourcePackedState)
+            return this;
+
         auto it{std::find_if(transitionCache.begin(), transitionCache.end(), [&packedState](auto pipeline) {
             if (pipeline && pipeline->sourcePackedState == packedState)
                 return true;
