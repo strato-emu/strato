@@ -921,10 +921,31 @@ namespace skyline::gpu::interconnect::maxwell3d {
             while (bundle.Deserialise(stream)) {
                 lastKnownGoodOffset = stream.tellg();
                 auto accessor{FilePipelineStateAccessor{bundle}};
-                map.emplace(bundle.GetKey<PackedPipelineState>(), std::make_unique<Pipeline>(gpu, accessor, bundle.GetKey<PackedPipelineState>()));
+                auto *pipeline{map.emplace(bundle.GetKey<PackedPipelineState>(), std::make_unique<Pipeline>(gpu, accessor, bundle.GetKey<PackedPipelineState>())).first.value().get()};
+                #ifdef PIPELINE_STATS
+                auto sharedIt{sharedPipelines.find(pipeline->sourcePackedState.shaderHashes)};
+                if (sharedIt == sharedPipelines.end())
+                    sharedPipelines.emplace(pipeline->sourcePackedState.shaderHashes, std::list<Pipeline *>{pipeline});
+                else
+                    sharedIt->second.push_back(pipeline);
+                #else
+                (void)pipeline;
+                #endif
             }
 
             Logger::Info("Loaded {} graphics pipelines in {}ms", map.size(), (util::GetTimeNs() - startTime) / constant::NsInMillisecond);
+
+            #ifdef PIPELINE_STATS
+            for (auto &[key, list] : sharedPipelines) {
+                sortedSharedPipelines.push_back(&list);
+            }
+            std::sort(sortedSharedPipelines.begin(), sortedSharedPipelines.end(), [](const auto &a, const auto &b) {
+                return a->size() > b->size();
+            });
+
+            raise(SIGTRAP);
+            #endif
+
         } catch (const exception &e) {
             Logger::Warn("Pipeline cache corrupted at: 0x{:X}, error: {}", lastKnownGoodOffset, e.what());
             gpu.graphicsPipelineCacheManager->InvalidateAllAfter(static_cast<u64>(lastKnownGoodOffset));
@@ -940,7 +961,17 @@ namespace skyline::gpu::interconnect::maxwell3d {
         auto bundle{std::make_unique<PipelineStateBundle>()};
         bundle->Reset(packedState);
         auto accessor{RuntimeGraphicsPipelineStateAccessor{std::move(bundle), ctx, textures, constantBuffers, shaderBinaries}};
-        return map.emplace(packedState, std::make_unique<Pipeline>(ctx.gpu, accessor, packedState)).first->second.get();
+        auto *pipeline{map.emplace(packedState, std::make_unique<Pipeline>(ctx.gpu, accessor, packedState)).first->second.get()};
+
+        #ifdef PIPELINE_STATS
+        auto sharedIt{sharedPipelines.find(pipeline->sourcePackedState.shaderHashes)};
+        if (sharedIt == sharedPipelines.end())
+            sharedPipelines.emplace(pipeline->sourcePackedState.shaderHashes, std::list<Pipeline *>{pipeline});
+        else
+            sharedIt->second.push_back(pipeline);
+        #endif
+
+        return pipeline;
     }
 }
 

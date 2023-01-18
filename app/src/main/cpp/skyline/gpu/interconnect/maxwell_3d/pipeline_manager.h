@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+// #define PIPELINE_STATS //!< Enables recording and ranking of pipelines by the number of variants-per-shader set
+
 #pragma once
 
 #include <tsl/robin_map.h>
@@ -261,6 +263,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
     class PipelineManager {
       private:
         tsl::robin_map<PackedPipelineState, std::unique_ptr<Pipeline>, PackedPipelineStateHash> map;
+
+        #ifdef PIPELINE_STATS
+        std::unordered_map<std::array<u64, engine::PipelineCount>, std::list<Pipeline*>, util::ObjectHash<std::array<u64, engine::PipelineCount>>> sharedPipelines; //!< Maps a shader set to all pipelines sharing that same set
+        std::vector<std::list<Pipeline*>*> sortedSharedPipelines; //!< Sorted list of shared pipelines
+        #endif
 
       public:
         PipelineManager(GPU &gpu);
