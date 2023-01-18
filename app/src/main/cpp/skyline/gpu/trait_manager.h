@@ -54,6 +54,11 @@ namespace skyline::gpu {
         u32 hostVisibleCoherentCachedMemoryType{std::numeric_limits<u32>::max()};
         u32 minimumStorageBufferAlignment{}; //!< Minimum alignment for storage buffers passed to shaders
 
+        u32 vendorId{}; //!< The `vendorID` Vulkan property
+        u32 deviceId{}; //!< The `deviceID` Vulkan property
+        u32 driverVersion{}; //!< The `driverVersion` Vulkan property
+        std::array<u8, VK_UUID_SIZE> pipelineCacheUuid{}; //!< The `pipelineCacheUUID` Vulkan property
+
         std::bitset<7> bcnSupport{}; //!< Bitmask of BCn texture formats supported, it is ordered as BC1, BC2, BC3, BC4, BC5, BC6H and BC7
         bool supportsAdrenoDirectMemoryImport{};
 

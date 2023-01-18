@@ -5,7 +5,7 @@
 
 #include <tsl/robin_map.h>
 #include <shader_compiler/frontend/ir/program.h>
-#include <gpu/cache/graphics_pipeline_cache.h>
+#include <gpu/graphics_pipeline_assembler.h>
 #include <gpu/interconnect/common/samplers.h>
 #include <gpu/interconnect/common/textures.h>
 #include <gpu/interconnect/common/pipeline_state_accessor.h>

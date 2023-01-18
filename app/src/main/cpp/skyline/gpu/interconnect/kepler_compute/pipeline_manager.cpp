@@ -92,7 +92,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
 
 
         if (ctx.gpu.traits.quirks.brokenMultithreadedPipelineCompilation)
-            ctx.gpu.graphicsPipelineCache.WaitIdle();
+            ctx.gpu.graphicsPipelineAssembler->WaitIdle();
 
         vk::raii::Pipeline pipeline{ctx.gpu.vkDevice, nullptr, pipelineInfo};
 

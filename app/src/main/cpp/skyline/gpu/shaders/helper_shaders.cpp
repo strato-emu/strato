@@ -4,7 +4,7 @@
 #include <gpu.h>
 #include <gpu/descriptor_allocator.h>
 #include <gpu/texture/texture.h>
-#include <gpu/cache/graphics_pipeline_cache.h>
+#include <gpu/graphics_pipeline_assembler.h>
 #include <vfs/filesystem.h>
 #include "helper_shaders.h"
 
@@ -39,9 +39,9 @@ namespace skyline::gpu {
                            }}
           } {}
 
-    cache::GraphicsPipelineCache::CompiledPipeline SimpleSingleRtShader::GetPipeline(GPU &gpu,
-                                                                                     const PipelineState &state,
-                                                                                     span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges) {
+    const GraphicsPipelineAssembler::CompiledPipeline &SimpleSingleRtShader::GetPipeline(GPU &gpu,
+                                                                                              const PipelineState &state,
+                                                                                              span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges) {
         if (auto it{pipelineCache.find(state)}; it != pipelineCache.end())
             return it->second;
 
@@ -137,7 +137,7 @@ namespace skyline::gpu {
         vertexState.unlink<vk::PipelineVertexInputDivisorStateCreateInfoEXT>();
 
         std::array<vk::Format, 1> colorFormats{state.colorFormat};
-        return pipelineCache.emplace(state, gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
+        return pipelineCache.emplace(state, gpu.graphicsPipelineAssembler->AssemblePipelineAsync(GraphicsPipelineAssembler::PipelineState{
             .shaderStages = shaderStages,
             .vertexState = vertexState,
             .inputAssemblyState = inputAssemblyState,
@@ -233,15 +233,15 @@ namespace skyline::gpu {
             blit::VertexPushConstantLayout vertexPushConstants;
             blit::FragmentPushConstantLayout fragmentPushConstants;
             DescriptorAllocator::ActiveDescriptorSet descriptorSet;
-            cache::GraphicsPipelineCache::CompiledPipeline pipeline;
+            const GraphicsPipelineAssembler::CompiledPipeline &pipeline;
             vk::Extent2D imageDimensions;
 
             DrawState(GPU &gpu,
                       blit::VertexPushConstantLayout vertexPushConstants, blit::FragmentPushConstantLayout fragmentPushConstants,
-                      cache::GraphicsPipelineCache::CompiledPipeline pipeline,
+                      const GraphicsPipelineAssembler::CompiledPipeline &pipeline,
                       vk::Extent2D imageDimensions)
                 : vertexPushConstants{vertexPushConstants}, fragmentPushConstants{fragmentPushConstants},
-                  descriptorSet{gpu.descriptor.AllocateSet(pipeline.descriptorSetLayout)},
+                  descriptorSet{gpu.descriptor.AllocateSet(*pipeline.descriptorSetLayout)},
                   pipeline{pipeline},
                   imageDimensions{imageDimensions} {}
         };
@@ -300,10 +300,10 @@ namespace skyline::gpu {
             commandBuffer.setScissor(0, {scissor});
             commandBuffer.setViewport(0, {viewport});
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *drawState->pipeline.pipeline.get());
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, drawState->pipeline.pipelineLayout, 0, *drawState->descriptorSet, nullptr);
-            commandBuffer.pushConstants(drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *drawState->pipeline.pipelineLayout, 0, *drawState->descriptorSet, nullptr);
+            commandBuffer.pushConstants(*drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
                                         vk::ArrayProxy<const blit::VertexPushConstantLayout>{drawState->vertexPushConstants});
-            commandBuffer.pushConstants(drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eFragment, sizeof(blit::VertexPushConstantLayout),
+            commandBuffer.pushConstants(*drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eFragment, sizeof(blit::VertexPushConstantLayout),
                                         vk::ArrayProxy<const blit::FragmentPushConstantLayout>{drawState->fragmentPushConstants});
             commandBuffer.draw(6, 1, 0, 0);
         });
@@ -333,12 +333,12 @@ namespace skyline::gpu {
                                  std::function<void(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32)> &&)> &&recordCb) {
         struct DrawState {
             clear::FragmentPushConstantLayout fragmentPushConstants;
-            cache::GraphicsPipelineCache::CompiledPipeline pipeline;
+            const GraphicsPipelineAssembler::CompiledPipeline &pipeline;
             vk::Extent2D imageDimensions;
 
             DrawState(GPU &gpu,
                       clear::FragmentPushConstantLayout fragmentPushConstants,
-                      cache::GraphicsPipelineCache::CompiledPipeline pipeline,
+                      const GraphicsPipelineAssembler::CompiledPipeline &pipeline,
                       vk::Extent2D imageDimensions)
                 : fragmentPushConstants{fragmentPushConstants},
                   pipeline{pipeline},
@@ -385,7 +385,7 @@ namespace skyline::gpu {
             commandBuffer.setScissor(0, {scissor});
             commandBuffer.setViewport(0, {viewport});
             commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *drawState->pipeline.pipeline.get());
-            commandBuffer.pushConstants(drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0,
+            commandBuffer.pushConstants(*drawState->pipeline.pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0,
                                         vk::ArrayProxy<const clear::FragmentPushConstantLayout>{drawState->fragmentPushConstants});
             commandBuffer.draw(6, 1, 0, 0);
         });

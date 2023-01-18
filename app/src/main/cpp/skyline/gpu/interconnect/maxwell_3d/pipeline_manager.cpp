@@ -6,7 +6,7 @@
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/interconnect/common/pipeline.inc>
 #include <gpu/interconnect/common/file_pipeline_state_accessor.h>
-#include <gpu/cache/graphics_pipeline_cache.h>
+#include <gpu/graphics_pipeline_assembler.h>
 #include <gpu/shader_manager.h>
 #include <gpu.h>
 #include "graphics_pipeline_state_accessor.h"
@@ -445,10 +445,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
     }
 
-    static cache::GraphicsPipelineCache::CompiledPipeline MakeCompiledPipeline(GPU &gpu,
-                                                                               const PackedPipelineState &packedState,
-                                                                               const std::array<Pipeline::ShaderStage, engine::ShaderStageCount> &shaderStages,
-                                                                               span<vk::DescriptorSetLayoutBinding> layoutBindings) {
+    static GraphicsPipelineAssembler::CompiledPipeline MakeCompiledPipeline(GPU &gpu,
+                                                                                 const PackedPipelineState &packedState,
+                                                                                 const std::array<ShaderStage, engine::ShaderStageCount> &shaderStages,
+                                                                                 span<vk::DescriptorSetLayoutBinding> layoutBindings) {
         boost::container::static_vector<vk::PipelineShaderStageCreateInfo, engine::ShaderStageCount> shaderStageInfos;
         for (const auto &stage : shaderStages)
             if (stage.module)
@@ -604,7 +604,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         texture::Format depthStencilFormat{packedState.GetDepthRenderTargetFormat()};
 
-        return gpu.graphicsPipelineCache.GetCompiledPipeline(cache::GraphicsPipelineCache::PipelineState{
+        return gpu.graphicsPipelineAssembler->AssemblePipelineAsync(GraphicsPipelineAssembler::PipelineState{
             .shaderStages = shaderStageInfos,
             .vertexState = vertexInputState,
             .inputAssemblyState = inputAssemblyState,
@@ -618,6 +618,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .colorFormats = colorAttachmentFormats,
             .depthStencilFormat = depthStencilFormat ? depthStencilFormat->vkFormat : vk::Format::eUndefined,
             .sampleCount = vk::SampleCountFlagBits::e1, //TODO: fix after MSAA support
+            .destroyShaderModules = true
         }, layoutBindings);
     }
 

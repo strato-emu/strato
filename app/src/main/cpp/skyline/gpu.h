@@ -14,8 +14,8 @@
 #include "gpu/descriptor_allocator.h"
 #include "gpu/shader_manager.h"
 #include "gpu/pipeline_cache_manager.h"
+#include "gpu/graphics_pipeline_assembler.h"
 #include "gpu/shaders/helper_shaders.h"
-#include "gpu/cache/graphics_pipeline_cache.h"
 #include "gpu/cache/renderpass_cache.h"
 #include "gpu/cache/framebuffer_cache.h"
 #include "gpu/interconnect/maxwell_3d/pipeline_manager.h"
@@ -59,7 +59,7 @@ namespace skyline::gpu {
 
         HelperShaders helperShaders;
 
-        cache::GraphicsPipelineCache graphicsPipelineCache;
+        std::optional<GraphicsPipelineAssembler> graphicsPipelineAssembler;
         cache::RenderPassCache renderPassCache;
         cache::FramebufferCache framebufferCache;
 

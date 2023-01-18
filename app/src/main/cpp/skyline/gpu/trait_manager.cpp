@@ -214,6 +214,11 @@ namespace skyline::gpu {
 
 
         minimumStorageBufferAlignment = static_cast<u32>(deviceProperties2.get().properties.limits.minStorageBufferOffsetAlignment);
+
+        vendorId = deviceProperties2.get().properties.vendorID;
+        deviceId = deviceProperties2.get().properties.deviceID;
+        driverVersion = deviceProperties2.get().properties.driverVersion;
+        pipelineCacheUuid = deviceProperties2.get().properties.pipelineCacheUUID;
     }
 
     std::string TraitManager::Summary() {

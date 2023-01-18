@@ -401,12 +401,12 @@ namespace skyline::gpu {
           megaBufferAllocator(*this),
           descriptor(*this),
           helperShaders(*this, state.os->assetFileSystem),
-          graphicsPipelineCache(*this),
           renderPassCache(*this),
           framebufferCache(*this) {}
 
     void GPU::Initialise() {
         std::string titleId{state.loader->nacp->GetSaveDataOwnerId()};
+        graphicsPipelineAssembler.emplace(*this, state.os->publicAppFilesPath + "vk_graphics_pipeline_cache/" + titleId);
         shader.emplace(state, *this,
                        state.os->publicAppFilesPath + "shader_replacements/" + titleId,
                        state.os->publicAppFilesPath + "shader_dumps/" + titleId);

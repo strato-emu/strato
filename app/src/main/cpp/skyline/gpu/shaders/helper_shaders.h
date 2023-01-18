@@ -5,7 +5,7 @@
 
 #include <vulkan/vulkan_raii.hpp>
 #include <gpu/descriptor_allocator.h>
-#include <gpu/cache/graphics_pipeline_cache.h>
+#include <gpu/graphics_pipeline_assembler.h>
 
 namespace skyline::vfs {
     class FileSystem;
@@ -36,7 +36,7 @@ namespace skyline::gpu {
             }
         };
 
-        std::unordered_map<PipelineState, cache::GraphicsPipelineCache::CompiledPipeline, util::ObjectHash<PipelineState>> pipelineCache;
+        std::unordered_map<PipelineState, GraphicsPipelineAssembler::CompiledPipeline, util::ObjectHash<PipelineState>> pipelineCache;
         vk::raii::ShaderModule vertexShaderModule;
         vk::raii::ShaderModule fragmentShaderModule;
 
@@ -47,9 +47,9 @@ namespace skyline::gpu {
         /**
          * @brief Returns a potentially cached pipeline built according to the supplied input state
          */
-        cache::GraphicsPipelineCache::CompiledPipeline GetPipeline(GPU &gpu,
-                                                                   const PipelineState &state,
-                                                                   span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges);
+        const GraphicsPipelineAssembler::CompiledPipeline &GetPipeline(GPU &gpu,
+                                                                            const PipelineState &state,
+                                                                            span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges);
     };
 
     /**

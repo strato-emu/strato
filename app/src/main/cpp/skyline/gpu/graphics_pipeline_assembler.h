@@ -11,12 +11,11 @@ namespace skyline::gpu {
     class TextureView;
 }
 
-namespace skyline::gpu::cache {
+namespace skyline::gpu {
     /**
-     * @brief A cache for all Vulkan graphics pipelines objects used by the GPU to avoid costly re-creation
-     * @note The cache is **not** compliant with Vulkan specification's Render Pass Compatibility clause when used with multi-subpass Render Passes but certain drivers may support a more relaxed version of this clause in practice which may allow it to be used with multi-subpass Render Passes
+     * @brief Wrapper for Vulkan pipelines to allow for asynchronous compilation
      */
-    class GraphicsPipelineCache {
+    class GraphicsPipelineAssembler {
       public:
         /**
          * @brief All unique state required to compile a graphics pipeline as references
@@ -36,6 +35,7 @@ namespace skyline::gpu::cache {
             span<vk::Format> colorFormats; //!< All color attachment formats in the subpass of this pipeline
             vk::Format depthStencilFormat; //!< The depth attachment format in the subpass of this pipeline, 'Undefined' if there is no depth attachment
             vk::SampleCountFlagBits sampleCount; //!< The sample count of the subpass of this pipeline
+            bool destroyShaderModules; //!< Whether the shader modules should be destroyed after the pipeline is compiled
 
             constexpr const vk::PipelineVertexInputStateCreateInfo &VertexInputState() const {
                 return vertexState.get<vk::PipelineVertexInputStateCreateInfo>();
@@ -56,8 +56,9 @@ namespace skyline::gpu::cache {
 
       private:
         GPU &gpu;
-        std::mutex mutex; //!< Synchronizes accesses to the pipeline cache
         vk::raii::PipelineCache vkPipelineCache; //!< A Vulkan Pipeline Cache which stores all unique graphics pipelines
+        BS::thread_pool pool;
+        std::string pipelineCacheDir;
 
         /**
          * @brief All unique metadata in a single attachment for a compatible render pass according to Render Pass Compatibility clause in the Vulkan specification
@@ -72,10 +73,7 @@ namespace skyline::gpu::cache {
             bool operator==(const AttachmentMetadata &rhs) const = default;
         };
 
-        /**
-         * @brief All data in PipelineState in value form to allow cheap heterogenous lookups with reference types while still storing a value-based key in the map
-         */
-        struct PipelineCacheKey {
+        struct PipelineDescription {
             std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
             vk::StructureChain<vk::PipelineVertexInputStateCreateInfo, vk::PipelineVertexInputDivisorStateCreateInfoEXT> vertexState;
             std::vector<vk::VertexInputBindingDescription> vertexBindings;
@@ -97,10 +95,9 @@ namespace skyline::gpu::cache {
             std::vector<vk::Format> colorFormats;
             vk::Format depthStencilFormat;
             vk::SampleCountFlagBits sampleCount;
+            bool destroyShaderModules;
 
-            PipelineCacheKey(const PipelineState& state);
-
-            bool operator==(const PipelineCacheKey& other) const = default;
+            PipelineDescription(const PipelineState& state);
 
             constexpr const vk::PipelineVertexInputStateCreateInfo &VertexInputState() const {
                 return vertexState.get<vk::PipelineVertexInputStateCreateInfo>();
@@ -119,44 +116,30 @@ namespace skyline::gpu::cache {
             }
         };
 
-        struct PipelineStateHash {
-            using is_transparent = std::true_type;
+        std::mutex mutex; //!< Protects access to `compilePendingDescs`
+        std::list<PipelineDescription> compilePendingDescs; //!< List of pipeline descriptions that are pending compilation
 
-            size_t operator()(const PipelineState &key) const;
-
-            size_t operator()(const PipelineCacheKey &key) const;
-        };
-
-        struct PipelineCacheEqual {
-            using is_transparent = std::true_type;
-
-            bool operator()(const PipelineCacheKey &lhs, const PipelineState &rhs) const;
-
-            bool operator()(const PipelineCacheKey &lhs, const PipelineCacheKey &rhs) const;
-        };
-
-        struct PipelineCacheEntry {
-            vk::raii::DescriptorSetLayout descriptorSetLayout;
-            vk::raii::PipelineLayout pipelineLayout;
-            std::optional<std::shared_future<vk::raii::Pipeline>> pipeline;
-
-            PipelineCacheEntry(vk::raii::DescriptorSetLayout&& descriptorSetLayout, vk::raii::PipelineLayout &&layout);
-        };
-
-        BS::thread_pool pool;
-        std::unordered_map<PipelineCacheKey, PipelineCacheEntry, PipelineStateHash, PipelineCacheEqual> pipelineCache;
-
-        vk::raii::Pipeline BuildPipeline(const PipelineCacheKey &key, vk::PipelineLayout pipelineLayout);
+        /**
+         * @brief Synchronously compiles a pipeline with the state from the given description
+         */
+        vk::raii::Pipeline AssemblePipeline(std::list<PipelineDescription>::iterator pipelineDescIt, vk::PipelineLayout pipelineLayout);
 
       public:
-        GraphicsPipelineCache(GPU &gpu);
+        GraphicsPipelineAssembler(GPU &gpu, std::string_view pipelineCacheDir);
 
         struct CompiledPipeline {
-            vk::DescriptorSetLayout descriptorSetLayout;
-            vk::PipelineLayout pipelineLayout;
+            vk::raii::DescriptorSetLayout descriptorSetLayout;
+            vk::raii::PipelineLayout pipelineLayout;
             std::shared_future<vk::raii::Pipeline> pipeline;
 
-            CompiledPipeline(const PipelineCacheEntry &entry);
+            CompiledPipeline() : descriptorSetLayout{nullptr}, pipelineLayout{nullptr} {};
+
+            CompiledPipeline(vk::raii::DescriptorSetLayout descriptorSetLayout,
+                             vk::raii::PipelineLayout pipelineLayout,
+                             std::shared_future<vk::raii::Pipeline> pipeline)
+                : descriptorSetLayout{std::move(descriptorSetLayout)},
+                  pipelineLayout{std::move(pipelineLayout)},
+                  pipeline{std::move(pipeline)} {};
         };
 
         /**
@@ -164,11 +147,16 @@ namespace skyline::gpu::cache {
          * @note Shader specializiation constants are **not** supported and will result in UB
          * @note Input/Resolve attachments are **not** supported and using them with the supplied pipeline will result in UB
          */
-        CompiledPipeline GetCompiledPipeline(const PipelineState& state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges = {}, bool noPushDescriptors = false);
+        CompiledPipeline AssemblePipelineAsync(const PipelineState &state, span<const vk::DescriptorSetLayoutBinding> layoutBindings, span<const vk::PushConstantRange> pushConstantRanges = {}, bool noPushDescriptors = false);
 
         /**
          * @brief Waits until the pipeline compilation thread pool is idle and all pipelines have been compiled
          */
         void WaitIdle();
+
+        /**
+         * @brief Saves the current Vulkan pipeline cache to the filesystem
+         */
+        void SavePipelineCache();
     };
 }
