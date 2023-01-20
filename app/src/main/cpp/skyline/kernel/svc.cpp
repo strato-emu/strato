@@ -955,6 +955,10 @@ namespace skyline::kernel::svc {
                 out = state.process->memory.GetUserMemoryUsage() + state.process->memory.GetSystemResourceUsage();
                 break;
 
+            case InfoState::IdleTickCount:
+                out = 0; // Stubbed
+                break;
+
             case InfoState::RandomEntropy:
                 out = util::GetTimeTicks();
                 break;
