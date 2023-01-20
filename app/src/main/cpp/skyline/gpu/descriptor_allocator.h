@@ -36,7 +36,7 @@ namespace skyline::gpu {
          * @brief A lockable VkDescriptorPool for maintaining external synchronization requirements
          */
         struct DescriptorPool : public vk::raii::DescriptorPool {
-            std::atomic<u64> freeSetCount{}; //!< The amount of sets free to allocate from this pool
+            size_t freeSetCount{}; //!< The amount of sets free to allocate from this pool
             std::unordered_map<vk::DescriptorSetLayout, std::list<DescriptorSetSlot>> layoutSlots; //!< A map of pools based on the layout of the descriptor sets
 
             DescriptorPool(vk::raii::Device const &device, vk::DescriptorPoolCreateInfo const &createInfo);

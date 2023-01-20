@@ -16,29 +16,34 @@ namespace skyline::gpu {
 
     void DescriptorAllocator::AllocateDescriptorPool() {
         namespace maxwell3d = soc::gm20b::engine::maxwell3d::type; // We use Maxwell3D as reference for base descriptor counts
-        using DescriptorSizes = std::array<vk::DescriptorPoolSize, 5>;
+        using DescriptorSizes = std::array<vk::DescriptorPoolSize, 6>;
+
         constexpr DescriptorSizes BaseDescriptorSizes{
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::ShaderStageConstantBufferCount,
+                .descriptorCount = 512,
                 .type = vk::DescriptorType::eUniformBuffer,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::ShaderStageCount * 5,
+                .descriptorCount = 64,
                 .type = vk::DescriptorType::eStorageBuffer,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::ShaderStageCount * 5,
+                .descriptorCount = 256,
                 .type = vk::DescriptorType::eCombinedImageSampler,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::ShaderStageCount,
+                .descriptorCount = 16,
                 .type = vk::DescriptorType::eStorageImage,
             },
             vk::DescriptorPoolSize{
-                .descriptorCount = maxwell3d::ColorTargetCount,
-                .type = vk::DescriptorType::eInputAttachment,
+                .descriptorCount = 4,
+                .type = vk::DescriptorType::eUniformTexelBuffer,
             },
-        }; //!< A best approximate ratio of descriptors of each type that may be utilized, the total amount will grow in these ratios
+            vk::DescriptorPoolSize{
+                .descriptorCount = 4,
+                .type = vk::DescriptorType::eStorageTexelBuffer,
+            } //!< Approximated descriptor counts based off empirical testing, the total amount will grow in these ratios
+        };
 
         DescriptorSizes descriptorSizes{BaseDescriptorSizes};
         for (auto &descriptorSize : descriptorSizes)
@@ -49,6 +54,8 @@ namespace skyline::gpu {
             .pPoolSizes = descriptorSizes.data(),
             .poolSizeCount = descriptorSizes.size(),
         });
+
+        pool->freeSetCount = descriptorSetCount;
     }
 
     vk::ResultValue<vk::DescriptorSet> DescriptorAllocator::AllocateVkDescriptorSet(vk::DescriptorSetLayout layout) {
@@ -60,6 +67,9 @@ namespace skyline::gpu {
         vk::DescriptorSet descriptorSet{};
 
         auto result{(*gpu.vkDevice).allocateDescriptorSets(&allocateInfo, &descriptorSet, *gpu.vkDevice.getDispatcher())};
+        if (pool->freeSetCount > 0)
+            pool->freeSetCount--;
+
         return vk::createResultValue(result, descriptorSet, __builtin_FUNCTION(), {
             vk::Result::eSuccess,
             vk::Result::eErrorOutOfPoolMemory,
@@ -67,9 +77,7 @@ namespace skyline::gpu {
         });
     }
 
-    DescriptorAllocator::ActiveDescriptorSet::ActiveDescriptorSet(std::shared_ptr<DescriptorPool> pPool, DescriptorSetSlot *slot) : pool{std::move(pPool)}, slot{slot} {
-        pool->freeSetCount--;
-    }
+    DescriptorAllocator::ActiveDescriptorSet::ActiveDescriptorSet(std::shared_ptr<DescriptorPool> pPool, DescriptorSetSlot *slot) : pool{std::move(pPool)}, slot{slot} {}
 
     DescriptorAllocator::ActiveDescriptorSet::ActiveDescriptorSet(DescriptorAllocator::ActiveDescriptorSet &&other) noexcept {
         pool = std::move(other.pool);
@@ -77,10 +85,8 @@ namespace skyline::gpu {
     }
 
     DescriptorAllocator::ActiveDescriptorSet::~ActiveDescriptorSet() {
-        if (slot) {
+        if (slot)
             slot->active.clear(std::memory_order_release);
-            pool->freeSetCount++;
-        }
     }
 
     DescriptorAllocator::DescriptorAllocator(GPU &gpu) : gpu{gpu} {
