@@ -706,6 +706,12 @@ namespace skyline::service::hosbinder {
                 break;
             }
 
+            case TransactionCode::GetBufferHistory: {
+                // Unimplemented for now
+                out.Push(AndroidStatus::Ok);
+                break;
+            }
+
             default:
                 throw exception("An unimplemented transaction was called: {}", static_cast<u32>(code));
         }

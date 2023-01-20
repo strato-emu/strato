@@ -187,6 +187,7 @@ namespace skyline::service::hosbinder {
             SetSidebandStream = 12,
             AllocateBuffers = 13,
             SetPreallocatedBuffer = 14, //!< A transaction specific to HOS, see the implementation for a description of its functionality
+            GetBufferHistory = 17,
         };
 
         GraphicBufferProducer(const DeviceState &state, nvdrv::core::NvMap &nvmap);
