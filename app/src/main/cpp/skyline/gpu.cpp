@@ -400,7 +400,6 @@ namespace skyline::gpu {
           buffer(*this),
           megaBufferAllocator(*this),
           descriptor(*this),
-          shader(state, *this),
           helperShaders(*this, state.os->assetFileSystem),
           graphicsPipelineCache(*this),
           renderPassCache(*this),
