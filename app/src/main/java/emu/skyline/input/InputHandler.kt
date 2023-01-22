@@ -13,6 +13,7 @@ import android.hardware.SensorManager
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.OrientationEventListener
 import android.view.View
 import androidx.core.content.getSystemService
 import emu.skyline.utils.ByteBufferSerializable
@@ -63,7 +64,7 @@ class InputHandler(private val inputManager : InputManager, private val preferen
         external fun setAxisValue(index : Int, axis : Int, value : Int)
 
         /**
-         * This sets the values of the points on the guest touch-screen
+         * This sets the values of the motion sensor on a specific controller
          *
          * @param index The index of the controller this is directed to
          * @param motionId The ID of the motion sensor that is being modified
@@ -92,6 +93,21 @@ class InputHandler(private val inputManager : InputManager, private val preferen
      * The latest state of the motion sensor
      */
     private val motionSensor = MotionSensorInput()
+
+    /**
+     * Buffer for passing motion data to c++
+     */
+    private val motionDataBufferSize = 0x5C
+    private val motionDataBuffer = ByteBuffer.allocateDirect(motionDataBufferSize).order(ByteOrder.LITTLE_ENDIAN)
+
+    /**
+     * Used for adjusting motion to phone orientation
+     */
+    private val motionRotationMatrix = FloatArray(9)
+    private val motionGyroOrientation : FloatArray = FloatArray(3);
+    private val motionAcelOrientation : FloatArray = FloatArray(3);
+    private var motionAxisOrientationX = SensorManager.AXIS_Y;
+    private var motionAxisOrientationY = SensorManager.AXIS_X;
 
     /**
      * Initializes all of the controllers from [InputManager] on the guest
@@ -138,6 +154,58 @@ class InputHandler(private val inputManager : InputManager, private val preferen
                 sensorManager.registerListener(this, rotationVector, SensorManager.SENSOR_DELAY_GAME)
             }
         }
+
+        setMotionOrientation90();
+        val orientationEventListener = object : OrientationEventListener(context) {
+            override fun onOrientationChanged(orientation : Int) {
+                when {
+                    isWithinOrientationRange(orientation, 270) -> {
+                        setMotionOrientation270();
+                    }
+                    isWithinOrientationRange(orientation, 90) -> {
+                        setMotionOrientation90();
+                    }
+                }
+            }
+
+            private fun isWithinOrientationRange(
+                currentOrientation : Int, targetOrientation : Int, epsilon : Int = 90
+            ) : Boolean {
+                return currentOrientation > targetOrientation - epsilon
+                        && currentOrientation < targetOrientation + epsilon
+            }
+        }
+        orientationEventListener.enable()
+    }
+
+    /**
+     * Configures motion axis to a 90° angle
+     */
+    fun setMotionOrientation90() {
+        motionGyroOrientation[0] = 1.0f
+        motionGyroOrientation[1] = -1.0f
+        motionGyroOrientation[2] = 1.0f
+        motionAcelOrientation[0] = -1.0f
+        motionAcelOrientation[1] = 1.0f
+        motionAcelOrientation[2] = -1.0f
+        motionAxisOrientationX = SensorManager.AXIS_Y;
+        motionAxisOrientationY = SensorManager.AXIS_X;
+    }
+
+    /**
+     * Configures motion axis to a 270° angle
+     */
+    fun setMotionOrientation270() {
+        motionGyroOrientation[0] = -1.0f
+        motionGyroOrientation[1] = 1.0f
+        motionGyroOrientation[2] = 1.0f
+        motionAcelOrientation[0] = 1.0f
+        motionAcelOrientation[1] = -1.0f
+        motionAcelOrientation[2] = -1.0f
+
+        // TODO: Find the correct configuration here
+        motionAxisOrientationX = SensorManager.AXIS_Y;
+        motionAxisOrientationY = SensorManager.AXIS_X;
     }
 
     /**
@@ -238,32 +306,34 @@ class InputHandler(private val inputManager : InputManager, private val preferen
     override fun onSensorChanged(event : SensorEvent) {
         when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> {
-                motionSensor.accelerometer[0] = event.values[0] / SensorManager.GRAVITY_EARTH
-                motionSensor.accelerometer[1] = event.values[1] / SensorManager.GRAVITY_EARTH
-                motionSensor.accelerometer[2] = event.values[2] / SensorManager.GRAVITY_EARTH
+                motionSensor.accelerometer[0] = motionAcelOrientation[0] * event.values[1] / SensorManager.GRAVITY_EARTH
+                motionSensor.accelerometer[1] = motionAcelOrientation[1] * event.values[0] / SensorManager.GRAVITY_EARTH
+                motionSensor.accelerometer[2] = motionAcelOrientation[2] * event.values[2] / SensorManager.GRAVITY_EARTH
             }
 
             Sensor.TYPE_GYROSCOPE -> {
                 // Investigate why sensor value is off by 12x
-                motionSensor.gyroscope[0] = event.values[0] / 12.0f
-                motionSensor.gyroscope[1] = event.values[1] / 12.0f
-                motionSensor.gyroscope[2] = event.values[2] / 12.0f
+                motionSensor.gyroscope[0] = motionGyroOrientation[0] * event.values[1] / 12.0f
+                motionSensor.gyroscope[1] = motionGyroOrientation[1] * event.values[0] / 12.0f
+                motionSensor.gyroscope[2] = motionGyroOrientation[2] * event.values[2] / 12.0f
             }
 
             Sensor.TYPE_ROTATION_VECTOR -> {
-                motionSensor.quaternion[0] = event.values[0]
-                motionSensor.quaternion[1] = event.values[1]
+                motionSensor.quaternion[0] = event.values[1]
+                motionSensor.quaternion[1] = event.values[0]
                 motionSensor.quaternion[2] = event.values[2]
                 motionSensor.quaternion[3] = event.values[3]
-                SensorManager.getRotationMatrixFromVector(motionSensor.orientationMatrix, event.values)
+                SensorManager.getRotationMatrixFromVector(motionRotationMatrix, motionSensor.quaternion)
+                SensorManager.remapCoordinateSystem(motionRotationMatrix, motionAxisOrientationX, motionAxisOrientationY, motionSensor.orientationMatrix);
             }
 
             Sensor.TYPE_GAME_ROTATION_VECTOR -> {
-                motionSensor.quaternion[0] = event.values[0]
-                motionSensor.quaternion[1] = event.values[1]
+                motionSensor.quaternion[0] = event.values[1]
+                motionSensor.quaternion[1] = event.values[0]
                 motionSensor.quaternion[2] = event.values[2]
                 motionSensor.quaternion[3] = event.values[3]
-                SensorManager.getRotationMatrixFromVector(motionSensor.orientationMatrix, event.values)
+                SensorManager.getRotationMatrixFromVector(motionRotationMatrix, motionSensor.quaternion)
+                SensorManager.remapCoordinateSystem(motionRotationMatrix, motionAxisOrientationX, motionAxisOrientationY, motionSensor.orientationMatrix);
             }
 
             else -> {}
@@ -275,9 +345,12 @@ class InputHandler(private val inputManager : InputManager, private val preferen
 
         motionSensor.deltaTimestamp = event.timestamp.toULong() - motionSensor.timestamp
         motionSensor.timestamp = event.timestamp.toULong()
-        setMotionState(0, 0, motionSensor.writeToByteBuffer(ByteBuffer.allocateDirect(0x5C).order(ByteOrder.LITTLE_ENDIAN)))
-        setMotionState(0, 1, motionSensor.writeToByteBuffer(ByteBuffer.allocateDirect(0x5C).order(ByteOrder.LITTLE_ENDIAN)))
-        setMotionState(0, 2, motionSensor.writeToByteBuffer(ByteBuffer.allocateDirect(0x5C).order(ByteOrder.LITTLE_ENDIAN)))
+        motionDataBuffer.clear();
+        setMotionState(0, 0, motionSensor.writeToByteBuffer(motionDataBuffer))
+        motionDataBuffer.clear();
+        setMotionState(0, 1, motionSensor.writeToByteBuffer(motionDataBuffer))
+        motionDataBuffer.clear();
+        setMotionState(0, 2, motionSensor.writeToByteBuffer(motionDataBuffer))
     }
 
     fun handleTouchEvent(view : View, event : MotionEvent) : Boolean {
