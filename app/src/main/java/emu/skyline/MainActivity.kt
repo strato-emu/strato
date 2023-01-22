@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -308,6 +309,23 @@ class MainActivity : AppCompatActivity() {
         if (items.isEmpty()) adapter.setItems(listOf(HeaderViewItem(getString(R.string.no_rom))))
     }
 
+    override fun onStart() {
+        super.onStart()
+
+        onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                binding.searchBar.apply {
+                    if (hasFocus() && text.isNotEmpty()) {
+                        text = ""
+                        clearFocus()
+                    } else {
+                        finish()
+                    }
+                }
+            }
+        })
+    }
+
     override fun onResume() {
         super.onResume()
 
@@ -328,17 +346,6 @@ class MainActivity : AppCompatActivity() {
         if (layoutTypeChanged) {
             setAppListDecoration()
             adapter.notifyItemRangeChanged(0, adapter.currentItems.size)
-        }
-    }
-
-    override fun onBackPressed() {
-        binding.searchBar.apply {
-            if (hasFocus() && text.isNotEmpty()) {
-                text = ""
-                clearFocus()
-            } else {
-                super.onBackPressed()
-            }
         }
     }
 }

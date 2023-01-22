@@ -342,7 +342,7 @@ class ControllerActivity : AppCompatActivity() {
      */
     override fun onKeyUp(keyCode : Int, event : KeyEvent?) : Boolean {
         if (keyCode == KeyEvent.KEYCODE_BUTTON_B) {
-            onBackPressed()
+            onBackPressedDispatcher.onBackPressed()
             return true
         }
 

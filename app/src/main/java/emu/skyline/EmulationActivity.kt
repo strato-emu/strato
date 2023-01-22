@@ -15,6 +15,7 @@ import android.os.*
 import android.util.Log
 import android.util.Rational
 import android.view.*
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.getSystemService
 import androidx.core.view.isGone
@@ -202,10 +203,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         emulationThread!!.start()
     }
 
-    override fun onBackPressed() {
-        returnFromEmulation()
-    }
-
     @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
@@ -285,6 +282,16 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             GpuDriverHelper.forceMaxGpuClocks(false)
 
         changeAudioStatus(false)
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                returnFromEmulation()
+            }
+        })
     }
 
     override fun onResume() {
