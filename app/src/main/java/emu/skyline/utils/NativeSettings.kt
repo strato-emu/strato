@@ -34,6 +34,7 @@ class NativeSettings(context : Context, pref : PreferenceSettings) {
 
     // Hacks
     var enableFastGpuReadbackHack : Boolean = pref.enableFastGpuReadbackHack
+    var disableSubgroupShuffle : Boolean = pref.disableSubgroupShuffle
 
     // Audio
     var isAudioOutputDisabled : Boolean = pref.isAudioOutputDisabled

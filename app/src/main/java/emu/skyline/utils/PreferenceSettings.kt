@@ -49,6 +49,7 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
 
     // Hacks
     var enableFastGpuReadbackHack by sharedPreferences(context, false)
+    var disableSubgroupShuffle by sharedPreferences(context, false)
 
     // Audio
     var isAudioOutputDisabled by sharedPreferences(context, false)

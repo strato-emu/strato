@@ -80,6 +80,7 @@ namespace skyline {
 
         // Hacks
         Setting<bool> enableFastGpuReadbackHack; //!< If the CPU texture readback skipping hack should be used
+        Setting<bool> disableSubgroupShuffle; //!< If shader subgroup suffle operations should be ignored
 
         // Audio
         Setting<bool> isAudioOutputDisabled; //!< Disables audio output

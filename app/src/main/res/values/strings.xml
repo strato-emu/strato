@@ -96,6 +96,10 @@
     <string name="enable_fast_gpu_readback">Enable fast GPU readback</string>
     <string name="enable_fast_gpu_readback_enabled">Fast GPU readback is enabled (Will break some games but others will have higher performance)</string>
     <string name="enable_fast_gpu_readback_disabled">Fast GPU readback is disabled (Ensures highest accuracy)</string>
+    <string name="disable_subgroup_shuffle">Disable GPU subgroup shuffle</string>
+    <string name="disable_subgroup_shuffle_enabled">Shader subgroup shuffle operations are disabled, may cause severe graphical issues</string>
+    <string name="disable_subgroup_shuffle_disabled">Shader subgroup shuffle operations are enabled, ensures maximum accuracy</string>
+
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Disable Audio Output</string>

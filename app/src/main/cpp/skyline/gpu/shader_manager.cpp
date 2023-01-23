@@ -4,6 +4,7 @@
 #include <range/v3/algorithm.hpp>
 #include <boost/functional/hash.hpp>
 #include <gpu.h>
+#include <common/settings.h>
 #include <shader_compiler/common/settings.h>
 #include <shader_compiler/common/log.h>
 #include <shader_compiler/frontend/maxwell/translate_program.h>
@@ -122,6 +123,7 @@ namespace skyline::gpu {
             .has_broken_spirv_subgroup_mask_vector_extract_dynamic = traits.quirks.brokenSubgroupMaskExtractDynamic,
             .has_broken_spirv_subgroup_shuffle = traits.quirks.brokenSubgroupShuffle,
             .max_subgroup_size = traits.subgroupSize,
+            .disable_subgroup_shuffle = *state.settings->disableSubgroupShuffle
         };
 
         Shader::Settings::values = {
