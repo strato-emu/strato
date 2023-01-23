@@ -11,10 +11,8 @@ namespace skyline::service::nvdrv::device::nvhost {
 
     void Ctrl::SyncpointEvent::Signal() {
         // We should only signal the KEvent if the event is actively being waited on
-        if (state.exchange(State::Signalling) == State::Waiting)
+        if (state.exchange(State::Signalled) == State::Waiting)
             event->Signal();
-
-        state = State::Signalled;
     }
 
     void Ctrl::SyncpointEvent::Cancel(soc::host1x::Host1x &host1x) {
