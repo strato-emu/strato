@@ -70,7 +70,7 @@ namespace skyline::gpu::interconnect {
                 ConstantBuffer &secondaryCbuf{constantBuffers[desc.secondary_cbuf_index]};
                 size_t secondaryCbufOffset{desc.secondary_cbuf_offset + elemOffset};
                 u32 secondaryVal{secondaryCbuf.Read<u32>(ctx.executor, secondaryCbufOffset)};
-                return {primaryVal | secondaryVal};
+                return {.raw = (primaryVal << desc.shift_left) | (secondaryVal << desc.secondary_shift_left)};
             }
         }
 
