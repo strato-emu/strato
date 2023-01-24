@@ -91,16 +91,16 @@
                     android:mimeType="text/plain"
                     android:pathPattern=".*\\.nro"
                     android:scheme="content"
-                    tools:ignore="AppLinkUrlError" />
+                    tools:ignore="IntentFilterUniqueDataAttributes" />
                 <data
                     android:mimeType="application/octet-stream"
                     android:pathPattern=".*\\.nro"
                     android:scheme="content"
-                    tools:ignore="AppLinkUrlError" />
+                    tools:ignore="IntentFilterUniqueDataAttributes" />
                 <data
                     android:mimeType="application/nro"
                     android:scheme="content"
-                    tools:ignore="AppLinkUrlError" />
+                    tools:ignore="IntentFilterUniqueDataAttributes" />
             </intent-filter>
         </activity>
 
