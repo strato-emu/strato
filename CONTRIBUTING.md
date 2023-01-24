@@ -14,6 +14,9 @@ Android Studio comes with a code formatter in-built, this can fix minor mistakes
 
 This can also be done by using `Ctrl + Alt + L` on Windows, `Ctrl + Shift + Alt + L` on Linux and `Option + Command + L` on macOS. 
 
+### Skyline Edge
+Any code that's been PR'd to the Skyline repository will only be in Edge builds for two weeks, after which it will be merged into the mainline branch. This is to ensure that any bugs that may have been introduced by the PR are caught and fixed before it's merged into the mainline branch. If you have any issues with this, you can request that we add the `CI` tag to your PRs so that CI builds are provided pre-merge.
+
 ## C++
 ### Include Order
 * STD includes
