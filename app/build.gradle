@@ -15,21 +15,21 @@ idea.module {
 
 android {
     namespace 'emu.skyline'
+    compileSdk 33
 
     var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true")
 
-    compileSdkVersion 33
-    buildToolsVersion '33.0.0'
     defaultConfig {
         applicationId "skyline.emu"
 
-        minSdkVersion 29
-        targetSdkVersion 33
+        minSdk 29
+        targetSdk 33
 
         versionCode 3
         versionName "0.0.3"
 
         ndk {
+            //noinspection ChromeOsAbiSupport
             abiFilters "arm64-v8a"
         }
 
@@ -45,8 +45,8 @@ android {
     /* JVM Bytecode Options */
     def javaVersion = JavaVersion.VERSION_1_8
     compileOptions {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
+        sourceCompatibility javaVersion
+        targetCompatibility javaVersion
     }
     kotlinOptions {
         jvmTarget = javaVersion.toString()
