@@ -470,7 +470,7 @@ namespace skyline {
             if (this->blocks.size() <= 2)
                 throw exception("Unexpected allocator state!");
 
-            auto searchPredecessor{this->blocks.begin()};
+            auto searchPredecessor{std::next(this->blocks.begin())};
             auto searchSuccessor{std::next(searchPredecessor)};
 
             while (searchSuccessor != this->blocks.end() &&
