@@ -93,8 +93,9 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (!mapping->fixed) {
             auto &allocator{mapping->bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
             u32 pageSizeBits{mapping->bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
+            u32 pageSize{mapping->bigPage ? vm.bigPageSize : VM::PageSize};
 
-            allocator.Free(static_cast<u32>(mapping->offset >> pageSizeBits), static_cast<u32>(mapping->size >> pageSizeBits));
+            allocator.Free(static_cast<u32>(mapping->offset >> pageSizeBits), static_cast<u32>(util::AlignUp(mapping->size, pageSize) >> pageSizeBits));
         }
 
         // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
@@ -128,8 +129,9 @@ namespace skyline::service::nvdrv::device::nvhost {
             if (allocation.sparse)
                 asCtx->gmmu.Unmap(offset, allocation.size);
 
-            auto &allocator{pageSize == VM::PageSize ? *vm.smallPageAllocator : *vm.bigPageAllocator};
-            u32 pageSizeBits{pageSize == VM::PageSize ? VM::PageSizeBits : vm.bigPageSizeBits};
+            bool bigPage{pageSize != VM::PageSize};
+            auto &allocator{bigPage ? *vm.bigPageAllocator : *vm.smallPageAllocator};
+            u32 pageSizeBits{bigPage ? vm.bigPageSizeBits : VM::PageSizeBits};
 
             allocator.Free(static_cast<u32>(offset >> pageSizeBits), static_cast<u32>(allocation.size >> pageSizeBits));
             allocationMap.erase(offset);
@@ -226,7 +228,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             if (!offset)
                 throw exception("Failed to allocate free space in the GPU AS!");
 
-            asCtx->gmmu.Map(offset, cpuPtr, size);
+            asCtx->gmmu.Map(offset, cpuPtr, util::AlignUp(size, pageSize));
 
             auto mapping{std::make_shared<Mapping>(cpuPtr, offset, size, false, bigPage, false)};
             mappingMap[offset] = mapping;
