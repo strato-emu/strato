@@ -100,7 +100,16 @@ namespace skyline::gpu::interconnect {
                 size_t storageOffset{splitBinaryStorage.size()};
                 splitBinaryStorage.resize(storageOffset + FallbackSize);
                 auto shaderStorage{span{splitBinaryStorage}.subspan(storageOffset, FallbackSize)};
-                ctx.channelCtx.asCtx->gmmu.Read(shaderStorage, programBase + programOffset);
+                auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(programBase + programOffset, storageOffset + FallbackSize)};
+                u8 *shaderStoragePtr{shaderStorage.data()};
+                for (auto mapping : mappings) {
+                    if (!mapping.valid())
+                        break;
+
+                    std::memcpy(shaderStoragePtr, mapping.data(), mapping.size());
+                    shaderStoragePtr += mapping.size();
+                }
+
                 binary.binary = shaderStorage;
             }
         }
