@@ -196,6 +196,7 @@ namespace skyline::gpu {
             .stageCount = static_cast<u32>(pipelineDescIt->shaderStages.size()),
             .pVertexInputState = &pipelineDescIt->vertexState.get<vk::PipelineVertexInputStateCreateInfo>(),
             .pInputAssemblyState = &pipelineDescIt->inputAssemblyState,
+            .pTessellationState = &pipelineDescIt->tessellationState,
             .pViewportState = &pipelineDescIt->viewportState,
             .pRasterizationState = &pipelineDescIt->rasterizationState.get<vk::PipelineRasterizationStateCreateInfo>(),
             .pMultisampleState = &pipelineDescIt->multisampleState,
