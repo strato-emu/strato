@@ -249,9 +249,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
             vkViewport.height = -vkViewport.height;
         }
 
+
         // Clamp since we don't yet use VK_EXT_unrestricted_depth_range
         vkViewport.minDepth = std::clamp(viewportClip.minZ, 0.0f, 1.0f);
         vkViewport.maxDepth = std::clamp(viewportClip.maxZ, 0.0f, 1.0f);
+
+        if (viewport.scaleZ < 0.0f)
+            std::swap(vkViewport.minDepth, vkViewport.maxDepth);
+
         return vkViewport;
     }
 
