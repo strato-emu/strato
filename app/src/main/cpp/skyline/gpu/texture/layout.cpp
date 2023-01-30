@@ -42,10 +42,10 @@ namespace skyline::gpu::texture {
             // Iterate over every level, adding the size of the current level to the total size
             totalSize += (GobWidth * gobsWidth) * (GobHeight * util::AlignUp(gobsHeight, gobBlockHeight)) * util::AlignUp(gobsDepth, gobBlockDepth);
 
-            // Successively divide every dimension by 2 until the final level is reached
-            gobsWidth = std::max(gobsWidth / 2, 1UL);
-            gobsHeight = std::max(gobsHeight / 2, 1UL);
-            gobsDepth = std::max(gobsDepth / 2, 1UL);
+            // Successively divide every dimension by 2 until the final level is reached, the division is rounded up to contain the padding GOBs
+            gobsWidth = std::max(util::DivideCeil(gobsWidth, 2UL), 1UL);
+            gobsHeight = std::max(util::DivideCeil(gobsHeight, 2UL), 1UL);
+            gobsDepth = std::max(gobsDepth / 2, 1UL); // The GOB depth is the same as the depth dimension and needs to be rounded down during the division
 
             gobBlockHeight = CalculateBlockGobs(gobBlockHeight, gobsHeight);
             gobBlockDepth = CalculateBlockGobs(gobBlockDepth, gobsDepth);
@@ -74,8 +74,8 @@ namespace skyline::gpu::texture {
                 gobBlockHeight, gobBlockDepth
             );
 
-            gobsWidth = std::max(gobsWidth / 2, 1UL);
-            gobsHeight = std::max(gobsHeight / 2, 1UL);
+            gobsWidth = std::max(util::DivideCeil(gobsWidth, 2UL), 1UL);
+            gobsHeight = std::max(util::DivideCeil(gobsHeight, 2UL), 1UL);
 
             dimensions.width = std::max(dimensions.width / 2, 1U);
             dimensions.height = std::max(dimensions.height / 2, 1U);
