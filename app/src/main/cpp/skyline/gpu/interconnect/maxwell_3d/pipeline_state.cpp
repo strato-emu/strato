@@ -87,7 +87,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Depth Render Target */
     void DepthRenderTargetState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, ztSize, ztOffset, ztFormat, ztBlockSize, ztArrayPitch, ztSelect, ztLayer, surfaceClip);
+        manager.Bind(handle, ztSize, ztOffset, ztFormat, ztBlockSize, ztArrayPitchLsr2, ztSelect, ztLayer, surfaceClip);
     }
 
     DepthRenderTargetState::DepthRenderTargetState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
@@ -121,7 +121,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             .blockDepth = engine->ztBlockSize.BlockDepth(),
         };
 
-        guest.layerStride = (guest.baseArrayLayer > 1 || guest.layerCount > 1) ? engine->ztArrayPitch : 0;
+        guest.layerStride = (guest.baseArrayLayer > 1 || guest.layerCount > 1) ? engine->ZtArrayPitch() : 0;
 
         auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(engine->ztOffset, guest.GetSize())};
         guest.mappings.assign(mappings.begin(), mappings.end());

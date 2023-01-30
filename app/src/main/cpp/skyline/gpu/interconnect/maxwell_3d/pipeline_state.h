@@ -40,12 +40,16 @@ namespace skyline::gpu::interconnect::maxwell3d {
             const soc::gm20b::engine::Address &ztOffset;
             const engine::ZtFormat &ztFormat;
             const engine::ZtBlockSize &ztBlockSize;
-            const u32 &ztArrayPitch;
+            const u32 &ztArrayPitchLsr2;
             const engine::ZtSelect &ztSelect;
             const engine::ZtLayer &ztLayer;
             const engine::SurfaceClip &surfaceClip;
 
             void DirtyBind(DirtyManager &manager, dirty::Handle handle) const;
+
+            u32 ZtArrayPitch() const {
+                return ztArrayPitchLsr2 << 2;
+            }
         };
 
       private:
