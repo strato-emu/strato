@@ -213,11 +213,24 @@ namespace skyline::gpu {
         }
 
         [[nodiscard]] bool HasHLEMacroState() const final {
-            return false;
+            return stage == Shader::Stage::VertexB || stage == Shader::Stage::VertexA;
         }
 
         [[nodiscard]] std::optional<Shader::ReplaceConstant> GetReplaceConstBuffer(u32 bank, u32 offset) final {
-            return std::nullopt;
+            if (bank != 0 || !is_propietary_driver)
+                return std::nullopt;
+
+            // Replace constant buffer offsets containing draw parameters with the appropriate shader attribute, required as e.g. in the case of indirect draws the constant buffer contents won't be entirely correct for these specific parameters
+            switch (offset) {
+                case 0x640:
+                    return Shader::ReplaceConstant::BaseVertex;
+                case 0x644:
+                    return Shader::ReplaceConstant::BaseInstance;
+                case 0x648:
+                    return Shader::ReplaceConstant::DrawID;
+                default:
+                    return std::nullopt;
+            }
         }
 
         void Dump(u64 hash) final {}
