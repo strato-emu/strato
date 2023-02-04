@@ -3,7 +3,9 @@
 
 #include <gpu.h>
 #include <loader/loader.h>
+#include <vulkan/vulkan.hpp>
 #include "command_scheduler.h"
+#include "common/exception.h"
 
 namespace skyline::gpu {
     void CommandScheduler::WaiterThread() {
@@ -91,16 +93,22 @@ namespace skyline::gpu {
         fullSignalSemaphores.push_back(cycle->semaphore);
 
         {
-            std::scoped_lock lock{gpu.queueMutex};
-            gpu.vkQueue.submit(vk::SubmitInfo{
-                .commandBufferCount = 1,
-                .pCommandBuffers = &*commandBuffer,
-                .waitSemaphoreCount = static_cast<u32>(fullWaitSemaphores.size()),
-                .pWaitSemaphores = fullWaitSemaphores.data(),
-                .pWaitDstStageMask = fullWaitStages.data(),
-                .signalSemaphoreCount = static_cast<u32>(fullSignalSemaphores.size()),
-                .pSignalSemaphores = fullSignalSemaphores.data(),
-            }, cycle->fence);
+            try {
+                std::scoped_lock lock{gpu.queueMutex};
+                gpu.vkQueue.submit(vk::SubmitInfo{
+                    .commandBufferCount = 1,
+                    .pCommandBuffers = &*commandBuffer,
+                    .waitSemaphoreCount = static_cast<u32>(fullWaitSemaphores.size()),
+                    .pWaitSemaphores = fullWaitSemaphores.data(),
+                    .pWaitDstStageMask = fullWaitStages.data(),
+                    .signalSemaphoreCount = static_cast<u32>(fullSignalSemaphores.size()),
+                    .pSignalSemaphores = fullSignalSemaphores.data(),
+                }, cycle->fence);
+            } catch (const vk::DeviceLostError &e) {
+                // Wait 5 seconds to give traces etc. time to settle
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+                throw exception("Vulkan device lost!");
+            }
         }
 
         cycle->NotifySubmitted();

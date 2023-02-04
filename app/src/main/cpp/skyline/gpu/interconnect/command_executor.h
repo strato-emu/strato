@@ -12,6 +12,8 @@
 #include "common/spin_lock.h"
 
 namespace skyline::gpu::interconnect {
+    constexpr bool EnableGpuCheckpoints{false}; //!< Whether to enable GPU debugging checkpoints (WILL DECREASE PERF SIGNIFICANTLY)
+
     /*
      * @brief Thread responsible for recording Vulkan commands from the execution nodes and submitting them
      */
@@ -120,6 +122,20 @@ namespace skyline::gpu::interconnect {
     };
 
     /**
+     * @brief Polls the debug buffer for checkpoint updates and reports them to perfetto
+     */
+    class CheckpointPollerThread {
+      private:
+        const DeviceState &state;
+        std::thread thread;
+
+        void Run();
+
+      public:
+        CheckpointPollerThread(const DeviceState &state);
+    };
+
+    /**
      * @brief Assembles a Vulkan command stream with various nodes and manages execution of the produced graph
      * @note This class is **NOT** thread-safe and should **ONLY** be utilized by a single thread
      */
@@ -130,6 +146,7 @@ namespace skyline::gpu::interconnect {
         CommandRecordThread recordThread;
         CommandRecordThread::Slot *slot{};
         ExecutionWaiterThread waiterThread;
+        std::optional<CheckpointPollerThread> checkpointPollerThread;
         node::RenderPassNode *renderPass{};
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
         u32 renderPassIndex{};
@@ -183,6 +200,8 @@ namespace skyline::gpu::interconnect {
         std::vector<std::function<void()>> flushCallbacks; //!< Set of persistent callbacks that will be called at the start of Execute in order to flush data required for recording
         std::vector<std::function<void()>> pipelineChangeCallbacks; //!< Set of persistent callbacks that will be called after any non-Maxwell 3D engine changes the active pipeline
 
+        u32 nextCheckpointId{}; //!< The ID of the next debug checkpoint to be allocated
+
         void RotateRecordSlot();
 
         /**
@@ -210,6 +229,11 @@ namespace skyline::gpu::interconnect {
         void ResetInternal();
 
         void AttachBufferBase(std::shared_ptr<Buffer> buffer);
+
+        /**
+         * @brief Non-gated implementation of `AddCheckpoint`
+         */
+        u32 AddCheckpointImpl(std::string_view annotation);
 
       public:
         std::shared_ptr<FenceCycle> cycle; //!< The fence cycle that this command executor uses to wait for the GPU to finish executing commands
@@ -304,6 +328,18 @@ namespace skyline::gpu::interconnect {
          * @brief Calls all registered pipeline change callbacks
          */
         void NotifyPipelineChange();
+
+        /**
+         * @brief Records a checkpoint into the GPU command stream at the current
+         * @param annotation A string annotation to display in perfetto for this checkpoint
+         * @return The checkpoint ID
+         */
+        u32 AddCheckpoint(std::string_view annotation) {
+            if constexpr (EnableGpuCheckpoints)
+                return AddCheckpointImpl(annotation);
+            else
+                return 0;
+        }
 
         /**
          * @brief Execute all the nodes and submit the resulting command buffer to the GPU

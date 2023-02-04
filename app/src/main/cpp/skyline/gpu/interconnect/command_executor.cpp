@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <range/v3/view.hpp>
@@ -97,31 +98,65 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandRecordThread::ProcessSlot(Slot *slot) {
-        TRACE_EVENT_FMT("gpu", "ProcessSlot: 0x{:X}, execution: {}", slot, slot->executionTag);
+        TRACE_EVENT_FMT("gpu", "ProcessSlot: 0x{:X}, execution: {}", slot, u64{slot->executionTag});
         auto &gpu{*state.gpu};
+        std::scoped_lock lock{gpu.buffer.recreationMutex};
 
         vk::RenderPass lRenderPass;
         u32 subpassIndex;
 
         using namespace node;
         for (NodeVariant &node : slot->nodes) {
-            #define NODE(name) [&](name& node) { node(slot->commandBuffer, slot->cycle, gpu); }
             std::visit(VariantVisitor{
-                NODE(FunctionNode),
+                [&](FunctionNode &node) {
+                    TRACE_EVENT_INSTANT("gpu", "FunctionNode");
+                    node(slot->commandBuffer, slot->cycle, gpu);
+                },
+
+                [&](CheckpointNode &node) {
+                    RecordFullBarrier(slot->commandBuffer);
+
+                    TRACE_EVENT_INSTANT("gpu", "CheckpointNode", "id", node.id, [&](perfetto::EventContext ctx) {
+                        ctx.event()->add_flow_ids(node.id);
+                    });
+
+                    std::array<vk::BufferCopy, 1> copy{vk::BufferCopy{
+                        .size = node.binding.size,
+                        .srcOffset = node.binding.offset,
+                        .dstOffset = 0,
+                    }};
+
+                    slot->commandBuffer.copyBuffer(node.binding.buffer, gpu.debugTracingBuffer.vkBuffer, copy);
+
+                    RecordFullBarrier(slot->commandBuffer);
+                },
 
                 [&](RenderPassNode &node) {
+                    TRACE_EVENT_INSTANT("gpu", "RenderPassNode");
                     lRenderPass = node(slot->commandBuffer, slot->cycle, gpu);
                     subpassIndex = 0;
                 },
 
                 [&](NextSubpassNode &node) {
+                    TRACE_EVENT_INSTANT("gpu", "NextSubpassNode");
                     node(slot->commandBuffer, slot->cycle, gpu);
                     ++subpassIndex;
                 },
-                [&](SubpassFunctionNode &node) { node(slot->commandBuffer, slot->cycle, gpu, lRenderPass, subpassIndex); },
-                [&](NextSubpassFunctionNode &node) { node(slot->commandBuffer, slot->cycle, gpu, lRenderPass, ++subpassIndex); },
 
-                NODE(RenderPassEndNode),
+                [&](SubpassFunctionNode &node) {
+                    TRACE_EVENT_INSTANT("gpu", "SubpassFunctionNode");
+                    node(slot->commandBuffer, slot->cycle, gpu, lRenderPass, subpassIndex);
+                },
+
+                [&](NextSubpassFunctionNode &node) {
+                    TRACE_EVENT_INSTANT("gpu", "NextSubpassFunctionNode");
+                    node(slot->commandBuffer, slot->cycle, gpu, lRenderPass, ++subpassIndex);
+                },
+
+                [&](RenderPassEndNode &node) {
+                    TRACE_EVENT_INSTANT("gpu", "RenderPassEndNode");
+                    node(slot->commandBuffer, slot->cycle, gpu);
+                },
             }, node);
             #undef NODE
         }
@@ -258,11 +293,35 @@ namespace skyline::gpu::interconnect {
         condition.notify_all();
     }
 
+    void CheckpointPollerThread::Run() {
+        u32 prevCheckpoint{};
+        for (size_t iteration{}; true; iteration++) {
+            u32 curCheckpoint{state.gpu->debugTracingBuffer.as<u32>()};
+
+            if ((iteration % 1024) == 0)
+                Logger::Info("Current Checkpoint: {}", curCheckpoint);
+
+            while (prevCheckpoint != curCheckpoint) {
+                // Make sure to report an event for every checkpoint inbetween the previous and current values, to ensure the perfetto trace is consistent
+                prevCheckpoint++;
+                TRACE_EVENT_INSTANT("gpu", "Checkpoint", "id", prevCheckpoint, [&](perfetto::EventContext ctx) {
+                    ctx.event()->add_terminating_flow_ids(prevCheckpoint);
+                });
+            }
+
+            prevCheckpoint = curCheckpoint;
+            std::this_thread::sleep_for(std::chrono::microseconds(5));
+        }
+    }
+
+    CheckpointPollerThread::CheckpointPollerThread(const DeviceState &state) : state{state}, thread{&CheckpointPollerThread::Run, this} {}
+
     CommandExecutor::CommandExecutor(const DeviceState &state)
         : state{state},
           gpu{*state.gpu},
           recordThread{state},
           waiterThread{state},
+          checkpointPollerThread{EnableGpuCheckpoints ? std::optional<CheckpointPollerThread>{state} : std::optional<CheckpointPollerThread>{}},
           tag{AllocateTag()} {
         RotateRecordSlot();
     }
@@ -510,6 +569,21 @@ namespace skyline::gpu::interconnect {
     void CommandExecutor::NotifyPipelineChange() {
         for (auto &callback : pipelineChangeCallbacks)
             callback();
+    }
+
+    u32 CommandExecutor::AddCheckpointImpl(std::string_view annotation) {
+        if (renderPass)
+            FinishRenderPass();
+
+        slot->nodes.emplace_back(node::CheckpointNode{gpu.megaBufferAllocator.Push(cycle, span<u32>(&nextCheckpointId, 1).cast<u8>()), nextCheckpointId});
+
+        TRACE_EVENT_INSTANT("gpu", "Mark Checkpoint", "id", nextCheckpointId, "annotation", [&annotation](perfetto::TracedValue context) {
+            std::move(context).WriteString(annotation.data(), annotation.size());
+        }, [&](perfetto::EventContext ctx) {
+            ctx.event()->add_flow_ids(nextCheckpointId);
+        });
+
+        return nextCheckpointId++;
     }
 
     void CommandExecutor::SubmitInternal() {

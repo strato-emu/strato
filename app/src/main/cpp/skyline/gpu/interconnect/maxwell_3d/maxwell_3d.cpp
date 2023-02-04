@@ -207,6 +207,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             return;
 
         TRACE_EVENT("gpu", "Maxwell3D::Clear");
+        ctx.executor.AddCheckpoint("Before clear");
 
         auto needsAttachmentClearCmd{[&](auto &view) {
             return scissor.offset.x != 0 || scissor.offset.y != 0 ||
@@ -281,13 +282,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
         }
 
-        if (clearAttachments.empty())
-            return;
+        if (!clearAttachments.empty()) {
+            std::array<TextureView *, 1> colorAttachments{colorView ? &*colorView : nullptr};
+            ctx.executor.AddSubpass([clearAttachments, clearRects](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
+                commandBuffer.clearAttachments(clearAttachments, span(clearRects).first(clearAttachments.size()));
+            }, renderArea, {}, {}, colorView ? colorAttachments : span<TextureView *>{}, depthStencilView ? &*depthStencilView : nullptr);
+        }
 
-        std::array<TextureView *, 1> colorAttachments{colorView ? &*colorView : nullptr};
-        ctx.executor.AddSubpass([clearAttachments, clearRects](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &, vk::RenderPass, u32) {
-            commandBuffer.clearAttachments(clearAttachments, span(clearRects).first(clearAttachments.size()));
-        }, renderArea, {}, {}, colorView ? colorAttachments : span<TextureView *>{}, depthStencilView ? &*depthStencilView : nullptr);
+        ctx.executor.AddCheckpoint("After clear");
     }
 
     void Maxwell3D::Draw(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance) {
@@ -333,6 +335,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
 
         constantBuffers.ResetQuickBind();
+        ctx.executor.AddCheckpoint("Before draw");
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
 
@@ -347,5 +350,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (drawParams->transformFeedbackEnable)
                 commandBuffer.endTransformFeedbackEXT(0, {}, {});
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask);
+        ctx.executor.AddCheckpoint("After draw");
     }
 }

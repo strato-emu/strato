@@ -31,6 +31,8 @@ namespace skyline::gpu {
 
         BufferBinding(vk::Buffer buffer, vk::DeviceSize offset = 0, vk::DeviceSize size = 0) : buffer{buffer}, offset{offset}, size{size} {}
 
+        BufferBinding(MegaBufferAllocator::Allocation allocation) : buffer{allocation.buffer}, offset{allocation.offset}, size{allocation.region.size()} {}
+
         operator bool() const {
             return buffer;
         }

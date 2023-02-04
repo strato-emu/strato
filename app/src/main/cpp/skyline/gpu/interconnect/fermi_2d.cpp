@@ -158,6 +158,8 @@ namespace skyline::gpu::interconnect {
                                     vk::PipelineStageFlagBits::eAllGraphics, vk::PipelineStageFlagBits::eAllGraphics);
             }
         );
+        executor.AddCheckpoint("After blit");
+
 
         executor.NotifyPipelineChange();
     }

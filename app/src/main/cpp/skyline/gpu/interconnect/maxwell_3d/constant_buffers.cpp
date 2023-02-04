@@ -64,6 +64,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 callbackData.view.GetBuffer()->BlockAllCpuBackingWrites();
 
                 auto srcGpuAllocation{callbackData.ctx.gpu.megaBufferAllocator.Push(callbackData.ctx.executor.cycle, callbackData.srcCpuBuf)};
+                callbackData.ctx.executor.AddCheckpoint("Before constant buffer load");
                 callbackData.ctx.executor.AddOutsideRpCommand([=, srcCpuBuf = callbackData.srcCpuBuf, view = callbackData.view, offset = callbackData.offset](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu) {
                     auto binding{view.GetBinding(gpu)};
                     vk::BufferCopy copyRegion{
@@ -77,6 +78,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                         .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite
                     }, {}, {});
                 });
+                callbackData.ctx.executor.AddCheckpoint("After constant buffer load");
             });
         }
     }
