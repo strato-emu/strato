@@ -80,7 +80,7 @@ namespace skyline::soc::gm20b::engine {
 
         struct {
             u32 index{std::numeric_limits<u32>::max()};
-            std::vector<u32> arguments;
+            std::vector<MacroArgument> arguments;
 
             bool Valid() {
                 return index != std::numeric_limits<u32>::max();
@@ -114,10 +114,14 @@ namespace skyline::soc::gm20b::engine {
             throw exception("DrawIndexedInstanced is not implemented for this engine");
         }
 
+        virtual void DrawIndexedIndirect(u32 drawTopology, span<u8> indirectBuffer, u32 count, u32 stride) {
+            throw exception("DrawIndexedIndirect is not implemented for this engine");
+        }
+
         /**
          * @brief Handles a call to a method in the MME space
          * @param macroMethodOffset The target offset from EngineMethodsEnd
          */
-        void HandleMacroCall(u32 macroMethodOffset, u32 value, bool lastCall);
+        void HandleMacroCall(u32 macroMethodOffset, u32 argument, u32 *argumentPtr, bool lastCall);
     };
 }

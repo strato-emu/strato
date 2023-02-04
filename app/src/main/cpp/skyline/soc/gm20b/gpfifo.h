@@ -132,7 +132,7 @@ namespace skyline::soc::gm20b {
         /**
          * @brief Sends a method call to the appropriate subchannel and handles macro and GPFIFO methods
          */
-        void SendFull(u32 method, u32 argument, SubchannelId subchannel, bool lastCall);
+        void SendFull(u32 method, u32 argument, u32 *argumentPtr, SubchannelId subchannel, bool lastCall);
 
         /**
          * @brief Sends a method call to the appropriate subchannel, macro and GPFIFO methods are not handled

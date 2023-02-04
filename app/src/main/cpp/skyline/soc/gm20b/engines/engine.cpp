@@ -18,7 +18,7 @@ namespace skyline::soc::gm20b::engine {
 
     MacroEngineBase::MacroEngineBase(MacroState &macroState) : macroState(macroState) {}
 
-    void MacroEngineBase::HandleMacroCall(u32 macroMethodOffset, u32 argument, bool lastCall) {
+    void MacroEngineBase::HandleMacroCall(u32 macroMethodOffset, u32 argument, u32 *argumentPtr, bool lastCall) {
         // Starting a new macro at index 'macroMethodOffset / 2'
         if (!(macroMethodOffset & 1)) {
             // Flush the current macro as we are switching to another one
@@ -31,7 +31,7 @@ namespace skyline::soc::gm20b::engine {
             macroInvocation.index = (macroMethodOffset / 2) % macroState.macroPositions.size();
         }
 
-        macroInvocation.arguments.emplace_back(argument);
+        macroInvocation.arguments.emplace_back(argument, argumentPtr);
 
         // Flush macro after all of the data in the method call has been sent
         if (lastCall && macroInvocation.Valid()) {

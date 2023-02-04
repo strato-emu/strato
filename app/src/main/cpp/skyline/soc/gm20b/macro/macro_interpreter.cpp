@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include "macro_state.h"
 #include "soc/gm20b/engines/engine.h"
 #include "macro_interpreter.h"
 
 namespace skyline::soc::gm20b::engine {
-    MacroInterpreter::MacroInterpreter(span<u32> macroCode) : macroCode(macroCode) {}
+    MacroInterpreter::MacroInterpreter(span<u32> macroCode) : macroCode{macroCode} {}
 
     void MacroInterpreter::Execute(size_t offset, span<u32> args, MacroEngineBase *targetEngine) {
         // Reset the interpreter state

@@ -88,21 +88,21 @@ namespace skyline::soc::gm20b {
         gpEntries(numEntries),
         thread(std::thread(&ChannelGpfifo::Run, this)) {}
 
-    void ChannelGpfifo::SendFull(u32 method, u32 argument, SubchannelId subChannel, bool lastCall) {
+    void ChannelGpfifo::SendFull(u32 method, u32 argument, u32 *argumentPtr, SubchannelId subChannel, bool lastCall) {
         if (method < engine::GPFIFO::RegisterCount) {
-            gpfifoEngine.CallMethod(method, argument);
+            gpfifoEngine.CallMethod(method, argumentPtr ? *argumentPtr : argument);
         } else if (method < engine::EngineMethodsEnd) { [[likely]]
-            SendPure(method, argument, subChannel);
+            SendPure(method, argumentPtr ? *argumentPtr : argument, subChannel);
         } else {
             switch (subChannel) {
                 case SubchannelId::ThreeD:
-                    channelCtx.maxwell3D.HandleMacroCall(method - engine::EngineMethodsEnd, argument, lastCall);
+                    channelCtx.maxwell3D.HandleMacroCall(method - engine::EngineMethodsEnd, argument, argumentPtr, lastCall);
                     break;
                 case SubchannelId::TwoD:
-                    channelCtx.fermi2D.HandleMacroCall(method - engine::EngineMethodsEnd, argument, lastCall);
+                    channelCtx.fermi2D.HandleMacroCall(method - engine::EngineMethodsEnd, argument, argumentPtr, lastCall);
                     break;
                 default:
-                    Logger::Warn("Called method 0x{:X} out of bounds for engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
+                    Logger::Warn("Called method 0x{:X} out of bounds for engine 0x{:X}, args: 0x{:X}", method, subChannel, argumentPtr ? *argumentPtr : argument);
                     break;
             }
         }
@@ -172,6 +172,7 @@ namespace skyline::soc::gm20b {
             if (channelCtx.executor.usageTracker.dirtyIntervals.Intersect(range))
                 channelCtx.executor.Submit({}, true);
 
+        bool pushBufferCopied{}; //!< Set by the below lambda in order to track if the pushbuffer is a copy of guest memory or not
         auto pushBuffer{[&]() -> span<u32> {
             if (pushBufferMappedRanges.size() == 1) {
                 return pushBufferMappedRanges.front().cast<u32>();
@@ -179,6 +180,7 @@ namespace skyline::soc::gm20b {
                 // Create an intermediate copy of pushbuffer data if it's split across multiple mappings
                 pushBufferData.resize(gpEntry.size);
                 channelCtx.asCtx->gmmu.Read<u32>(pushBufferData, gpEntry.Address());
+                pushBufferCopied = true;
                 return span(pushBufferData);
             }
         }()};
@@ -190,19 +192,24 @@ namespace skyline::soc::gm20b {
         auto resumeSplitMethod{[&](){
             switch (resumeState.state) {
                 case MethodResumeState::State::Inc:
-                    while (entry != pushBuffer.end() && resumeState.remaining)
-                        SendFull(resumeState.address++, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
+                    while (entry != pushBuffer.end() && resumeState.remaining) {
+                        SendFull(resumeState.address++, pushBufferCopied ? *entry : 0, pushBufferCopied ? nullptr : entry.base(), resumeState.subChannel, --resumeState.remaining == 0);
+                        entry++;
+                    }
 
                     break;
                 case MethodResumeState::State::OneInc:
-                    SendFull(resumeState.address++, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
+                    SendFull(resumeState.address++, pushBufferCopied ? *entry : 0, pushBufferCopied ? nullptr : entry.base(), resumeState.subChannel, --resumeState.remaining == 0);
+                    entry++;
 
                     // After the first increment OneInc methods work the same as a NonInc method, this is needed so they can resume correctly if they are broken up by multiple GpEntries
                     resumeState.state = MethodResumeState::State::NonInc;
                     [[fallthrough]];
                 case MethodResumeState::State::NonInc:
-                    while (entry != pushBuffer.end() && resumeState.remaining)
-                        SendFull(resumeState.address, *(entry++), resumeState.subChannel, --resumeState.remaining == 0);
+                    while (entry != pushBuffer.end() && resumeState.remaining) {
+                        SendFull(resumeState.address, pushBufferCopied ? *entry : 0, pushBufferCopied ? nullptr : entry.base(), resumeState.subChannel, --resumeState.remaining == 0);
+                        entry++;
+                    }
 
                     break;
             }
@@ -275,7 +282,7 @@ namespace skyline::soc::gm20b {
                             // For pure oneinc methods we can send the initial method then send the rest as a span in one go
                             if (methodHeader.methodCount > (BatchCutoff + 1)) [[unlikely]] {
                                 SendPure(methodHeader.methodAddress, *++entry, methodHeader.methodSubChannel);
-                                SendPureBatchNonInc(methodHeader.methodAddress + 1, span(&(*++entry) ,methodHeader.methodCount - 1), methodHeader.methodSubChannel);
+                                SendPureBatchNonInc(methodHeader.methodAddress + 1, span((++entry).base(), methodHeader.methodCount - 1), methodHeader.methodSubChannel);
 
                                 entry += methodHeader.methodCount - 2;
                                 return false;
@@ -287,8 +294,10 @@ namespace skyline::soc::gm20b {
                             SendPure(methodHeader.methodAddress + methodOffset(i), *++entry, methodHeader.methodSubChannel);
                     } else {
                         // Slow path for methods that touch GPFIFO or macros
-                        for (u32 i{}; i < methodHeader.methodCount; i++)
-                            SendFull(methodHeader.methodAddress + methodOffset(i), *++entry, methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
+                        for (u32 i{}; i < methodHeader.methodCount; i++) {
+                            entry++;
+                            SendFull(methodHeader.methodAddress + methodOffset(i), pushBufferCopied ? *entry : 0, pushBufferCopied ? nullptr : entry.base(), methodHeader.methodSubChannel, i == methodHeader.methodCount - 1);
+                        }
                     }
                 } else {
                     startSplitMethod(State);
@@ -311,7 +320,7 @@ namespace skyline::soc::gm20b {
                     if (methodHeader.Pure())
                         SendPure(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel);
                     else
-                        SendFull(methodHeader.methodAddress, methodHeader.immdData, methodHeader.methodSubChannel, true);
+                        SendFull(methodHeader.methodAddress, methodHeader.immdData, nullptr, methodHeader.methodSubChannel, true);
 
                     return false;
                 } else if (methodHeader.secOp == PushBufferMethodHeader::SecOp::NonIncMethod) [[unlikely]] {

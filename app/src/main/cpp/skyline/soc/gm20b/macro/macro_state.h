@@ -7,8 +7,19 @@
 #include "macro_interpreter.h"
 
 namespace skyline::soc::gm20b {
+    struct MacroArgument {
+        u32 argument;
+        u32 *argumentPtr;
+
+        MacroArgument(u32 argument, u32 *argumentPtr) : argument{argument}, argumentPtr{argumentPtr} {}
+
+        u32 operator*() const {
+            return argumentPtr ? *argumentPtr : argument;
+        }
+    };
+
     namespace macro_hle {
-        using Function = void (*)(size_t offset, span<u32> args, engine::MacroEngineBase *targetEngine);
+        using Function = bool (*)(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine);
     }
 
     /**
@@ -24,12 +35,14 @@ namespace skyline::soc::gm20b {
         std::array<u32, 0x2000> macroCode{}; //!< Stores GPU macros, writes to it will wraparound on overflow
         std::array<size_t, 0x80> macroPositions{}; //!< The positions of each individual macro in macro code memory, there can be a maximum of 0x80 macros at any one time
         std::array<MacroHleEntry, 0x80> macroHleFunctions{}; //!< The HLE functions for each macro position, used to optionally override the interpreter
+        std::vector<u32> argumentStorage; //!< Storage for the macro arguments during execution using the interpreter
+
         bool invalidatePending{};
 
-        MacroState() : macroInterpreter(macroCode) {}
+        MacroState() : macroInterpreter{macroCode} {}
 
         void Invalidate();
 
-        void Execute(u32 position, span<u32> args, engine::MacroEngineBase *targetEngine);
+        void Execute(u32 position, span<MacroArgument> args, engine::MacroEngineBase *targetEngine);
     };
 }
