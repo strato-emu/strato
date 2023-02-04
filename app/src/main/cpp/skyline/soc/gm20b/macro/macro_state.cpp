@@ -7,16 +7,18 @@
 
 namespace skyline::soc::gm20b {
     namespace macro_hle {
-        void DrawInstanced(size_t offset, span<u32> args, engine::MacroEngineBase *targetEngine) {
-            u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & args[2]};
+        bool DrawInstanced(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+            u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
 
-            targetEngine->DrawInstanced(true, args[0], args[1], instanceCount, args[3], args[4]);
+            targetEngine->DrawInstanced(true, *args[0], *args[1], instanceCount, *args[3], *args[4]);
+            return true;
         }
 
-        void DrawIndexedInstanced(size_t offset, span<u32> args, engine::MacroEngineBase *targetEngine) {
-            u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & args[2]};
+        bool DrawIndexedInstanced(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+            u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
 
-            targetEngine->DrawIndexedInstanced(true, args[0], args[1], instanceCount, args[3], args[4], args[5]);
+            targetEngine->DrawIndexedInstanced(true, *args[0], *args[1], instanceCount, *args[3], *args[4], *args[5]);
+            return true;
         }
 
         void DrawInstancedIndexedWithConstantBuffer(size_t offset, span<u32> args, engine::MacroEngineBase *targetEngine) {
@@ -37,10 +39,10 @@ namespace skyline::soc::gm20b {
             u32 hash;
         };
 
-        constexpr std::array<HleFunctionInfo, 0x3> functions{{
-            {DrawInstanced, 0x12, 0x6F0DD310},
-            {DrawIndexedInstanced, 0x17, 0x2764C4F},
-            {DrawInstancedIndexedWithConstantBuffer, 0x1F, 0xF2F16988},
+        constexpr std::array<HleFunctionInfo, 0x4> functions{{
+            {DrawInstanced, 0x12, 0x2FDD711},
+            {DrawIndexedInstanced, 0x17, 0xDBC3B762},
+            {DrawInstancedIndexedIndirectWithConstantBuffer, 0x1F, 0xDA07F4E5}
         }};
 
         static Function LookupFunction(span<u32> code) {
@@ -49,8 +51,7 @@ namespace skyline::soc::gm20b {
                     continue;
 
                 auto macro{code.subspan(0, function.size)};
-
-                if (XXH32(code.data(), code.size_bytes(), 0) == function.hash)
+                if (XXH32(macro.data(), macro.size_bytes(), 0) == function.hash)
                     return function.function;
             }
 
@@ -62,7 +63,7 @@ namespace skyline::soc::gm20b {
         invalidatePending = true;
     }
 
-    void MacroState::Execute(u32 position, span<u32> args, engine::MacroEngineBase *targetEngine) {
+    void MacroState::Execute(u32 position, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
         size_t offset{macroPositions[position]};
 
         if (invalidatePending) {
@@ -77,9 +78,11 @@ namespace skyline::soc::gm20b {
             hleEntry.valid = true;
         }
 
-        if (macroHleFunctions[position].function)
-            macroHleFunctions[position].function(offset, args, targetEngine);
-        else
-            macroInterpreter.Execute(offset, args, targetEngine);
+        if (macroHleFunctions[position].function && macroHleFunctions[position].function(offset, args, targetEngine))
+            return;
+
+        argumentStorage.resize(args.size());
+        std::transform(args.begin(), args.end(), argumentStorage.begin(), [](MacroArgument arg) { return *arg; });
+        macroInterpreter.Execute(offset, argumentStorage, targetEngine);
     }
 }
