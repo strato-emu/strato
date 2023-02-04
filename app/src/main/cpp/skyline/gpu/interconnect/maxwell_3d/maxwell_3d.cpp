@@ -352,4 +352,67 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask);
         ctx.executor.AddCheckpoint("After draw");
     }
+
+    void Maxwell3D::DrawIndirect(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, span<u8> indirectBuffer, u32 count, u32 stride) {
+        if (!count)
+            return;
+
+        TRACE_EVENT("gpu", "Indirect Draw", "buffer", reinterpret_cast<uintptr_t>(indirectBuffer.data()));
+
+        StateUpdateBuilder builder{*ctx.executor.allocator};
+        vk::PipelineStageFlags srcStageMask{}, dstStageMask{};
+
+        PrepareDraw(builder, topology, indexed, true, 0, 0, srcStageMask, dstStageMask);
+
+        if (directState.inputAssembly.NeedsQuadConversion())
+            throw exception("Quad conversion is not supported for indirect draws!");
+
+        if (indirectBufferView)
+            indirectBufferView = indirectBufferView.GetBuffer()->TryGetView(indirectBuffer);
+        if (!indirectBufferView)
+            indirectBufferView = ctx.gpu.buffer.FindOrCreate(indirectBuffer, ctx.executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+                ctx.executor.AttachLockedBuffer(buffer, std::move(lock));
+            });
+
+        indirectBufferView.GetBuffer()->BlockSequencedCpuBackingWrites();
+
+        auto stateUpdater{builder.Build()};
+
+        /**
+         * @brief Struct that can be linearly allocated, holding all state for the draw to avoid a dynamic allocation with lambda captures
+         */
+        struct DrawParams {
+            StateUpdater stateUpdater;
+            BufferView indirectBuffer;
+            u32 count;
+            u32 stride;
+            bool indexed;
+            bool transformFeedbackEnable;
+        };
+        auto *drawParams{ctx.executor.allocator->EmplaceUntracked<DrawParams>(DrawParams{stateUpdater,
+                                                                                         indirectBufferView,
+                                                                                         count, stride, indexed,
+                                                                                         ctx.gpu.traits.supportsTransformFeedback ? transformFeedbackEnable : false})};
+
+        auto scissor{GetDrawScissor()};
+        constantBuffers.ResetQuickBind();
+
+        ctx.executor.AddCheckpoint("Before indirect draw");
+        ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
+            drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
+
+            if (drawParams->transformFeedbackEnable)
+                commandBuffer.beginTransformFeedbackEXT(0, {}, {});
+
+            auto indirectBinding{drawParams->indirectBuffer.GetBinding(gpu)};
+            if (drawParams->indexed)
+                commandBuffer.drawIndexedIndirect(indirectBinding.buffer, indirectBinding.offset, drawParams->count, drawParams->stride);
+            else
+                commandBuffer.drawIndirect(indirectBinding.buffer,  indirectBinding.offset, drawParams->count, drawParams->stride);
+
+            if (drawParams->transformFeedbackEnable)
+                commandBuffer.endTransformFeedbackEXT(0, {}, {});
+        }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask);
+        ctx.executor.AddCheckpoint("After indirect draw");
+    }
 }
