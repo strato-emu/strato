@@ -85,4 +85,10 @@ namespace skyline::service::fssrv {
     Result IFileSystem::Commit(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
+
+    Result IFileSystem::GetFreeSpaceSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        //TODO: proper implementation for GetFreeSpaceSize
+        response.Push<u64>(90000000);
+        return {};
+    }
 }
