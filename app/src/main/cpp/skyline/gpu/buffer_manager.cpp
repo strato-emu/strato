@@ -126,7 +126,7 @@ namespace skyline::gpu {
                     copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->backing->data(), srcBuffer->backing->data());
                 }
             } else {
-                if (srcBuffer->directGpuWritesActive) {
+                if (srcBuffer->RefreshGpuWritesActiveDirect(false, {})) {
                     newBuffer->MarkGpuDirtyImpl();
                 } else if (srcBuffer->directTrackedShadowActive) {
                     newBuffer->EnableTrackedShadowDirect();
