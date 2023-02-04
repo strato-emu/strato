@@ -95,6 +95,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     // Initialize tracing
     perfetto::TracingInitArgs args;
     args.backends |= perfetto::kSystemBackend;
+    args.shmem_size_hint_kb = 0x200000;
     perfetto::Tracing::Initialize(args);
     perfetto::TrackEvent::Register();
 
