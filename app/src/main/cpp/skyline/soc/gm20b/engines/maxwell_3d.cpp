@@ -499,4 +499,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
         interconnect.Draw(topology, *registers.streamOutputEnable, true, indexBufferCount, indexBufferFirst, instanceCount, globalBaseVertexIndex, globalBaseInstanceIndex);
     }
+
+    void Maxwell3D::DrawIndexedIndirect(u32 drawTopology, span<u8> indirectBuffer, u32 count, u32 stride) {
+        auto topology{static_cast<type::DrawTopology>(drawTopology)};
+        interconnect.DrawIndirect(topology, *registers.streamOutputEnable, true, indirectBuffer, count, stride);
+    }
+
 }

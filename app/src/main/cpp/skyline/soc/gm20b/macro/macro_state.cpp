@@ -2,10 +2,22 @@
 // Copyright © 2022 yuzu Emulator Project (https://yuzu-emu.org/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <soc/gm20b/engines/maxwell/types.h>
 #include <soc/gm20b/engines/engine.h>
 #include "macro_state.h"
 
 namespace skyline::soc::gm20b {
+    static bool TopologyRequiresConversion(engine::maxwell3d::type::DrawTopology topology) {
+        switch (topology) {
+            case engine::maxwell3d::type::DrawTopology::Quads:
+            case engine::maxwell3d::type::DrawTopology::QuadStrip:
+            case engine::maxwell3d::type::DrawTopology::Polygon:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     namespace macro_hle {
         bool DrawInstanced(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
             u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
@@ -21,16 +33,17 @@ namespace skyline::soc::gm20b {
             return true;
         }
 
-        void DrawInstancedIndexedWithConstantBuffer(size_t offset, span<u32> args, engine::MacroEngineBase *targetEngine) {
-            // Writes globalBaseVertexIndex and globalBaseInstanceIndex to the bound constant buffer before performing a standard instanced indexed draw
-            u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & args[2]};
-            targetEngine->CallMethodFromMacro(0x8e3, 0x640);
-            targetEngine->CallMethodFromMacro(0x8e4, args[4]);
-            targetEngine->CallMethodFromMacro(0x8e5, args[5]);
-            targetEngine->DrawIndexedInstanced(false, args[0], args[1], instanceCount, args[4], args[3], args[5]);
-            targetEngine->CallMethodFromMacro(0x8e3, 0x640);
-            targetEngine->CallMethodFromMacro(0x8e4, 0x0);
-            targetEngine->CallMethodFromMacro(0x8e5, 0x0);
+        bool DrawInstancedIndexedIndirectWithConstantBuffer(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+            u32 topology{*args[0]};
+            if (TopologyRequiresConversion(static_cast<engine::maxwell3d::type::DrawTopology>(topology)) || !args[1].argumentPtr) {
+                // If the passed parameters aren't dirty or the indirect topology isn't supported fallback to a non indirect draw (may wait)
+                u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
+                targetEngine->DrawIndexedInstanced(false, topology, *args[1], instanceCount, *args[4], *args[3], *args[5]);
+            } else {
+                targetEngine->DrawIndexedIndirect(topology, span(args[1].argumentPtr, 5).cast<u8>(), 1, 0);
+            }
+
+            return true;
         }
 
         struct HleFunctionInfo {
