@@ -89,6 +89,18 @@ namespace skyline::service::visrv {
         Result SetLayerScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Draws an indirect layer into the supplied buffer
+         * @url https://switchbrew.org/wiki/Display_services#GetIndirectLayerImageMap
+         */
+        Result GetIndirectLayerImageMap(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Gets the amount of memory required for an indirect layer
+         * @url https://switchbrew.org/wiki/Display_services#GetIndirectLayerImageRequiredMemoryInfo
+         */
+        Result GetIndirectLayerImageRequiredMemoryInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Converts an arbitrary scaling mode to a VI scaling mode
          */
         Result ConvertScalingMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -113,6 +125,8 @@ namespace skyline::service::visrv {
           SFUNC_BASE(0x7EF, IApplicationDisplayService, IDisplayService, DestroyStrayLayer),
           SFUNC(0x835, IApplicationDisplayService, SetLayerScalingMode),
           SFUNC(0x836, IApplicationDisplayService, ConvertScalingMode),
+          SFUNC(0x992, IApplicationDisplayService, GetIndirectLayerImageMap),
+          SFUNC(0x99C, IApplicationDisplayService, GetIndirectLayerImageRequiredMemoryInfo),
           SFUNC(0x1452, IApplicationDisplayService, GetDisplayVsyncEvent)
       )
     };

@@ -7,5 +7,6 @@
 
 namespace skyline::service::visrv::result {
     constexpr Result InvalidArgument(114, 1);
+    constexpr Result InvalidDimensions(114, 4);
     constexpr Result IllegalOperation(114, 6);
 }
