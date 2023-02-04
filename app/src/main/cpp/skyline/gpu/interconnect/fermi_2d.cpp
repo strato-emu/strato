@@ -112,6 +112,8 @@ namespace skyline::gpu::interconnect {
           executor{channelCtx.executor} {}
 
     void Fermi2D::Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, SampleModeOrigin sampleOrigin, bool resolve, SampleModeFilter filter) {
+        TRACE_EVENT("gpu", "Fermi2D::Blit");
+
         // TODO: When we support MSAA perform a resolve operation rather than blit when the `resolve` flag is set.
         auto srcGuestTexture{GetGuestTexture(srcSurface)};
         auto dstGuestTexture{GetGuestTexture(dstSurface)};
@@ -129,6 +131,7 @@ namespace skyline::gpu::interconnect {
         float centredSrcRectX{sampleOrigin == SampleModeOrigin::Corner ? srcRectX - 0.5f : srcRectX};
         float centredSrcRectY{sampleOrigin == SampleModeOrigin::Corner ? srcRectY - 0.5f : srcRectY};
 
+        executor.AddCheckpoint("Before blit");
         gpu.helperShaders.blitHelperShader.Blit(
             gpu,
             {

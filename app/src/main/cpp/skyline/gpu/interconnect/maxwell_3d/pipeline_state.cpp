@@ -385,6 +385,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
           ctSelect{engine.ctSelect} {}
 
     void PipelineState::Flush(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder) {
+        TRACE_EVENT("gpu", "PipelineState::Flush");
+
         packedState.dynamicStateActive = ctx.gpu.traits.supportsExtendedDynamicState;
         packedState.ctSelect = ctSelect;
 

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/trace.h>
 #include <common/linear_allocator.h>
 #include <common/segment_table.h>
 #include <common/spin_lock.h>
@@ -99,6 +100,7 @@ namespace skyline::gpu {
         BufferView FindOrCreateImpl(GuestBuffer guestMapping, ContextTag tag, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer);
 
         BufferView FindOrCreate(GuestBuffer guestMapping, ContextTag tag = {}, const std::function<void(std::shared_ptr<Buffer>, ContextLock<Buffer> &&)> &attachBuffer = {}) {
+            TRACE_EVENT("gpu", "BufferManager::FindOrCreate");
             auto lookupBuffer{bufferTable[guestMapping.begin().base()]};
             if (lookupBuffer != nullptr)
                 if (auto view{lookupBuffer->TryGetView(guestMapping)}; view)

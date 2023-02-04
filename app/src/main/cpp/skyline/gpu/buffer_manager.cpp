@@ -53,6 +53,7 @@ namespace skyline::gpu {
     }
 
     BufferManager::LockedBuffer BufferManager::CoalesceBuffers(span<u8> range, const LockedBuffers &srcBuffers, ContextTag tag) {
+        TRACE_EVENT("gpu", "BufferManager::CoalesceBuffers");
         std::shared_ptr<FenceCycle> newBufferCycle{};
         for (auto &srcBuffer : srcBuffers) {
             // Since new direct buffers will share the underlying backing of source buffers we don't need to wait for the GPU if they're dirty, for non direct buffers we do though as otherwise we won't be able to migrate their contents to the new backing

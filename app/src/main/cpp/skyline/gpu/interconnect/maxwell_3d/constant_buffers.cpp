@@ -40,6 +40,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void ConstantBuffers::Load(InterconnectContext &ctx, span<u32> data, u32 offset) {
+        TRACE_EVENT("gpu", "ConstantBuffers::Load");
+
         auto &view{*selectorState.UpdateGet(ctx, data.size_bytes()).view};
         auto srcCpuBuf{data.cast<u8>()};
 

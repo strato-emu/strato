@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <common/trace.h>
 #include "texture_manager.h"
 
 namespace skyline::gpu {
     TextureManager::TextureManager(GPU &gpu) : gpu(gpu) {}
 
     std::shared_ptr<TextureView> TextureManager::FindOrCreate(const GuestTexture &guestTexture, ContextTag tag) {
+        TRACE_EVENT("gpu", "TextureManager::FindOrCreate");
+
         auto guestMapping{guestTexture.mappings.front()};
 
         /*

@@ -31,6 +31,8 @@ namespace skyline::gpu::interconnect::kepler_compute {
         if (ctx.gpu.traits.quirks.brokenComputeShaders)
             return;
 
+        TRACE_EVENT("gpu", "KeplerCompute::Dispatch");
+
         StateUpdateBuilder builder{*ctx.executor.allocator};
 
         constantBuffers.Update(ctx, qmd);

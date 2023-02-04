@@ -132,6 +132,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         if (scissor.extent.width == 0 || scissor.extent.height == 0)
             return;
 
+        TRACE_EVENT("gpu", "Maxwell3D::Clear");
+
         auto needsAttachmentClearCmd{[&](auto &view) {
             return scissor.offset.x != 0 || scissor.offset.y != 0 ||
                 scissor.extent != vk::Extent2D{view->texture->dimensions} ||
@@ -215,6 +217,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void Maxwell3D::Draw(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance) {
+        TRACE_EVENT("gpu", "Draw", "indexed", indexed, "count", count, "instanceCount", instanceCount);
+
         StateUpdateBuilder builder{*ctx.executor.allocator};
         vk::PipelineStageFlags srcStageMask{}, dstStageMask{};
 

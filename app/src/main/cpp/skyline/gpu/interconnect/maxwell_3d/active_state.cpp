@@ -435,6 +435,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void ActiveState::Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder,
                              bool indexed, engine::DrawTopology topology, bool estimateIndexBufferSize, u32 drawFirstIndex, u32 drawElementCount,
                              vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        TRACE_EVENT("gpu", "ActiveState::Update");
         if (topology != directState.inputAssembly.GetPrimitiveTopology()) {
             directState.inputAssembly.SetPrimitiveTopology(topology);
             pipeline.MarkDirty(false);
