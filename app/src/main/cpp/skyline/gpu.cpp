@@ -402,7 +402,8 @@ namespace skyline::gpu {
           descriptor(*this),
           helperShaders(*this, state.os->assetFileSystem),
           renderPassCache(*this),
-          framebufferCache(*this) {}
+          framebufferCache(*this),
+          debugTracingBuffer(memory.AllocateBuffer(DebugTracingBufferSize)) {}
 
     void GPU::Initialise() {
         std::string titleId{state.loader->nacp->GetSaveDataOwnerId()};

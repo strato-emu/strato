@@ -68,6 +68,9 @@ namespace skyline::gpu {
         std::optional<interconnect::maxwell3d::PipelineManager> graphicsPipelineManager;
         interconnect::kepler_compute::PipelineManager computePipelineManager;
 
+        static constexpr size_t DebugTracingBufferSize{0x80000}; //!< 512KiB
+        memory::Buffer debugTracingBuffer; //!< General use buffer for debug tracing, first 4 bytes are allocated for checkpoints
+
         GPU(const DeviceState &state);
 
         /**
