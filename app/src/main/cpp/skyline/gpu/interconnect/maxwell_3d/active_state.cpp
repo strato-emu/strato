@@ -3,6 +3,7 @@
 // Copyright © 2022 yuzu Team and Contributors (https://github.com/yuzu-emu/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <limits>
 #include <range/v3/algorithm.hpp>
 #include <soc/gm20b/channel.h>
 #include <soc/gm20b/gmmu.h>
@@ -116,18 +117,25 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     /* Index Buffer */
     void IndexBufferState::EngineRegisters::DirtyBind(DirtyManager &manager, dirty::Handle handle) const {
-        manager.Bind(handle, indexBuffer.indexSize, indexBuffer.address);
+        manager.Bind(handle, indexBuffer.indexSize, indexBuffer.address, indexBuffer.limit);
     }
 
     IndexBufferState::IndexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    void IndexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount) {
+    void IndexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, bool estimateSize, u32 firstIndex, u32 elementCount) {
+        didEstimateSize = estimateSize;
         usedElementCount = elementCount;
         usedFirstIndex = firstIndex;
         usedQuadConversion = quadConversion;
 
-        size_t size{GetIndexBufferSize(engine->indexBuffer.indexSize, firstIndex + elementCount)};
-        view.Update(ctx, engine->indexBuffer.address, size);
+        size_t size{[&] () {
+            if (estimateSize)
+                return engine->indexBuffer.address - engine->indexBuffer.limit + 1;
+            else
+                return GetIndexBufferSize(engine->indexBuffer.indexSize, firstIndex + elementCount);
+        }()};
+
+        view.Update(ctx, engine->indexBuffer.address, size, !estimateSize);
         if (!*view) {
             Logger::Warn("Unmapped index buffer: 0x{:X}", engine->indexBuffer.address);
             return;
@@ -149,17 +157,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
             builder.SetIndexBuffer(*view, indexType);
     }
 
-    bool IndexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount) {
+    bool IndexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, bool estimateSize, u32 firstIndex, u32 elementCount) {
         if (*view)
             view->GetBuffer()->PopulateReadBarrier(vk::PipelineStageFlagBits::eVertexInput, srcStageMask, dstStageMask);
 
-        if (elementCount > usedElementCount)
-            return true;
-
-        if (quadConversion != usedQuadConversion)
-            return true;
-
-        if (quadConversion != usedQuadConversion)
+        if (didEstimateSize != estimateSize || (elementCount + firstIndex > usedElementCount + usedFirstIndex) || quadConversion != usedQuadConversion)
             return true;
 
         // TODO: optimise this to use buffer sequencing to avoid needing to regenerate the quad buffer every time. We can't use as it is rn though because sequences aren't globally unique and may conflict after buffer recreation
@@ -431,7 +433,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void ActiveState::Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder,
-                             bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount,
+                             bool indexed, engine::DrawTopology topology, bool estimateIndexBufferSize, u32 drawFirstIndex, u32 drawElementCount,
                              vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         if (topology != directState.inputAssembly.GetPrimitiveTopology()) {
             directState.inputAssembly.SetPrimitiveTopology(topology);
@@ -444,7 +446,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         pipeline.Update(ctx, textures, constantBuffers, builder);
         ranges::for_each(vertexBuffers, updateFuncBuffer);
         if (indexed)
-            updateFuncBuffer(indexBuffer, directState.inputAssembly.NeedsQuadConversion(), drawFirstIndex, drawElementCount);
+            updateFuncBuffer(indexBuffer, directState.inputAssembly.NeedsQuadConversion(), estimateIndexBufferSize, drawFirstIndex, drawElementCount);
         ranges::for_each(transformFeedbackBuffers, updateFuncBuffer);
         ranges::for_each(viewports, updateFunc);
         ranges::for_each(scissors, updateFunc);

@@ -47,6 +47,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         CachedMappedBufferView view{};
         BufferBinding megaBufferBinding{};
         vk::IndexType indexType{};
+        bool didEstimateSize{};
         u32 usedElementCount{};
         u32 usedFirstIndex{};
         bool usedQuadConversion{};
@@ -54,9 +55,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         IndexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount);
+        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, bool estimateSize, u32 firstIndex, u32 elementCount);
 
-        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount);
+        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, bool estimateSize, u32 firstIndex, u32 elementCount);
 
         void PurgeCaches();
     };
@@ -259,9 +260,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         /**
          * @brief Updates the active state for a given draw operation, removing the dirtiness of all member states
+         * @note If `extimateIndexBufferSize` is false and `indexed` is true the `drawFirstIndex` and `drawElementCount` arguments must be populated
          */
         void Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder,
-                    bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount,
+                    bool indexed, engine::DrawTopology topology, bool estimateIndexBufferSize, u32 drawFirstIndex, u32 drawElementCount,
                     vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
 
         Pipeline *GetPipeline();
