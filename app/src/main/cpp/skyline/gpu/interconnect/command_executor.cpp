@@ -13,6 +13,15 @@
 #include <nce.h>
 
 namespace skyline::gpu::interconnect {
+    static void RecordFullBarrier(vk::raii::CommandBuffer &commandBuffer) {
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+            }, {}, {}
+        );
+    }
+
     CommandRecordThread::CommandRecordThread(const DeviceState &state)
         : state{state},
           incoming{1U << *state.settings->executorSlotCountScale},
@@ -437,12 +446,7 @@ namespace skyline::gpu::interconnect {
 
     void CommandExecutor::AddFullBarrier() {
         AddOutsideRpCommand([](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
-            commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                }, {}, {}
-            );
+            RecordFullBarrier(commandBuffer);
         });
     }
 
@@ -516,12 +520,7 @@ namespace skyline::gpu::interconnect {
             slot->WaitReady();
 
             // We need this barrier here to ensure that resources are in the state we expect them to be in, we shouldn't overwrite resources while prior commands might still be using them or read from them while they might be modified by prior commands
-            slot->commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                }, {}, {}
-            );
+            RecordFullBarrier(slot->commandBuffer);
 
             boost::container::small_vector<FenceCycle *, 8> chainedCycles;
             for (const auto &texture : ranges::views::concat(attachedTextures, preserveAttachedTextures)) {
@@ -537,12 +536,7 @@ namespace skyline::gpu::interconnect {
             }
 
             // Wait on texture syncs to finish before beginning the cmdbuf
-            slot->commandBuffer.pipelineBarrier(
-                vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
-                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                }, {}, {}
-            );
+            RecordFullBarrier(slot->commandBuffer);
         }
 
         for (const auto &attachedBuffer : ranges::views::concat(attachedBuffers, preserveAttachedBuffers)) {
