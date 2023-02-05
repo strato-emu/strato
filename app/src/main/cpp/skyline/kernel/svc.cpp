@@ -727,6 +727,7 @@ namespace skyline::kernel::svc {
         try {
             std::unique_lock lock(type::KSyncObject::syncObjectMutex);
             auto thread{state.process->GetHandle<type::KThread>(state.ctx->gpr.w0)};
+            Logger::Debug("Cancelling Synchronization {}", thread->id);
             thread->cancelSync = true;
             if (thread->isCancellable) {
                 thread->isCancellable = false;
