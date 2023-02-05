@@ -101,3 +101,6 @@ libVkLayer_adreno.so
 
 # Android Studio Profiler Traces
 *.trace
+
+# Output Metadata
+output-metadata.json
