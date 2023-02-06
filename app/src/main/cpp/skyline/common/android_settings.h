@@ -20,14 +20,12 @@ namespace skyline {
          * @note Will construct the underlying KtSettings object in-place
          */
         AndroidSettings(JNIEnv *env, jobject settingsInstance) : ktSettings(env, settingsInstance) {
+            ktSettings.BeginTransaction(env);
             Update();
         }
 
-        /**
-         * @note Will take ownership of the passed KtSettings object
-         */
-        AndroidSettings(KtSettings &&ktSettings) : ktSettings(std::move(ktSettings)) {
-            Update();
+        void BeginTransaction(JNIEnv *env) {
+            ktSettings.BeginTransaction(env);
         }
 
         void Update() override {
@@ -50,6 +48,6 @@ namespace skyline {
             disableSubgroupShuffle = ktSettings.GetBool("disableSubgroupShuffle");
             isAudioOutputDisabled = ktSettings.GetBool("isAudioOutputDisabled");
             validationLayer = ktSettings.GetBool("validationLayer");
-        };
+        }
     };
 }

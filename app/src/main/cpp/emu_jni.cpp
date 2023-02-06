@@ -27,7 +27,7 @@ std::weak_ptr<skyline::kernel::OS> OsWeak;
 std::weak_ptr<skyline::gpu::GPU> GpuWeak;
 std::weak_ptr<skyline::audio::Audio> AudioWeak;
 std::weak_ptr<skyline::input::Input> InputWeak;
-std::weak_ptr<skyline::Settings> SettingsWeak;
+std::weak_ptr<skyline::AndroidSettings> SettingsWeak;
 
 // https://cs.android.com/android/platform/superproject/+/master:bionic/libc/tzcode/bionic.cpp;l=43;drc=master;bpv=1;bpt=1
 static std::string GetTimeZoneName() {
@@ -85,7 +85,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
     auto jvmManager{std::make_shared<skyline::JvmManager>(env, instance)};
 
-    std::shared_ptr<skyline::Settings> settings{std::make_shared<skyline::AndroidSettings>(env, settingsInstance)};
+    auto androidSettings{std::make_shared<skyline::AndroidSettings>(env, settingsInstance)};
+    std::shared_ptr<skyline::Settings> settings{androidSettings};
 
     skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
     skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.sklog");
@@ -115,7 +116,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         GpuWeak = os->state.gpu;
         AudioWeak = os->state.audio;
         InputWeak = os->state.input;
-        SettingsWeak = settings;
+        SettingsWeak = androidSettings;
         jvmManager->InitializeControllers();
 
         skyline::Logger::DebugNoPrefix("Launching ROM {}", skyline::JniString(env, romUriJstring));
@@ -247,6 +248,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_NativeSettings_updateNa
     auto settings{SettingsWeak.lock()};
     if (!settings)
         return; // We don't mind if we miss settings updates while settings haven't been initialized
+    settings->BeginTransaction(env);
     settings->Update();
 }
 

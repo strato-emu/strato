@@ -33,7 +33,7 @@ namespace skyline::gpu {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);
-        state.settings->disableFrameThrottling.AddCallback(std::bind(&PresentationEngine::OnDisableFrameThrottlingChanged, this, std::placeholders::_1));
+        state.settings->disableFrameThrottling.AddCallback([this](auto && value) { OnDisableFrameThrottlingChanged(value); });
     }
 
     PresentationEngine::~PresentationEngine() {
