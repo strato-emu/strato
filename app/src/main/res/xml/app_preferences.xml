@@ -28,6 +28,10 @@
             app:key="app_theme"
             app:title="@string/theme"
             app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.LanguagePreference
+            app:key="app_language"
+            app:persistent="false"
+            app:title="@string/app_language" />
         <emu.skyline.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/layout_type"

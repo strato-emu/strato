@@ -40,6 +40,13 @@ android {
 
         // Only enable separate process for release builds
         manifestPlaceholders += [emulationProcess: ""]
+
+        def locales = ["en", "de", "el", "es", "es-419", "fr", "hu", "id", "it", "ja", "ko", "pl", "ru", "ta", "zh-Hans", "zh-Hant"]
+
+        // Add available locales to the build config so that they can be accessed from the app
+        buildConfigField "String[]", "AVAILABLE_APP_LANGUAGES", "new String[]{\"" + locales.join("\",\"") + "\"}"
+        // Uncomment the following line whenever AAPT2 will properly support BCP47 language tags
+        //resourceConfigurations += locales
     }
 
     /* JVM Bytecode Options */

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" /> <!-- English (default) -->
+    <locale android:name="de" /> <!-- German -->
+    <locale android:name="el" /> <!-- Greek -->
+    <locale android:name="es" /> <!-- Spanish -->
+    <locale android:name="es-419" /> <!-- Latin American Spanish -->
+    <locale android:name="fr" /> <!-- French -->
+    <locale android:name="hu" /> <!-- Hungarian -->
+    <locale android:name="id" /> <!-- Indonesian -->
+    <locale android:name="it" /> <!-- Italian -->
+    <locale android:name="ja" /> <!-- Japanese -->
+    <locale android:name="ko" /> <!-- Korean -->
+    <locale android:name="pl" /> <!-- Polish -->
+    <locale android:name="ru" /> <!-- Russian -->
+    <locale android:name="ta" /> <!-- Tamil -->
+    <locale android:name="zh-Hans" /> <!-- Simplified Chinese -->
+    <locale android:name="zh-Hant" /> <!-- Traditional Chinese -->
+</locale-config>

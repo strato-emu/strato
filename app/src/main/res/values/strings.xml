@@ -41,6 +41,8 @@
     <!-- Settings - Appearance -->
     <string name="appearance">Appearance</string>
     <string name="theme">Theme</string>
+    <string name="app_language">App Language</string>
+    <string name="app_language_default">Use System Default</string>
     <string name="layout_type">Game Display Layout</string>
     <string name="sort_apps_by">Games Sorting Order</string>
     <string name="group_by_format">Group Games By Format</string>
