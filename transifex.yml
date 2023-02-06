@@ -8,5 +8,6 @@ git:
   settings:
     language_mapping:
       es_419: b+es+419
+      id: in
       zh-Hans: b+zh+Hans
       zh-Hant: b+zh+Hant
