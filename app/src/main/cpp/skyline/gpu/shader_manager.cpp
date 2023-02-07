@@ -410,7 +410,7 @@ namespace skyline::gpu {
         if (program.info.loads.Legacy() || program.info.stores.Legacy())
             Shader::Maxwell::ConvertLegacyToGeneric(program, runtimeInfo);
 
-        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings, fmt::format("shader_{:016X}", hash))};
+        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),
