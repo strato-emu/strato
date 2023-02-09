@@ -432,6 +432,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
     }
 
     void PackedPipelineState::SetTransformFeedbackVaryings(const engine::StreamOutControl &control, const std::array<u8, engine::StreamOutLayoutSelectAttributeCount> &layoutSelect, size_t buffer) {
+        if (control.streamSelect != 0)
+            throw exception("Geometry streams are unsupported!");
+
         for (size_t i{}; i < control.componentCount; i++) {
             // TODO: We could merge multiple component accesses from the same attribute into one varying as yuzu does
             u8 attributeIndex{layoutSelect[i]};
