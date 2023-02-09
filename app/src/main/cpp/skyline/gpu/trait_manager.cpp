@@ -163,12 +163,11 @@ namespace skyline::gpu {
         }
 
         if (hasTransformFeedbackExt) {
-            bool hasTransformFeedbackFeat{}, hasGeometryStreamsStreamsFeat{};
+            bool hasTransformFeedbackFeat{};
             FEAT_SET(vk::PhysicalDeviceTransformFeedbackFeaturesEXT, transformFeedback, hasTransformFeedbackFeat)
-            FEAT_SET(vk::PhysicalDeviceTransformFeedbackFeaturesEXT, geometryStreams, hasGeometryStreamsStreamsFeat)
 
             auto transformFeedbackProperties{deviceProperties2.get<vk::PhysicalDeviceTransformFeedbackPropertiesEXT>()};
-            if (hasTransformFeedbackFeat && hasGeometryStreamsStreamsFeat && transformFeedbackProperties.transformFeedbackDraw)
+            if (hasTransformFeedbackFeat && transformFeedbackProperties.transformFeedbackDraw)
                 supportsTransformFeedback = true;
         } else {
             enabledFeatures2.unlink<vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
@@ -262,7 +261,6 @@ namespace skyline::gpu {
 
             case vk::DriverId::eArmProprietary: {
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
-                brokenComputeShaders = true;
                 break;
             }
 
