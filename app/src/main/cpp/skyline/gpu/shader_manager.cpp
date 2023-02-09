@@ -35,8 +35,10 @@ namespace skyline::gpu {
             for (const auto &entry : std::filesystem::directory_iterator{replacementDirPath}) {
                 if (entry.is_regular_file()) {
                     // Parse hash from filename
-                    u64 hash{std::stoull(entry.path().filename().string(), nullptr, 16)};
-                    auto it{shaderReplacements.insert({hash, {}})};
+                    auto path{entry.path()};
+                    auto &replacementMap{path.extension().string() == ".spv" ? hostShaderReplacements : guestShaderReplacements};
+                    u64 hash{std::stoull(path.stem().string(), nullptr, 16)};
+                    auto it{replacementMap.insert({hash, {}})};
 
                     // Read file into map entry
                     std::ifstream file{entry.path(), std::ios::binary | std::ios::ate};
@@ -48,9 +50,10 @@ namespace skyline::gpu {
         }
     }
 
-    span<u8> ShaderManager::ProcessShaderBinary(u64 hash, span<u8> binary) {
-        auto it{shaderReplacements.find(hash)};
-        if (it != shaderReplacements.end()) {
+    span<u8> ShaderManager::ProcessShaderBinary(bool spv, u64 hash, span<u8> binary) {
+        auto &replacementMap{spv ? hostShaderReplacements : guestShaderReplacements};
+        auto it{replacementMap.find(hash)};
+        if (it != replacementMap.end()) {
             Logger::Info("Replacing shader with hash: 0x{:X}", hash);
             return it->second;
         }
@@ -58,7 +61,7 @@ namespace skyline::gpu {
         if (DumpShaders) {
             std::scoped_lock lock{dumpMutex};
 
-            auto shaderPath{dumpPath / fmt::format("{:016X}", hash)};
+            auto shaderPath{dumpPath / fmt::format("{:016X}{}", hash, spv ? ".spv" : "")};
             if (!std::filesystem::exists(shaderPath)) {
                 std::ofstream file{shaderPath, std::ios::binary};
                 file.write(reinterpret_cast<const char *>(binary.data()), static_cast<std::streamsize>(binary.size()));
@@ -368,7 +371,7 @@ namespace skyline::gpu {
                                                            u32 textureConstantBufferIndex,
                                                            bool viewportTransformEnabled,
                                                            const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
-        binary = ProcessShaderBinary(hash, binary);
+        binary = ProcessShaderBinary(false, hash, binary);
 
         std::scoped_lock lock{poolMutex};
 
@@ -395,13 +398,13 @@ namespace skyline::gpu {
                                                           u32 localMemorySize, u32 sharedMemorySize,
                                                           std::array<u32, 3> workgroupDimensions,
                                                           const ConstantBufferRead &constantBufferRead, const GetTextureType &getTextureType) {
-        binary = ProcessShaderBinary(hash, binary);
+        binary = ProcessShaderBinary(false, hash, binary);
 
         std::scoped_lock lock{poolMutex};
 
         ComputeEnvironment environment{binary, baseOffset, textureConstantBufferIndex, localMemorySize, sharedMemorySize, workgroupDimensions, constantBufferRead, getTextureType};
         Shader::Maxwell::Flow::CFG cfg{environment, flowBlockPool, Shader::Maxwell::Location{static_cast<u32>(baseOffset)}};
-        return  Shader::Maxwell::TranslateProgram(instructionPool, blockPool, environment, cfg, hostTranslateInfo);
+        return Shader::Maxwell::TranslateProgram(instructionPool, blockPool, environment, cfg, hostTranslateInfo);
     }
 
     vk::ShaderModule ShaderManager::CompileShader(const Shader::RuntimeInfo &runtimeInfo, Shader::IR::Program &program, Shader::Backend::Bindings &bindings, u64 hash) {
@@ -410,11 +413,12 @@ namespace skyline::gpu {
         if (program.info.loads.Legacy() || program.info.stores.Legacy())
             Shader::Maxwell::ConvertLegacyToGeneric(program, runtimeInfo);
 
-        auto spirv{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
+        auto spirvEmitted{Shader::Backend::SPIRV::EmitSPIRV(profile, runtimeInfo, program, bindings)};
+        auto spirv{ProcessShaderBinary(true, hash, span<u32>{spirvEmitted}.cast<u8>()).cast<u32>()};
 
         vk::ShaderModuleCreateInfo createInfo{
             .pCode = spirv.data(),
-            .codeSize = spirv.size() * sizeof(u32),
+            .codeSize = spirv.size_bytes(),
         };
 
         return (*gpu.vkDevice).createShaderModule(createInfo, nullptr, *gpu.vkDevice.getDispatcher());

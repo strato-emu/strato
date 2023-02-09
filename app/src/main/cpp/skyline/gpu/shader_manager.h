@@ -28,7 +28,9 @@ namespace skyline::gpu {
         Shader::ObjectPool<Shader::Maxwell::Flow::Block> flowBlockPool;
         Shader::ObjectPool<Shader::IR::Inst> instructionPool;
         Shader::ObjectPool<Shader::IR::Block> blockPool;
-        std::unordered_map<u64, std::vector<u8>> shaderReplacements; //!< Map of shader hash -> replacement shader binary, populated at init time and must not be modified after
+        std::unordered_map<u64, std::vector<u8>> guestShaderReplacements; //!< Map of guest shader hash -> replacement guest shader binary, populated at init time and must not be modified after
+        std::unordered_map<u64, std::vector<u8>> hostShaderReplacements; //!< ^^ same as above but for host
+
         std::mutex poolMutex;
         std::filesystem::path dumpPath;
         std::mutex dumpMutex;
@@ -42,7 +44,7 @@ namespace skyline::gpu {
          * @brief Returns the raw binary of shader replacement for the given hash, if no replacement is found the input binary is returned
          * @note This will also dump the binary to disk if dumping is enabled
          */
-        span<u8> ProcessShaderBinary(u64 hash, span<u8> binary);
+        span<u8> ProcessShaderBinary(bool spv, u64 hash, span<u8> binary);
 
       public:
         using ConstantBufferRead = std::function<u32(u32 index, u32 offset)>; //!< A function which reads a constant buffer at the specified offset and returns the value

@@ -25,7 +25,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
 
         Shader::Backend::Bindings bindings{};
 
-        return {ctx.gpu.shader->CompileShader({}, program, bindings), program.info};
+        return {ctx.gpu.shader->CompileShader({}, program, bindings, packedState.shaderHash), program.info};
     }
 
     static Pipeline::DescriptorInfo MakePipelineDescriptorInfo(const Pipeline::ShaderStage &stage) {
