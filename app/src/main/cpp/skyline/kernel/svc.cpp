@@ -176,6 +176,7 @@ namespace skyline::kernel::svc {
         if (!sourceObject)
             throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
 
+        state.process->memory.FreeMemory(sourceChunk.value().memory->guest);
         state.process->CloseHandle(sourceObject->handle);
 
         Logger::Debug("Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
@@ -1082,8 +1083,9 @@ namespace skyline::kernel::svc {
                 if (memory->memoryState == memory::states::Heap) {
                     if (memory->guest.data() >= pointer) {
                         if (memory->guest.size() <= size) {
-                            memory->Resize(0);
+                            state.process->memory.FreeMemory(memory->guest);
                             state.process->CloseHandle(memory->handle);
+                            delete memory;
                         } else {
                             memory->Remap(span<u8>{pointer + size, static_cast<size_t>((pointer + memory->guest.size() - memory->guest.data())) - size});
                         }
