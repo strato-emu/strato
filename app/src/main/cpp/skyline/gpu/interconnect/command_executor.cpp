@@ -543,6 +543,14 @@ namespace skyline::gpu::interconnect {
                 texture->cycle = cycle;
                 texture->UpdateRenderPassUsage(0, texture::RenderPassUsage::None);
             }
+
+            // Wait on texture syncs to finish before beginning the cmdbuf
+            slot->commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
+                    .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                    .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+                }, {}, {}
+            );
         }
 
         for (const auto &attachedBuffer : ranges::views::concat(attachedBuffers, preserveAttachedBuffers)) {
