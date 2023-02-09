@@ -1,0 +1,17 @@
+name: Edge CI
+
+on:
+  pull_request_target:
+    types: [labeled, unlabeled]
+
+jobs:
+  update-patches:
+    if: github.event.label.name == 'edge'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Edge patches
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.EDGE_PATCH_PAT }}
+          repository: skyline-emu/edge-patch
+          event-type: update-patches
