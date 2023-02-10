@@ -129,6 +129,8 @@ namespace skyline::gpu::interconnect {
             TIC_FORMAT_CASE_ST_SRGB(Astc10x8, Astc10x8, Unorm);
             TIC_FORMAT_CASE_ST(Astc10x10, Astc10x10, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc10x10, Astc10x10, Unorm);
+            TIC_FORMAT_CASE_ST(Astc12x12, Astc12x12, Unorm);
+	    TIC_FORMAT_CASE_ST_SRGB(Astc12x12, Astc12x12, Unorm);
             TIC_FORMAT_CASE_ST(BC2, BC2, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(BC2, BC2, Unorm);
             TIC_FORMAT_CASE_ST(BC3, BC3, Unorm);

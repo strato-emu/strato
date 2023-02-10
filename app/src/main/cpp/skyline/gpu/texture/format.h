@@ -158,6 +158,11 @@ namespace skyline::gpu::format {
                            .blockHeight = 10
     );
 
+    FORMAT_SUFF_UNORM_SRGB(Astc12x12, 128, eAstc12x12, Block,
+			   .blockWidth = 12,
+			   .blockHeight = 12
+    );
+
     // Depth/Stencil Formats
     // All of these have a G->R swizzle
     FORMAT(D16Unorm, 16, eD16Unorm, vka::eDepth, .swizzleMapping = {
