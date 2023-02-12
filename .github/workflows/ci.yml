@@ -17,6 +17,8 @@ jobs:
       JVM_OPTS: -Xmx6G
       IS_SKYLINE_SIGNED: ${{ secrets.KEYSTORE != '' }}
       UPLOAD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci') }}
+      CMAKE_VERSION: "3.22.1"
+      NDK_VERSION: "25.0.8775105"
 
     steps:
       - name: Git Checkout
@@ -27,7 +29,7 @@ jobs:
       - name: Restore CCache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
-          max-size: 2Gi
+          max-size: 3Gi
 
       - name: Restore Gradle Cache
         uses: actions/cache@v3
@@ -45,7 +47,7 @@ jobs:
           ln -s /usr/bin/ninja .
 
       - name: Install CMake & Android NDK
-        run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;3.22.1" "ndk;25.0.8775105" --channel=3 | grep -v = || true
+        run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;${{ env.CMAKE_VERSION }}" "ndk;${{ env.NDK_VERSION }}" --channel=3 | grep -v = || true
 
       - name: Decode Keystore
         if: env.IS_SKYLINE_SIGNED == 'true'
@@ -61,7 +63,7 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           CMAKE_C_COMPILER_LAUNCHER: "ccache"
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
-          CCACHE_NOCOMPRESS: "true"
+          CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
         run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFull
 
       - name: Rename APKs (Signed)
