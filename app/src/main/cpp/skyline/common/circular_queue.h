@@ -96,12 +96,15 @@ namespace skyline {
 
         void Push(const Type &item) {
             Type *waitNext{};
+            Type *waitEnd{};
 
             while (true) {
                 if (waitNext) {
                     std::unique_lock consumeLock{consumptionMutex};
-                    consumeCondition.wait(consumeLock, [=]() { return waitNext != start; });
+
+                    consumeCondition.wait(consumeLock, [=]() { return waitNext != start || waitEnd != end; });
                     waitNext = nullptr;
+                    waitEnd = nullptr;
                 }
 
                 std::scoped_lock lock{productionMutex};
@@ -109,6 +112,7 @@ namespace skyline {
                 next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
                 if (next == start) {
                     waitNext = next;
+                    waitEnd = end;
                     continue;
                 }
                 *next = item;
