@@ -633,6 +633,13 @@ namespace skyline::gpu {
         return mirror;
     }
 
+    void Buffer::PopulateReadBarrier(vk::PipelineStageFlagBits dstStage, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        if (currentExecutionGpuDirty) {
+            srcStageMask |= vk::PipelineStageFlagBits::eAllCommands;
+            dstStageMask |= dstStage;
+        }
+    }
+
     void Buffer::lock() {
         mutex.lock();
         accumulatedCpuLockCounter++;

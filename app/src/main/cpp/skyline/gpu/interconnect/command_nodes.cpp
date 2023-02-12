@@ -2,21 +2,18 @@
 // Copyright © 2021 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include "command_nodes.h"
+#include "gpu/texture/texture.h"
+#include <vulkan/vulkan_enums.hpp>
 
 namespace skyline::gpu::interconnect::node {
-    RenderPassNode::RenderPassNode(vk::Rect2D renderArea) : subpassDependencies(
-        {
-            // We assume all past commands have been executed when this RP starts
-            vk::SubpassDependency{
-                .srcSubpass = VK_SUBPASS_EXTERNAL,
-                .dstSubpass = 0,
-                .srcStageMask = vk::PipelineStageFlagBits::eAllGraphics,
-                .dstStageMask = vk::PipelineStageFlagBits::eAllGraphics,
-                .srcAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-                .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-            }
-        }
-    ), renderArea(renderArea) {}
+    RenderPassNode::RenderPassNode(vk::Rect2D renderArea)
+        : externalDependency{vk::SubpassDependency{
+              .srcSubpass = VK_SUBPASS_EXTERNAL,
+              .dstSubpass = 0,
+              .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+              .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+          }},
+          renderArea{renderArea} {}
 
     u32 RenderPassNode::AddAttachment(TextureView *view, GPU &gpu) {
         auto vkView{view->GetView()};
@@ -42,6 +39,19 @@ namespace skyline::gpu::interconnect::node {
                 .finalLayout = view->texture->layout,
                 .flags = vk::AttachmentDescriptionFlagBits::eMayAlias
             });
+
+            if (auto usage{view->texture->GetLastRenderPassUsage()}; usage != texture::RenderPassUsage::None) {
+                if (view->format->vkAspect & vk::ImageAspectFlagBits::eColor)
+                    externalDependency.dstStageMask |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+                else if (view->format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
+                    externalDependency.dstStageMask |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+
+                if (usage == texture::RenderPassUsage::RenderTarget)
+                    externalDependency.srcStageMask |= externalDependency.dstStageMask;
+                else if (usage == texture::RenderPassUsage::Sampled)
+                    externalDependency.srcStageMask |= vk::PipelineStageFlagBits::eAllGraphics;
+            }
+
             return static_cast<u32>(attachments.size() - 1);
         } else {
             // If we've got a match from a previous subpass, we need to preserve the attachment till the current subpass
@@ -116,7 +126,10 @@ namespace skyline::gpu::interconnect::node {
         }
     }
 
-    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU& gpu) {
+    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU &gpu, vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask) {
+        externalDependency.srcStageMask |= srcStageMask;
+        externalDependency.dstStageMask |= dstStageMask;
+
         attachmentReferences.reserve(attachmentReferences.size() + inputAttachments.size() + colorAttachments.size() + (depthStencilAttachment ? 1 : 0));
 
         auto inputAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
@@ -224,6 +237,9 @@ namespace skyline::gpu::interconnect::node {
             subpassDescription.pPreserveAttachments = preserveAttachmentIt->data();
             preserveAttachmentIt++;
         }
+
+        if (externalDependency.srcStageMask && externalDependency.dstStageMask)
+            subpassDependencies.push_back(externalDependency);
 
         auto renderPass{gpu.renderPassCache.GetRenderPass(vk::RenderPassCreateInfo{
             .attachmentCount = static_cast<u32>(attachmentDescriptions.size()),

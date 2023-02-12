@@ -44,7 +44,7 @@ namespace skyline::gpu::interconnect {
         u64 blockMappingEndAddr; //!< The end GPU address of `blockMapping`
 
       public:
-        BufferView view; //!< The buffer view created as a result of a call to `Update()`
+        BufferView view{}; //!< The buffer view created as a result of a call to `Update()`
 
         /**
          * @brief Updates `view` based on the supplied GPU mapping

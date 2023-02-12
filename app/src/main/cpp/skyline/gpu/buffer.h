@@ -430,6 +430,11 @@ namespace skyline::gpu {
          * @note The buffer **must** be kept locked until the span is no longer in use
          */
         span<u8> GetReadOnlyBackingSpan(bool isFirstUsage, const std::function<void()> &flushHostCallback);
+
+        /**
+         * @brief Populates the input src and dst stage masks with appropriate read barrier parameters for the current buffer state
+         */
+        void PopulateReadBarrier(vk::PipelineStageFlagBits dstStage, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
     };
 
     /**

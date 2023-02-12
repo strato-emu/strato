@@ -27,9 +27,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         VertexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index);
 
-        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder);
+        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
 
-        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder);
+        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
 
         void PurgeCaches();
     };
@@ -54,14 +54,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         IndexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 firstIndex, u32 elementCount);
+        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount);
 
-        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 firstIndex, u32 elementCount);
+        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount);
 
         void PurgeCaches();
     };
 
-    class TransformFeedbackBufferState : dirty::CachedManualDirty {
+    class TransformFeedbackBufferState : dirty::CachedManualDirty, dirty::RefreshableManualDirty {
       public:
         struct EngineRegisters {
             const engine::StreamOutBuffer &streamOutBuffer;
@@ -78,7 +78,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         TransformFeedbackBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index);
 
-        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder);
+        void Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
+
+        bool Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
 
         void PurgeCaches();
     };
@@ -258,7 +260,9 @@ namespace skyline::gpu::interconnect::maxwell3d {
         /**
          * @brief Updates the active state for a given draw operation, removing the dirtiness of all member states
          */
-        void Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount);
+        void Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder,
+                    bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount,
+                    vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
 
         Pipeline *GetPipeline();
 

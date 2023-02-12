@@ -258,6 +258,22 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return shaderStages;
     }
 
+    static vk::PipelineStageFlagBits ConvertShaderToPipelineStage(vk::ShaderStageFlagBits stage) {
+        switch (stage) {
+            case vk::ShaderStageFlagBits::eVertex:
+                return vk::PipelineStageFlagBits::eVertexShader;
+            case vk::ShaderStageFlagBits::eTessellationControl:
+                return vk::PipelineStageFlagBits::eTessellationControlShader;
+            case vk::ShaderStageFlagBits::eTessellationEvaluation:
+                return vk::PipelineStageFlagBits::eTessellationEvaluationShader;
+            case vk::ShaderStageFlagBits::eGeometry:
+                return vk::PipelineStageFlagBits::eGeometryShader;
+            case vk::ShaderStageFlagBits::eFragment:
+                return vk::PipelineStageFlagBits::eFragmentShader;
+            default:
+                throw exception("Invalid shader stage");
+        }
+    }
     static Pipeline::DescriptorInfo MakePipelineDescriptorInfo(const std::array<ShaderStage, engine::ShaderStageCount> &shaderStages, bool needsIndividualTextureBindingWrites) {
         Pipeline::DescriptorInfo descriptorInfo{};
         u16 bindingIndex{};
@@ -268,6 +284,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 continue;
 
             auto &stageDescInfo{descriptorInfo.stages[i]};
+            stageDescInfo.stage = ConvertShaderToPipelineStage(stage.stage);
 
             auto pushBindings{[&](vk::DescriptorType type, const auto &descs, u16 &count, auto &outputDescs, auto &&descCb, bool individualDescWrites = false) {
                 descriptorInfo.totalWriteDescCount += individualDescWrites ? descs.size() : ((descs.size() > 0) ? 1 : 0);
@@ -712,7 +729,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return descriptorInfo.totalCombinedImageSamplerCount;
     }
 
-    DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, span<TextureView *> sampledImages) {
+    DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, span<TextureView *> sampledImages, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         SyncCachedStorageBufferViews(ctx.executor.executionTag);
 
         u32 writeIdx{};
@@ -788,12 +805,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
             writeBufferDescs(vk::DescriptorType::eUniformBuffer, stage.uniformBufferDescs, stage.uniformBufferDescTotalCount,
                              [&](const DescriptorInfo::StageDescriptorInfo::UniformBufferDesc &desc, size_t arrayIdx) {
                                  size_t cbufIdx{desc.index + arrayIdx};
-                                 return GetConstantBufferBinding(ctx, {stage.constantBufferUsedSizes}, constantBuffers[i][cbufIdx].view, cbufIdx);
+                                 return GetConstantBufferBinding(ctx, {stage.constantBufferUsedSizes},
+                                                                 constantBuffers[i][cbufIdx].view, cbufIdx,
+                                                                 stage.stage,
+                                                                 srcStageMask, dstStageMask);
                              });
 
             writeBufferDescs(vk::DescriptorType::eStorageBuffer, stage.storageBufferDescs, stage.storageBufferDescTotalCount,
                              [&](const DescriptorInfo::StageDescriptorInfo::StorageBufferDesc &desc, size_t arrayIdx) {
-                                 return GetStorageBufferBinding(ctx, desc, constantBuffers[i][desc.cbuf_index], storageBufferViews[storageBufferIdx++]);
+                                 return GetStorageBufferBinding(ctx, desc, constantBuffers[i][desc.cbuf_index],
+                                                                storageBufferViews[storageBufferIdx++],
+                                                                stage.stage,
+                                                                srcStageMask, dstStageMask);
                              });
 
             bindingIdx += stage.uniformTexelBufferDescs.size();
@@ -802,7 +825,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             writeImageDescs(vk::DescriptorType::eCombinedImageSampler, stage.combinedImageSamplerDescs, stage.combinedImageSamplerDescTotalCount,
                             [&](const DescriptorInfo::StageDescriptorInfo::CombinedImageSamplerDesc &desc, size_t arrayIdx) {
                                 BindlessHandle handle{ReadBindlessHandle(ctx, constantBuffers[i], desc, arrayIdx)};
-                                auto binding{GetTextureBinding(ctx, desc, samplers, textures, handle)};
+                                auto binding{GetTextureBinding(ctx, desc,
+                                                               samplers, textures, handle,
+                                                               stage.stage,
+                                                               srcStageMask, dstStageMask)};
                                 sampledImages[combinedImageSamplerIdx++] = binding.second;
                                 return binding.first;
                             }, ctx.gpu.traits.quirks.needsIndividualTextureBindingWrites);
@@ -825,7 +851,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         });
     }
 
-    DescriptorUpdateInfo *Pipeline::SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind, span<TextureView *> sampledImages) {
+    DescriptorUpdateInfo *Pipeline::SyncDescriptorsQuickBind(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, ConstantBuffers::QuickBind quickBind, span<TextureView *> sampledImages, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         SyncCachedStorageBufferViews(ctx.executor.executionTag);
 
         size_t stageIndex{static_cast<size_t>(quickBind.stage)};
@@ -879,18 +905,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
         writeDescs.operator()<false, true>(vk::DescriptorType::eUniformBuffer, cbufUsageInfo.uniformBuffers, stageDescInfo.uniformBufferDescs,
                                            [&](auto usage, const DescriptorInfo::StageDescriptorInfo::UniformBufferDesc &desc, size_t arrayIdx) -> DynamicBufferBinding {
                                                size_t cbufIdx{desc.index + arrayIdx};
-                                               return GetConstantBufferBinding(ctx, {stageDescInfo.constantBufferUsedSizes}, stageConstantBuffers[cbufIdx].view, cbufIdx);
+                                               return GetConstantBufferBinding(ctx, {stageDescInfo.constantBufferUsedSizes},
+                                                                               stageConstantBuffers[cbufIdx].view, cbufIdx,
+                                                                               stageDescInfo.stage,
+                                                                               srcStageMask, dstStageMask);
                                            });
 
         writeDescs.operator()<false, true>(vk::DescriptorType::eStorageBuffer, cbufUsageInfo.storageBuffers, stageDescInfo.storageBufferDescs,
                                            [&](auto usage, const DescriptorInfo::StageDescriptorInfo::StorageBufferDesc &desc, size_t arrayIdx) {
-                                               return GetStorageBufferBinding(ctx, desc, stageConstantBuffers[desc.cbuf_index], storageBufferViews[usage.entirePipelineIdx + arrayIdx]);
+                                               return GetStorageBufferBinding(ctx, desc, stageConstantBuffers[desc.cbuf_index],
+                                                                              storageBufferViews[usage.entirePipelineIdx + arrayIdx],
+                                                                              stageDescInfo.stage,
+                                                                              srcStageMask, dstStageMask);
                                            });
 
         writeDescs.operator()<true, false>(vk::DescriptorType::eCombinedImageSampler, cbufUsageInfo.combinedImageSamplers, stageDescInfo.combinedImageSamplerDescs,
                                            [&](auto usage, const DescriptorInfo::StageDescriptorInfo::CombinedImageSamplerDesc &desc, size_t arrayIdx) {
                                                BindlessHandle handle{ReadBindlessHandle(ctx, stageConstantBuffers, desc, arrayIdx)};
-                                               auto binding{GetTextureBinding(ctx, desc, samplers, textures, handle)};
+                                               auto binding{GetTextureBinding(ctx, desc,
+                                                                              samplers, textures, handle,
+                                                                              stageDescInfo.stage,
+                                                                              srcStageMask, dstStageMask)};
                                                sampledImages[usage.entirePipelineIdx + arrayIdx] = binding.second;
                                                return binding.first;
                                            });

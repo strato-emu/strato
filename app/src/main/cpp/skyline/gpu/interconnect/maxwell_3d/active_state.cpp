@@ -21,13 +21,14 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     VertexBufferState::VertexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
 
-    void VertexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+    void VertexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         size_t size{engine->vertexStreamLimit - engine->vertexStream.location + 1};
 
         if (engine->vertexStream.format.enable && engine->vertexStream.location != 0 && size) {
             view.Update(ctx, engine->vertexStream.location, size);
             if (*view) {
                 ctx.executor.AttachBuffer(*view);
+                view->GetBuffer()->PopulateReadBarrier(vk::PipelineStageFlagBits::eVertexInput, srcStageMask, dstStageMask);
 
                 if (megaBufferBinding = view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag);
                     megaBufferBinding)
@@ -48,7 +49,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             builder.SetVertexBuffer(index, {ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer}, ctx.gpu.traits.supportsExtendedDynamicState, engine->vertexStream.format.stride);
     }
 
-    bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+    bool VertexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        if (*view)
+            view->GetBuffer()->PopulateReadBarrier(vk::PipelineStageFlagBits::eVertexInput, srcStageMask, dstStageMask);
+
         if (megaBufferBinding) {
             if (auto newMegaBufferBinding{view->TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag)};
                 newMegaBufferBinding != megaBufferBinding) {
@@ -117,7 +121,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     IndexBufferState::IndexBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine) : engine{manager, dirtyHandle, engine} {}
 
-    void IndexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 firstIndex, u32 elementCount) {
+    void IndexBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount) {
         usedElementCount = elementCount;
         usedFirstIndex = firstIndex;
         usedQuadConversion = quadConversion;
@@ -130,6 +134,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         }
 
         ctx.executor.AttachBuffer(*view);
+        view->GetBuffer()->PopulateReadBarrier(vk::PipelineStageFlagBits::eVertexInput, srcStageMask, dstStageMask);
 
         indexType = ConvertIndexType(engine->indexBuffer.indexSize);
 
@@ -144,7 +149,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             builder.SetIndexBuffer(*view, indexType);
     }
 
-    bool IndexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, bool quadConversion, u32 firstIndex, u32 elementCount) {
+    bool IndexBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask, bool quadConversion, u32 firstIndex, u32 elementCount) {
+        if (*view)
+            view->GetBuffer()->PopulateReadBarrier(vk::PipelineStageFlagBits::eVertexInput, srcStageMask, dstStageMask);
+
         if (elementCount > usedElementCount)
             return true;
 
@@ -185,13 +193,18 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     TransformFeedbackBufferState::TransformFeedbackBufferState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine, u32 index) : engine{manager, dirtyHandle, engine}, index{index} {}
 
-    void TransformFeedbackBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
+    void TransformFeedbackBufferState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         if (engine->streamOutEnable) {
             if (engine->streamOutBuffer.size) {
                 view.Update(ctx, engine->streamOutBuffer.address + engine->streamOutBuffer.loadWritePointerStartOffset, engine->streamOutBuffer.size);
 
                 if (*view) {
                     ctx.executor.AttachBuffer(*view);
+
+                    if (view->GetBuffer()->SequencedCpuBackingWritesBlocked()) {
+                        srcStageMask |= vk::PipelineStageFlagBits::eAllCommands;
+                        dstStageMask |=  vk::PipelineStageFlagBits::eTransformFeedbackEXT;
+                    }
 
                     view->GetBuffer()->MarkGpuDirty();
                     builder.SetTransformFeedbackBuffer(index, *view);
@@ -204,6 +217,15 @@ namespace skyline::gpu::interconnect::maxwell3d {
             // Bind an empty buffer ourselves since Vulkan doesn't support passing a VK_NULL_HANDLE xfb buffer
             builder.SetTransformFeedbackBuffer(index, {ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, 0).buffer});
         }
+    }
+
+    bool TransformFeedbackBufferState::Refresh(InterconnectContext &ctx, StateUpdateBuilder &builder, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        if (*view && view->GetBuffer()->SequencedCpuBackingWritesBlocked()) {
+            srcStageMask |= vk::PipelineStageFlagBits::eAllCommands;
+            dstStageMask |=  vk::PipelineStageFlagBits::eTransformFeedbackEXT;
+        }
+
+        return false;
     }
 
     void TransformFeedbackBufferState::PurgeCaches() {
@@ -408,18 +430,22 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirtyFunc(stencilValues);
     }
 
-    void ActiveState::Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder, bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount) {
+    void ActiveState::Update(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, StateUpdateBuilder &builder,
+                             bool indexed, engine::DrawTopology topology, u32 drawFirstIndex, u32 drawElementCount,
+                             vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         if (topology != directState.inputAssembly.GetPrimitiveTopology()) {
             directState.inputAssembly.SetPrimitiveTopology(topology);
             pipeline.MarkDirty(false);
         }
 
         auto updateFunc{[&](auto &stateElem, auto &&... args) { stateElem.Update(ctx, builder, args...); }};
+        auto updateFuncBuffer{[&](auto &stateElem, auto &&... args) { stateElem.Update(ctx, builder, srcStageMask, dstStageMask, args...); }};
+
         pipeline.Update(ctx, textures, constantBuffers, builder);
-        ranges::for_each(vertexBuffers, updateFunc);
+        ranges::for_each(vertexBuffers, updateFuncBuffer);
         if (indexed)
-            updateFunc(indexBuffer, directState.inputAssembly.NeedsQuadConversion(), drawFirstIndex, drawElementCount);
-        ranges::for_each(transformFeedbackBuffers, updateFunc);
+            updateFuncBuffer(indexBuffer, directState.inputAssembly.NeedsQuadConversion(), drawFirstIndex, drawElementCount);
+        ranges::for_each(transformFeedbackBuffers, updateFuncBuffer);
         ranges::for_each(viewports, updateFunc);
         ranges::for_each(scissors, updateFunc);
         updateFunc(lineWidth);

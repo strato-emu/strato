@@ -120,7 +120,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
         }
     }
 
-    DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures) {
+    DescriptorUpdateInfo *Pipeline::SyncDescriptors(InterconnectContext &ctx, ConstantBufferSet &constantBuffers, Samplers &samplers, Textures &textures, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         SyncCachedStorageBufferViews(ctx.executor.executionTag);
 
         u32 writeIdx{};
@@ -175,12 +175,18 @@ namespace skyline::gpu::interconnect::kepler_compute {
         writeBufferDescs(vk::DescriptorType::eUniformBuffer, shaderStage.info.constant_buffer_descriptors,
                          [&](const Shader::ConstantBufferDescriptor &desc, size_t arrayIdx) {
                              size_t cbufIdx{desc.index + arrayIdx};
-                             return GetConstantBufferBinding(ctx, shaderStage.info.constant_buffer_used_sizes, constantBuffers[cbufIdx].view, cbufIdx);
+                             return GetConstantBufferBinding(ctx, shaderStage.info.constant_buffer_used_sizes,
+                                                             constantBuffers[cbufIdx].view, cbufIdx,
+                                                             vk::PipelineStageFlagBits::eComputeShader,
+                                                             srcStageMask, dstStageMask);
                          });
 
         writeBufferDescs(vk::DescriptorType::eStorageBuffer, shaderStage.info.storage_buffers_descriptors,
                          [&](const Shader::StorageBufferDescriptor &desc, size_t arrayIdx) {
-                             auto binding{GetStorageBufferBinding(ctx, desc, constantBuffers[desc.cbuf_index], storageBufferViews[storageBufferIdx])};
+                             auto binding{GetStorageBufferBinding(ctx, desc, constantBuffers[desc.cbuf_index],
+                                                                  storageBufferViews[storageBufferIdx],
+                                                                  vk::PipelineStageFlagBits::eComputeShader,
+                                                                  srcStageMask, dstStageMask)};
                              storageBufferIdx += arrayIdx ? 0 : 1;
                              return binding;
                          });
@@ -188,7 +194,10 @@ namespace skyline::gpu::interconnect::kepler_compute {
         writeImageDescs(vk::DescriptorType::eCombinedImageSampler, shaderStage.info.texture_descriptors,
                         [&](const Shader::TextureDescriptor &desc, size_t arrayIdx) {
                             BindlessHandle handle{ReadBindlessHandle(ctx, constantBuffers, desc, arrayIdx)};
-                            auto binding{GetTextureBinding(ctx, desc, samplers, textures, handle)};
+                            auto binding{GetTextureBinding(ctx, desc,
+                                                           samplers, textures, handle,
+                                                           vk::PipelineStageFlagBits::eComputeShader,
+                                                           srcStageMask, dstStageMask)};
                             return binding.first;
                         });
 

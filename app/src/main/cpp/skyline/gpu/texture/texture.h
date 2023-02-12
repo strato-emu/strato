@@ -410,6 +410,7 @@ namespace skyline::gpu {
 
         u32 lastRenderPassIndex{}; //!< The index of the last render pass that used this texture
         texture::RenderPassUsage lastRenderPassUsage{texture::RenderPassUsage::None}; //!< The type of usage in the last render pass
+        vk::PipelineStageFlags pendingStageMask{}; //!< List of pipeline stages that are yet to be flushed for reads since the last time this texture was used an an RT
 
         friend TextureManager;
         friend TextureView;
@@ -606,5 +607,15 @@ namespace skyline::gpu {
          * @brief Updates renderpass usage tracking information
          */
         void UpdateRenderPassUsage(u32 renderPassIndex, texture::RenderPassUsage renderPassUsage);
+
+        /**
+         * @return The last usage of the texture
+         */
+        texture::RenderPassUsage GetLastRenderPassUsage();
+
+        /**
+         * @brief Populates the input src and dst stage masks with appropriate read barrier parameters for the current texture state
+         */
+        void PopulateReadBarrier(vk::PipelineStageFlagBits dstStage, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
     };
 }

@@ -1006,5 +1006,32 @@ namespace skyline::gpu {
     void Texture::UpdateRenderPassUsage(u32 renderPassIndex, texture::RenderPassUsage renderPassUsage) {
         lastRenderPassUsage = renderPassUsage;
         lastRenderPassIndex = renderPassIndex;
+
+        if (renderPassUsage == texture::RenderPassUsage::RenderTarget)
+            pendingStageMask = vk::PipelineStageFlagBits::eVertexShader |
+                               vk::PipelineStageFlagBits::eTessellationControlShader |
+                               vk::PipelineStageFlagBits::eTessellationEvaluationShader |
+                               vk::PipelineStageFlagBits::eGeometryShader |
+                               vk::PipelineStageFlagBits::eFragmentShader |
+                               vk::PipelineStageFlagBits::eComputeShader;
+        else if (renderPassUsage == texture::RenderPassUsage::None)
+            pendingStageMask = {};
+    }
+
+    texture::RenderPassUsage Texture::GetLastRenderPassUsage() {
+        return lastRenderPassUsage;
+    }
+
+    void Texture::PopulateReadBarrier(vk::PipelineStageFlagBits dstStage, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        if (!(pendingStageMask & dstStage))
+            return;
+
+        if (format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
+            srcStageMask |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+        else if (format->vkAspect & vk::ImageAspectFlagBits::eColor)
+            srcStageMask |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+        pendingStageMask &= ~dstStage;
+        dstStageMask |= dstStage;
     }
 }

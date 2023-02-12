@@ -17,11 +17,16 @@ namespace skyline::gpu::interconnect {
         };
     };
 
-    static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx, span<const u32, Shader::Info::MAX_CBUFS> cbufSizes, BufferView view, size_t idx) {
+    static DynamicBufferBinding GetConstantBufferBinding(InterconnectContext &ctx,
+                                                         span<const u32, Shader::Info::MAX_CBUFS> cbufSizes,
+                                                         BufferView view, size_t idx,
+                                                         vk::PipelineStageFlagBits dstStage,
+                                                         vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         if (!view) // Return a dummy buffer if the constant buffer isn't bound
             return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, PAGE_SIZE).buffer, 0, PAGE_SIZE};
 
         ctx.executor.AttachBuffer(view);
+        view.GetBuffer()->PopulateReadBarrier(dstStage, srcStageMask, dstStageMask);
 
         size_t sizeOverride{std::min<size_t>(cbufSizes[idx], view.size)};
         if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag, sizeOverride)}) {
@@ -32,7 +37,10 @@ namespace skyline::gpu::interconnect {
         }
     }
 
-    static DynamicBufferBinding GetStorageBufferBinding(InterconnectContext &ctx, const auto &desc, ConstantBuffer &cbuf, CachedMappedBufferView &cachedView) {
+    static DynamicBufferBinding GetStorageBufferBinding(InterconnectContext &ctx, const auto &desc,
+                                                        ConstantBuffer &cbuf, CachedMappedBufferView &cachedView,
+                                                        vk::PipelineStageFlagBits dstStage,
+                                                        vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         struct SsboDescriptor {
             u64 address;
             u32 size;
@@ -46,8 +54,14 @@ namespace skyline::gpu::interconnect {
 
         auto view{cachedView.view};
         ctx.executor.AttachBuffer(view);
+        view.GetBuffer()->PopulateReadBarrier(dstStage, srcStageMask, dstStageMask);
 
         if (desc.is_written) {
+            if (view.GetBuffer()->SequencedCpuBackingWritesBlocked()) {
+                srcStageMask |= vk::PipelineStageFlagBits::eAllCommands;
+                dstStageMask |= dstStage;
+            }
+
             view.GetBuffer()->MarkGpuDirty();
         } else {
             if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag)})
@@ -77,11 +91,16 @@ namespace skyline::gpu::interconnect {
         return {.raw = primaryVal};
     }
 
-    static std::pair<vk::DescriptorImageInfo, TextureView *> GetTextureBinding(InterconnectContext &ctx, const auto &desc, Samplers &samplers, Textures &textures, BindlessHandle handle) {
+    static std::pair<vk::DescriptorImageInfo, TextureView *> GetTextureBinding(InterconnectContext &ctx, const auto &desc,
+                                                                               Samplers &samplers, Textures &textures,
+                                                                               BindlessHandle handle,
+                                                                               vk::PipelineStageFlagBits dstStage,
+                                                                               vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
         auto sampler{samplers.GetSampler(ctx, handle.samplerIndex, handle.textureIndex)};
         auto texture{textures.GetTexture(ctx, handle.textureIndex, desc.type)};
         ctx.executor.AttachTexture(texture);
         auto view{texture->GetView()};
+        texture->texture->PopulateReadBarrier(dstStage, srcStageMask, dstStageMask);
 
         return {
             vk::DescriptorImageInfo{
