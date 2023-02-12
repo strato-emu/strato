@@ -64,20 +64,20 @@ jobs:
           CMAKE_C_COMPILER_LAUNCHER: "ccache"
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
-        run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFull
+        run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFullRelease assembleFullReldebug
 
       - name: Rename APKs (Signed)
         if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
-          mv app/build/outputs/apk/full/debug/app-full-debug.apk skyline-$GITHUB_RUN_NUMBER-debug.apk
+          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk skyline-$GITHUB_RUN_NUMBER-reldebug.apk
           mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
 
       - name: Upload Signed Debug APK
         if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: skyline-${{ github.run_number }}-debug.apk
-          path: skyline-${{ github.run_number }}-debug.apk
+          name: skyline-${{ github.run_number }}-reldebug.apk
+          path: skyline-${{ github.run_number }}-reldebug.apk
 
       - name: Upload Signed Release APK
         if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
@@ -89,15 +89,15 @@ jobs:
       - name: Rename APKs (Unsigned)
         if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
-          mv app/build/outputs/apk/full/debug/app-full-debug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-debug.apk
+          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-reldebug.apk
           mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-unsigned-release.apk
 
       - name: Upload Unsigned Debug APK
         if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: skyline-${{ github.run_number }}-unsigned-debug.apk
-          path: skyline-${{ github.run_number }}-unsigned-debug.apk
+          name: skyline-${{ github.run_number }}-unsigned-reldebug.apk
+          path: skyline-${{ github.run_number }}-unsigned-reldebug.apk
 
       - name: Upload Unsigned Release APK
         if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
