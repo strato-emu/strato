@@ -175,10 +175,9 @@ namespace skyline::gpu::interconnect {
         std::vector<LockedBuffer> attachedBuffers; //!< All textures that are attached to the current execution
 
 
-        std::vector<TextureView *> lastSubpassAttachments; //!< The storage backing for attachments used in the last subpass
-        span<TextureView *> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
-        span<TextureView *> lastSubpassColorAttachments; //!< The set of color attachments used in the last subpass
-        TextureView *lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
+        std::vector<vk::ImageView> lastSubpassInputAttachments; //!< The set of input attachments used in the last subpass
+        std::vector<vk::ImageView> lastSubpassColorAttachments; //!< The set of color attachments used in the last subpass
+        vk::ImageView lastSubpassDepthStencilAttachment{}; //!< The depth stencil attachment used in the last subpass
 
         std::vector<std::function<void()>> flushCallbacks; //!< Set of persistent callbacks that will be called at the start of Execute in order to flush data required for recording
         std::vector<std::function<void()>> pipelineChangeCallbacks; //!< Set of persistent callbacks that will be called after any non-Maxwell 3D engine changes the active pipeline

@@ -275,34 +275,26 @@ namespace skyline::gpu::interconnect {
         allocator = &slot->allocator;
     }
 
+    static bool ViewsEqual(vk::ImageView a, TextureView *b) {
+        return (!a && !b) || (a && b && b->GetView() == a);
+    }
+
     bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> sampledImages, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, bool noSubpassCreation) {
         auto addSubpass{[&] {
             renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment, gpu);
+            lastSubpassColorAttachments.clear();
+            lastSubpassInputAttachments.clear();
 
-            lastSubpassAttachments.clear();
-            auto insertAttachmentRange{[this](auto &attachments) -> std::pair<size_t, size_t> {
-                size_t beginIndex{lastSubpassAttachments.size()};
-                lastSubpassAttachments.insert(lastSubpassAttachments.end(), attachments.begin(), attachments.end());
-                return {beginIndex, attachments.size()};
-            }};
-
-            auto rangeToSpan{[this](auto &range) -> span<TextureView *> {
-                return {lastSubpassAttachments.data() + range.first, range.second};
-            }};
-
-            auto inputAttachmentRange{insertAttachmentRange(inputAttachments)};
-            auto colorAttachmentRange{insertAttachmentRange(colorAttachments)};
-
-            lastSubpassInputAttachments = rangeToSpan(inputAttachmentRange);
-            lastSubpassColorAttachments = rangeToSpan(colorAttachmentRange);
-            lastSubpassDepthStencilAttachment = depthStencilAttachment;
+            ranges::transform(colorAttachments, std::back_inserter(lastSubpassColorAttachments), [](TextureView *view){ return view ? view->GetView() : vk::ImageView{};});
+            ranges::transform(inputAttachments, std::back_inserter(lastSubpassInputAttachments), [](TextureView *view){ return view ? view->GetView() : vk::ImageView{};});
+            lastSubpassDepthStencilAttachment = depthStencilAttachment ? depthStencilAttachment->GetView() : vk::ImageView{};
         }};
 
         span<TextureView *> depthStencilAttachmentSpan{depthStencilAttachment ? span<TextureView *>(depthStencilAttachment) : span<TextureView *>()};
         auto outputAttachmentViews{ranges::views::concat(colorAttachments, depthStencilAttachmentSpan)};
-        bool attachmentsMatch{ranges::equal(lastSubpassInputAttachments, inputAttachments) &&
-                              ranges::equal(lastSubpassColorAttachments, colorAttachments) &&
-                              lastSubpassDepthStencilAttachment == depthStencilAttachment};
+        bool attachmentsMatch{std::equal(lastSubpassInputAttachments.begin(), lastSubpassInputAttachments.end(), inputAttachments.begin(), inputAttachments.end(), ViewsEqual) &&
+                              std::equal(lastSubpassColorAttachments.begin(), lastSubpassColorAttachments.end(), colorAttachments.begin(), colorAttachments.end(), ViewsEqual) &&
+                              ViewsEqual(lastSubpassDepthStencilAttachment, depthStencilAttachment)};
 
         bool splitRenderPass{renderPass == nullptr || renderPass->renderArea != renderArea || !attachmentsMatch ||
             !ranges::all_of(outputAttachmentViews, [this] (auto view) { return !view || view->texture->ValidateRenderPassUsage(renderPassIndex, texture::RenderPassUsage::RenderTarget); }) ||
@@ -343,10 +335,9 @@ namespace skyline::gpu::interconnect {
             renderPass = nullptr;
             subpassCount = 0;
 
-            lastSubpassAttachments.clear();
-            lastSubpassInputAttachments = nullptr;
-            lastSubpassColorAttachments = nullptr;
-            lastSubpassDepthStencilAttachment = nullptr;
+            lastSubpassInputAttachments.clear();
+            lastSubpassColorAttachments.clear();
+            lastSubpassDepthStencilAttachment = vk::ImageView{};
         }
     }
 
