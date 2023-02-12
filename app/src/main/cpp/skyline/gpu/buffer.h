@@ -80,6 +80,8 @@ namespace skyline::gpu {
         } backingImmutability{}; //!< Describes how the buffer backing should be accessed by the current context
         RecursiveSpinLock stateMutex; //!< Synchronizes access to the dirty state and backing immutability
 
+        bool currentExecutionGpuDirty{}; //!< If the buffer is GPU dirty within the current execution
+
         static constexpr u32 InitialSequenceNumber{1}; //!< Sequence number that all buffers start off with
         static constexpr u32 FrequentlySyncedThreshold{6}; //!< Threshold for the sequence number after which the buffer is considered elegible for megabuffering
         u32 sequenceNumber{InitialSequenceNumber}; //!< Sequence number that is incremented after all modifications to the host side `backing` buffer, used to prevent redundant copies of the buffer being stored in the megabuffer by views
@@ -320,6 +322,13 @@ namespace skyline::gpu {
          */
         bool FrequentlyLocked() {
             return accumulatedCpuLockCounter >= FrequentlyLockedThreshold;
+        }
+
+        /*
+         * @note The buffer **must** be locked prior to calling this
+         */
+        bool IsCurrentExecutionGpuDirty() {
+            return currentExecutionGpuDirty;
         }
 
         /**

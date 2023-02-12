@@ -430,6 +430,8 @@ namespace skyline::gpu {
         if (!guest)
             return;
 
+        currentExecutionGpuDirty = true;
+
         if (isDirect)
             MarkGpuDirtyImplDirect();
         else
@@ -648,6 +650,7 @@ namespace skyline::gpu {
     void Buffer::unlock() {
         tag = ContextTag{};
         AllowAllBackingWrites();
+        currentExecutionGpuDirty = false;
         mutex.unlock();
     }
 
