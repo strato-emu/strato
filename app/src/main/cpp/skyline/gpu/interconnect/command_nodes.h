@@ -48,7 +48,8 @@ namespace skyline::gpu::interconnect::node {
       public:
         std::vector<vk::SubpassDescription> subpassDescriptions;
         std::vector<vk::SubpassDependency> subpassDependencies;
-        vk::SubpassDependency externalDependency;
+        vk::PipelineStageFlags dependencySrcStageMask;
+        vk::PipelineStageFlags dependencyDstStageMask;
 
         vk::Rect2D renderArea;
         std::vector<vk::ClearValue> clearValues;
@@ -64,7 +65,12 @@ namespace skyline::gpu::interconnect::node {
         /**
          * @brief Creates a subpass with the attachments bound in the specified order
          */
-        void AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU &gpu, vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask);
+        void AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU &gpu);
+
+        /**
+         * @brief Updates the dependency barrier for the renderpass
+         */
+        void UpdateDependency(vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask);
 
         /**
          * @brief Clears a color attachment in the current subpass with VK_ATTACHMENT_LOAD_OP_CLEAR

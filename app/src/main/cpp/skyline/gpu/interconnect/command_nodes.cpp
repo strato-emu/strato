@@ -6,14 +6,7 @@
 #include <vulkan/vulkan_enums.hpp>
 
 namespace skyline::gpu::interconnect::node {
-    RenderPassNode::RenderPassNode(vk::Rect2D renderArea)
-        : externalDependency{vk::SubpassDependency{
-              .srcSubpass = VK_SUBPASS_EXTERNAL,
-              .dstSubpass = 0,
-              .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
-              .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-          }},
-          renderArea{renderArea} {}
+    RenderPassNode::RenderPassNode(vk::Rect2D renderArea) : renderArea{renderArea} {}
 
     u32 RenderPassNode::AddAttachment(TextureView *view, GPU &gpu) {
         auto vkView{view->GetView()};
@@ -41,15 +34,18 @@ namespace skyline::gpu::interconnect::node {
             });
 
             if (auto usage{view->texture->GetLastRenderPassUsage()}; usage != texture::RenderPassUsage::None) {
+                vk::PipelineStageFlags attachmentDstStageMask{};
                 if (view->format->vkAspect & vk::ImageAspectFlagBits::eColor)
-                    externalDependency.dstStageMask |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+                    attachmentDstStageMask |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
                 else if (view->format->vkAspect & (vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil))
-                    externalDependency.dstStageMask |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+                    attachmentDstStageMask |= vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+
+                dependencyDstStageMask |= attachmentDstStageMask;
 
                 if (usage == texture::RenderPassUsage::RenderTarget)
-                    externalDependency.srcStageMask |= externalDependency.dstStageMask;
+                    dependencySrcStageMask |= attachmentDstStageMask;
                 else if (usage == texture::RenderPassUsage::Sampled)
-                    externalDependency.srcStageMask |= vk::PipelineStageFlagBits::eAllGraphics;
+                    dependencySrcStageMask |= view->texture->GetReadStageMask();
             }
 
             return static_cast<u32>(attachments.size() - 1);
@@ -173,8 +169,8 @@ namespace skyline::gpu::interconnect::node {
     }
 
     void RenderPassNode::UpdateDependency(vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask) {
-        externalDependency.srcStageMask |= srcStageMask;
-        externalDependency.dstStageMask |= dstStageMask;
+        dependencySrcStageMask |= srcStageMask;
+        dependencyDstStageMask |= dstStageMask;
     }
 
     bool RenderPassNode::ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value, GPU& gpu) {
@@ -240,8 +236,12 @@ namespace skyline::gpu::interconnect::node {
             preserveAttachmentIt++;
         }
 
-        if (externalDependency.srcStageMask && externalDependency.dstStageMask)
-            subpassDependencies.push_back(externalDependency);
+        if (dependencyDstStageMask && dependencySrcStageMask) {
+            commandBuffer.pipelineBarrier(dependencySrcStageMask, dependencyDstStageMask, {}, {vk::MemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
+                .dstAccessMask = vk::AccessFlagBits::eMemoryWrite | vk::AccessFlagBits::eMemoryRead,
+            }}, {}, {});
+        }
 
         auto renderPass{gpu.renderPassCache.GetRenderPass(vk::RenderPassCreateInfo{
             .attachmentCount = static_cast<u32>(attachmentDescriptions.size()),
