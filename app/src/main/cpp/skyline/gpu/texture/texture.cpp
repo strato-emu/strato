@@ -1007,22 +1007,31 @@ namespace skyline::gpu {
         lastRenderPassUsage = renderPassUsage;
         lastRenderPassIndex = renderPassIndex;
 
-        if (renderPassUsage == texture::RenderPassUsage::RenderTarget)
+        if (renderPassUsage == texture::RenderPassUsage::RenderTarget) {
             pendingStageMask = vk::PipelineStageFlagBits::eVertexShader |
-                               vk::PipelineStageFlagBits::eTessellationControlShader |
-                               vk::PipelineStageFlagBits::eTessellationEvaluationShader |
-                               vk::PipelineStageFlagBits::eGeometryShader |
-                               vk::PipelineStageFlagBits::eFragmentShader |
-                               vk::PipelineStageFlagBits::eComputeShader;
-        else if (renderPassUsage == texture::RenderPassUsage::None)
+                vk::PipelineStageFlagBits::eTessellationControlShader |
+                vk::PipelineStageFlagBits::eTessellationEvaluationShader |
+                vk::PipelineStageFlagBits::eGeometryShader |
+                vk::PipelineStageFlagBits::eFragmentShader |
+                vk::PipelineStageFlagBits::eComputeShader;
+            readStageMask = {};
+        } else if (renderPassUsage == texture::RenderPassUsage::None) {
             pendingStageMask = {};
+            readStageMask = {};
+        }
     }
 
     texture::RenderPassUsage Texture::GetLastRenderPassUsage() {
         return lastRenderPassUsage;
     }
 
+    vk::PipelineStageFlags Texture::GetReadStageMask() {
+        return readStageMask;
+    }
+
     void Texture::PopulateReadBarrier(vk::PipelineStageFlagBits dstStage, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        readStageMask |= dstStage;
+
         if (!(pendingStageMask & dstStage))
             return;
 
