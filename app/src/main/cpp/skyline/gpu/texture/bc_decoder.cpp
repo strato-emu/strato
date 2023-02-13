@@ -131,11 +131,11 @@ namespace {
             }
 
             if (c[0] > c[1]) {
-                for (size_t i = 2; i < 8; ++i) {
+                for (int i = 2; i < 8; ++i) {
                     c[i] = ((8 - i) * c[0] + (i - 1) * c[1]) / 7;
                 }
             } else {
-                for (size_t i = 2; i < 6; ++i) {
+                for (int i = 2; i < 6; ++i) {
                     c[i] = ((6 - i) * c[0] + (i - 1) * c[1]) / 5;
                 }
                 c[6] = isSigned ? -128 : 0;
