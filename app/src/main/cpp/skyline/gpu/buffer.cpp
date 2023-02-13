@@ -98,7 +98,7 @@ namespace skyline::gpu {
                 // As opposed to skipping readback as we do for textures, with buffers we can still perform the readback but just without syncinc the GPU
                 // While the read data may be invalid it's still better than nothing and works in most cases
                 memcpy(buffer->mirror.data(), buffer->backing->data(), buffer->mirror.size());
-                buffer->dirtyState = DirtyState::Clean;
+                buffer->dirtyState = *buffer->gpu.state.settings->enableFastReadbackWrites ? DirtyState::CpuDirty : DirtyState::Clean;
                 return true;
             }
 
