@@ -133,13 +133,25 @@ namespace skyline::gpu::format {
                            .blockWidth = 4,
                            .blockHeight = 4
     );
+    FORMAT_SUFF_UNORM_SRGB(Astc5x4, 128, eAstc5x4, Block,
+                           .blockWidth = 5,
+                           .blockHeight = 4
+    );
     FORMAT_SUFF_UNORM_SRGB(Astc5x5, 128, eAstc5x5, Block,
                            .blockWidth = 5,
+                           .blockHeight = 5
+    );
+    FORMAT_SUFF_UNORM_SRGB(Astc6x5, 128, eAstc6x5, Block,
+                           .blockWidth = 6,
                            .blockHeight = 5
     );
     FORMAT_SUFF_UNORM_SRGB(Astc6x6, 128, eAstc6x6, Block,
                            .blockWidth = 6,
                            .blockHeight = 6
+    );
+    FORMAT_SUFF_UNORM_SRGB(Astc8x5, 128, eAstc8x5, Block,
+                           .blockWidth = 8,
+                           .blockHeight = 5
     );
     FORMAT_SUFF_UNORM_SRGB(Astc8x6, 128, eAstc8x6, Block,
                            .blockWidth = 8,
@@ -149,6 +161,14 @@ namespace skyline::gpu::format {
                            .blockWidth = 8,
                            .blockHeight = 8
     );
+    FORMAT_SUFF_UNORM_SRGB(Astc10x5, 128, eAstc10x5, Block,
+                           .blockWidth = 10,
+                           .blockHeight = 5
+    );
+    FORMAT_SUFF_UNORM_SRGB(Astc10x6, 128, eAstc10x6, Block,
+                           .blockWidth = 10,
+                           .blockHeight = 6
+    );
     FORMAT_SUFF_UNORM_SRGB(Astc10x8, 128, eAstc10x8, Block,
                            .blockWidth = 10,
                            .blockHeight = 8
@@ -157,10 +177,13 @@ namespace skyline::gpu::format {
                            .blockWidth = 10,
                            .blockHeight = 10
     );
-
+    FORMAT_SUFF_UNORM_SRGB(Astc12x10, 128, eAstc12x10, Block,
+                           .blockWidth = 12,
+                           .blockHeight = 10
+    );
     FORMAT_SUFF_UNORM_SRGB(Astc12x12, 128, eAstc12x12, Block,
-			   .blockWidth = 12,
-			   .blockHeight = 12
+                           .blockWidth = 12,
+                           .blockHeight = 12
     );
 
     // Depth/Stencil Formats

@@ -117,20 +117,33 @@ namespace skyline::gpu::interconnect {
 
             TIC_FORMAT_CASE_ST(Astc4x4, Astc4x4, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc4x4, Astc4x4, Unorm);
+            TIC_FORMAT_CASE_ST(Astc5x4, Astc5x4, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc5x4, Astc5x4, Unorm);
             TIC_FORMAT_CASE_ST(Astc5x5, Astc5x5, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc5x5, Astc5x5, Unorm);
+            TIC_FORMAT_CASE_ST(Astc6x5, Astc6x5, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc6x5, Astc6x5, Unorm);
             TIC_FORMAT_CASE_ST(Astc6x6, Astc6x6, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc6x6, Astc6x6, Unorm);
+            TIC_FORMAT_CASE_ST(Astc8x5, Astc8x5, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc8x5, Astc8x5, Unorm);
             TIC_FORMAT_CASE_ST(Astc8x6, Astc8x6, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc8x6, Astc8x6, Unorm);
             TIC_FORMAT_CASE_ST(Astc8x8, Astc8x8, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc8x8, Astc8x8, Unorm);
+            TIC_FORMAT_CASE_ST(Astc10x5, Astc10x5, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc10x5, Astc10x5, Unorm);
+            TIC_FORMAT_CASE_ST(Astc10x6, Astc10x6, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc10x6, Astc10x6, Unorm);
             TIC_FORMAT_CASE_ST(Astc10x8, Astc10x8, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc10x8, Astc10x8, Unorm);
             TIC_FORMAT_CASE_ST(Astc10x10, Astc10x10, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(Astc10x10, Astc10x10, Unorm);
+            TIC_FORMAT_CASE_ST(Astc12x10, Astc12x10, Unorm);
+            TIC_FORMAT_CASE_ST_SRGB(Astc12x10, Astc12x10, Unorm);
             TIC_FORMAT_CASE_ST(Astc12x12, Astc12x12, Unorm);
-	    TIC_FORMAT_CASE_ST_SRGB(Astc12x12, Astc12x12, Unorm);
+	        TIC_FORMAT_CASE_ST_SRGB(Astc12x12, Astc12x12, Unorm);
+
             TIC_FORMAT_CASE_ST(BC2, BC2, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(BC2, BC2, Unorm);
             TIC_FORMAT_CASE_ST(BC3, BC3, Unorm);
@@ -140,6 +153,7 @@ namespace skyline::gpu::interconnect {
             TIC_FORMAT_CASE(Bc6HSfloat, Bc6HSfloat, Float, Float, Float, Float);
             TIC_FORMAT_CASE_ST(BC7, BC7, Unorm);
             TIC_FORMAT_CASE_ST_SRGB(BC7, BC7, Unorm);
+
             TIC_FORMAT_CASE_INT_FLOAT(R32G32B32A32, R32G32B32A32);
 
             default:
