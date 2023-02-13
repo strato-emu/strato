@@ -81,6 +81,7 @@ namespace skyline::gpu {
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt16, supportsInt16)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderInt64, supportsInt64)
         FEAT_SET(vk::PhysicalDeviceFeatures2, features.shaderStorageImageReadWithoutFormat, supportsImageReadWithoutFormat)
+        FEAT_SET(vk::PhysicalDeviceFeatures2, features.robustBufferAccess, std::ignore)
 
         if (hasUint8IndicesExt)
             FEAT_SET(vk::PhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8, supportsUint8Indices)
@@ -94,7 +95,6 @@ namespace skyline::gpu {
 
         if (hasRobustness2Ext) {
             FEAT_SET(vk::PhysicalDeviceRobustness2FeaturesEXT, nullDescriptor, supportsNullDescriptor)
-            FEAT_SET(vk::PhysicalDeviceFeatures2, features.robustBufferAccess, std::ignore)
             FEAT_SET(vk::PhysicalDeviceRobustness2FeaturesEXT, robustBufferAccess2, std::ignore)
             FEAT_SET(vk::PhysicalDeviceRobustness2FeaturesEXT, robustImageAccess2, std::ignore)
         } else {
