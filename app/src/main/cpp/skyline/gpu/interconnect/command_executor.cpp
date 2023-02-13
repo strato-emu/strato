@@ -304,8 +304,7 @@ namespace skyline::gpu::interconnect {
                               ranges::equal(lastSubpassColorAttachments, colorAttachments) &&
                               lastSubpassDepthStencilAttachment == depthStencilAttachment};
 
-        bool splitRenderPass{renderPass == nullptr || renderPass->renderArea != renderArea ||
-            ((noSubpassCreation || subpassCount >= gpu.traits.quirks.maxSubpassCount) && !attachmentsMatch) ||
+        bool splitRenderPass{renderPass == nullptr || renderPass->renderArea != renderArea || !attachmentsMatch ||
             !ranges::all_of(outputAttachmentViews, [this] (auto view) { return !view || view->texture->ValidateRenderPassUsage(renderPassIndex, texture::RenderPassUsage::RenderTarget); }) ||
             !ranges::all_of(sampledImages, [this] (auto view) { return view->texture->ValidateRenderPassUsage(renderPassIndex, texture::RenderPassUsage::Sampled); })};
 
