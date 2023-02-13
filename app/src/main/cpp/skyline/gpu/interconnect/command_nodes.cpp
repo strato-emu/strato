@@ -126,10 +126,7 @@ namespace skyline::gpu::interconnect::node {
         }
     }
 
-    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU &gpu, vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask) {
-        externalDependency.srcStageMask |= srcStageMask;
-        externalDependency.dstStageMask |= dstStageMask;
-
+    void RenderPassNode::AddSubpass(span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, GPU &gpu) {
         attachmentReferences.reserve(attachmentReferences.size() + inputAttachments.size() + colorAttachments.size() + (depthStencilAttachment ? 1 : 0));
 
         auto inputAttachmentsOffset{attachmentReferences.size() * sizeof(vk::AttachmentReference)};
@@ -173,6 +170,11 @@ namespace skyline::gpu::interconnect::node {
             .pColorAttachments = reinterpret_cast<vk::AttachmentReference *>(colorAttachmentsOffset),
             .pDepthStencilAttachment = reinterpret_cast<vk::AttachmentReference *>(depthStencilAttachment ? depthStencilAttachmentOffset : NoDepthStencil),
         });
+    }
+
+    void RenderPassNode::UpdateDependency(vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask) {
+        externalDependency.srcStageMask |= srcStageMask;
+        externalDependency.dstStageMask |= dstStageMask;
     }
 
     bool RenderPassNode::ClearColorAttachment(u32 colorAttachment, const vk::ClearColorValue &value, GPU& gpu) {

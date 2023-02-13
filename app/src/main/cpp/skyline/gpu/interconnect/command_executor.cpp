@@ -281,7 +281,7 @@ namespace skyline::gpu::interconnect {
 
     bool CommandExecutor::CreateRenderPassWithSubpass(vk::Rect2D renderArea, span<TextureView *> sampledImages, span<TextureView *> inputAttachments, span<TextureView *> colorAttachments, TextureView *depthStencilAttachment, bool noSubpassCreation, vk::PipelineStageFlags srcStageMask, vk::PipelineStageFlags dstStageMask) {
         auto addSubpass{[&] {
-            renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment, gpu, srcStageMask, dstStageMask);
+            renderPass->AddSubpass(inputAttachments, colorAttachments, depthStencilAttachment, gpu);
             lastSubpassColorAttachments.clear();
             lastSubpassInputAttachments.clear();
 
@@ -316,6 +316,8 @@ namespace skyline::gpu::interconnect {
             subpassCount++;
             gotoNext = true;
         }
+
+        renderPass->UpdateDependency(srcStageMask, dstStageMask);
 
         for (auto view : outputAttachmentViews)
             if (view)
