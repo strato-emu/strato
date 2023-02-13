@@ -23,7 +23,8 @@ namespace skyline::gpu::cache {
 
     RenderPassCache::RenderPassMetadata::RenderPassMetadata(const vk::RenderPassCreateInfo &createInfo)
         : attachments{createInfo.pAttachments, createInfo.pAttachments + createInfo.attachmentCount},
-          subpasses{createInfo.pSubpasses, createInfo.pSubpasses + createInfo.subpassCount} {}
+          subpasses{createInfo.pSubpasses, createInfo.pSubpasses + createInfo.subpassCount},
+          dependencies{createInfo.pDependencies, createInfo.pDependencies + createInfo.dependencyCount} {}
 
     #define HASH(x) boost::hash_combine(hash, x)
 
@@ -69,6 +70,17 @@ namespace skyline::gpu::cache {
             HASH(subpass.preserveAttachments.size());
             for (const auto &index : subpass.preserveAttachments)
                 HASH(index);
+        }
+
+        HASH(key.dependencies.size());
+        for (const auto &dependency : key.dependencies) {
+            HASH(dependency.srcSubpass);
+            HASH(dependency.dstSubpass);
+            HASH(static_cast<VkDependencyFlags>(dependency.dependencyFlags));
+            HASH(static_cast<VkPipelineStageFlags>(dependency.srcStageMask));
+            HASH(static_cast<VkPipelineStageFlags>(dependency.dstStageMask));
+            HASH(static_cast<VkAccessFlags>(dependency.srcAccessMask));
+            HASH(static_cast<VkAccessFlags>(dependency.dstAccessMask));
         }
 
         return hash;
@@ -119,6 +131,17 @@ namespace skyline::gpu::cache {
                 HASH(index);
         }
 
+        HASH(key.dependencyCount);
+        for (const auto &dependency : span<const vk::SubpassDependency>{key.pDependencies, key.dependencyCount}) {
+            HASH(dependency.srcSubpass);
+            HASH(dependency.dstSubpass);
+            HASH(static_cast<VkDependencyFlags>(dependency.dependencyFlags));
+            HASH(static_cast<VkPipelineStageFlags>(dependency.srcStageMask));
+            HASH(static_cast<VkPipelineStageFlags>(dependency.dstStageMask));
+            HASH(static_cast<VkAccessFlags>(dependency.srcAccessMask));
+            HASH(static_cast<VkAccessFlags>(dependency.dstAccessMask));
+        }
+
         return hash;
     }
 
@@ -156,6 +179,8 @@ namespace skyline::gpu::cache {
 
             vkSubpass++;
         }
+
+        RETARRNEQ(lhs.dependencies, rhs.pDependencies, rhs.dependencyCount)
 
         #undef RETF
 

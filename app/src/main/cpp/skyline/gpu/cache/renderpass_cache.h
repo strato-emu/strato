@@ -38,6 +38,7 @@ namespace skyline::gpu::cache {
         struct RenderPassMetadata {
             std::vector<vk::AttachmentDescription> attachments;
             std::vector<SubpassDescription> subpasses;
+            std::vector<vk::SubpassDependency> dependencies;
 
             RenderPassMetadata(const vk::RenderPassCreateInfo &createInfo);
 
