@@ -67,7 +67,8 @@
 
         <activity
             android:name=".EmulationActivity"
-            android:configChanges="orientation|screenSize|uiMode"
+            android:supportsPictureInPicture="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
             android:process="${emulationProcess}"

@@ -6,9 +6,11 @@
 package emu.skyline
 
 import android.annotation.SuppressLint
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.res.AssetManager
+import android.content.res.Configuration
 import android.graphics.PointF
 import android.hardware.display.DisplayManager
 import android.os.*
@@ -168,6 +170,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     /**
      * Return from emulation to either [MainActivity] or the activity on the back stack
      */
+    @SuppressWarnings("WeakerAccess")
     fun returnFromEmulation() {
         if (shouldFinish) {
             runOnUiThread {
@@ -260,6 +263,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             binding.onScreenControllerToggle.setOnApplyWindowInsetsListener(insetsOrMarginHandler)
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(true).build())
+
         binding.gameView.holder.addCallback(this)
 
         binding.gameView.setAspectRatio(
@@ -343,6 +349,23 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
     }
 
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        if (isInPictureInPictureMode) {
+            binding.onScreenControllerView.isGone = true
+            binding.onScreenControllerToggle.isGone = true
+        } else {
+            binding.onScreenControllerView.apply {
+                controllerType = inputHandler.getFirstControllerType()
+                isGone = controllerType == ControllerType.None || !appSettings.onScreenControl
+            }
+            binding.onScreenControllerToggle.apply {
+                isGone = binding.onScreenControllerView.isGone
+            }
+        }
+    }
+
+
     /**
      * Stop the currently executing ROM and replace it with the one specified in the new intent
      */
@@ -352,6 +375,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             setIntent(intent)
             executeApplication(intent)
         }
+    }
+
+    override fun onUserLeaveHint() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
+            enterPictureInPictureMode(PictureInPictureParams.Builder().build())
     }
 
     override fun onDestroy() {
@@ -519,7 +547,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         return ((major shl 22) or (minor shl 12) or (patch)).toInt()
     }
 
-    val insetsOrMarginHandler = View.OnApplyWindowInsetsListener { view, insets ->
+    private val insetsOrMarginHandler = View.OnApplyWindowInsetsListener { view, insets ->
         insets.displayCutout?.let {
             val defaultHorizontalMargin = view.resources.getDimensionPixelSize(R.dimen.onScreenItemHorizontalMargin)
             val left = if (it.safeInsetLeft == 0) defaultHorizontalMargin else it.safeInsetLeft
