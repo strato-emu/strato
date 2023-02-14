@@ -37,7 +37,7 @@
         </activity>
 
         <activity
-            android:name=".SettingsActivity"
+            android:name=".settings.SettingsActivity"
             android:exported="true"
             android:label="@string/settings"
             android:launchMode="singleTop"
@@ -47,13 +47,13 @@
         <activity
             android:name=".input.ControllerActivity"
             android:exported="true"
-            android:parentActivityName=".SettingsActivity">
+            android:parentActivityName=".settings.SettingsActivity">
         </activity>
 
         <activity
             android:name=".preference.GpuDriverActivity"
             android:exported="true"
-            android:parentActivityName=".SettingsActivity">
+            android:parentActivityName=".settings.SettingsActivity">
         </activity>
 
         <activity

@@ -11,7 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import emu.skyline.input.InputManager
-import emu.skyline.utils.PreferenceSettings
+import emu.skyline.settings.PreferenceSettings
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)

@@ -3,14 +3,15 @@
  * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
-package emu.skyline.utils
+package emu.skyline.settings
 
 import android.content.Context
 import android.content.pm.ActivityInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
+import emu.skyline.R
+import emu.skyline.utils.sharedPreferences
 import javax.inject.Inject
 import javax.inject.Singleton
-import emu.skyline.R
 
 @Singleton
 class PreferenceSettings @Inject constructor(@ApplicationContext private val context : Context) {

@@ -38,7 +38,8 @@ import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
 import emu.skyline.provider.DocumentsProvider
 import emu.skyline.utils.GpuDriverHelper
-import emu.skyline.utils.PreferenceSettings
+import emu.skyline.settings.PreferenceSettings
+import emu.skyline.settings.SettingsActivity
 import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
 import kotlin.math.ceil

@@ -14,7 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.R
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.R as SkylineR
-import emu.skyline.SettingsActivity
+import emu.skyline.settings.SettingsActivity
 import emu.skyline.provider.DocumentsProvider
 
 class DocumentsProviderPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {

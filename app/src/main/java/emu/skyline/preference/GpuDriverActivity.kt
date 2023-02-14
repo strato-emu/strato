@@ -25,7 +25,7 @@ import emu.skyline.adapter.SpacingItemDecoration
 import emu.skyline.databinding.GpuDriverActivityBinding
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.GpuDriverInstallResult
-import emu.skyline.utils.PreferenceSettings
+import emu.skyline.settings.PreferenceSettings
 import emu.skyline.utils.WindowInsetsHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

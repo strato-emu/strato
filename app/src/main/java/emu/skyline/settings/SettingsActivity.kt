@@ -3,7 +3,7 @@
  * Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
-package emu.skyline
+package emu.skyline.settings
 
 import android.os.Bundle
 import android.view.*
@@ -14,11 +14,12 @@ import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import emu.skyline.BuildConfig
+import emu.skyline.R
 import emu.skyline.databinding.SettingsActivityBinding
 import emu.skyline.preference.IntegerListPreference
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
-import emu.skyline.utils.sharedPreferences
 
 class SettingsActivity : AppCompatActivity() {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }

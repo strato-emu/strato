@@ -243,13 +243,13 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Compa
     env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_NativeSettings_updateNative(JNIEnv *env, jobject) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_settings_NativeSettings_updateNative(JNIEnv *env, jobject) {
     auto settings{SettingsWeak.lock()};
     if (!settings)
         return; // We don't mind if we miss settings updates while settings haven't been initialized
     settings->Update();
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_NativeSettings_00024Companion_setLogLevel(JNIEnv *, jobject, jint logLevel) {
+extern "C" JNIEXPORT void JNICALL Java_emu_skyline_settings_NativeSettings_00024Companion_setLogLevel(JNIEnv *, jobject, jint logLevel) {
     skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
 }

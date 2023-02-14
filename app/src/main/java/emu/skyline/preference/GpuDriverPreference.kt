@@ -14,7 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
 import emu.skyline.utils.GpuDriverHelper
-import emu.skyline.utils.PreferenceSettings
+import emu.skyline.settings.PreferenceSettings
 import emu.skyline.R as SkylineR
 
 /**

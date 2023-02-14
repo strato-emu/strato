@@ -3,10 +3,11 @@
  * Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
  */
 
-package emu.skyline.utils
+package emu.skyline.settings
 
 import android.content.Context
 import emu.skyline.BuildConfig
+import emu.skyline.utils.GpuDriverHelper
 
 /**
  * The settings that will be passed to libskyline when running and executable

@@ -29,7 +29,7 @@ import emu.skyline.input.dialog.ButtonDialog
 import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
 import emu.skyline.input.onscreen.OnScreenEditActivity
-import emu.skyline.utils.PreferenceSettings
+import emu.skyline.settings.PreferenceSettings
 import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
 

@@ -14,7 +14,7 @@ import androidx.preference.Preference
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.KeyReader
 import emu.skyline.R
-import emu.skyline.SettingsActivity
+import emu.skyline.settings.SettingsActivity
 import emu.skyline.di.getSettings
 
 class KeyPickerPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {

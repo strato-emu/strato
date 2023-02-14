@@ -8,7 +8,7 @@ package emu.skyline.preference
 import android.content.Context
 import android.util.AttributeSet
 import androidx.preference.R
-import emu.skyline.utils.NativeSettings
+import emu.skyline.settings.NativeSettings
 
 class LogLevelPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.dialogPreferenceStyle) : IntegerListPreference(context, attrs, defStyleAttr) {
     init {

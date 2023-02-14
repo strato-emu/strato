@@ -17,7 +17,7 @@ import android.view.OrientationEventListener
 import android.view.View
 import androidx.core.content.getSystemService
 import emu.skyline.utils.ByteBufferSerializable
-import emu.skyline.utils.PreferenceSettings
+import emu.skyline.settings.PreferenceSettings
 import emu.skyline.utils.u64
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
