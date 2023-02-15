@@ -272,11 +272,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             binding.onScreenControllerToggle.setOnApplyWindowInsetsListener(insetsOrMarginHandler)
         }
 
-        val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
-        val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(muteIntentAction), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
+        pictureInPictureParamsBuilder = PictureInPictureParams.Builder()
 
-        pictureInPictureParamsBuilder = PictureInPictureParams.Builder().setActions(mutableListOf(muteRemoteAction))
+        if (!emulationSettings.isAudioOutputDisabled) {
+            val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
+            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(muteIntentAction), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
+            pictureInPictureParamsBuilder.setActions(mutableListOf(muteRemoteAction))
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
             pictureInPictureParamsBuilder.setAutoEnterEnabled(true)
 
@@ -368,33 +371,39 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
-            muteReceiver = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent) {
-                    if (intent.action == muteIntentAction)
-                        changeAudioStatus(false)
+            if (!emulationSettings.isAudioOutputDisabled) {
+                muteReceiver = object : BroadcastReceiver() {
+                    override fun onReceive(context : Context?, intent : Intent) {
+                        if (intent.action == muteIntentAction)
+                            changeAudioStatus(false)
+                    }
                 }
-            }
 
-            IntentFilter(muteIntentAction).also {
-                registerReceiver(muteReceiver, it)
+                IntentFilter(muteIntentAction).also {
+                    registerReceiver(muteReceiver, it)
+                }
             }
 
             binding.onScreenControllerView.isGone = true
             binding.onScreenControllerToggle.isGone = true
         } else {
+            if (!emulationSettings.isAudioOutputDisabled) {
+                changeAudioStatus(true)
+
+                try {
+                    if (this::muteReceiver.isInitialized)
+                        unregisterReceiver(muteReceiver)
+                } catch (ignored : Exception) {
+                    // Perfectly acceptable and should be ignored
+                }
+            }
+            
             binding.onScreenControllerView.apply {
                 controllerType = inputHandler.getFirstControllerType()
                 isGone = controllerType == ControllerType.None || !appSettings.onScreenControl
             }
             binding.onScreenControllerToggle.apply {
                 isGone = binding.onScreenControllerView.isGone
-            }
-
-            try {
-                if (this::muteReceiver.isInitialized)
-                    unregisterReceiver(muteReceiver)
-            } catch (ignored: Exception) {
-                // Perfectly acceptable and should be ignored
             }
         }
     }
