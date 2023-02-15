@@ -6,12 +6,17 @@
 package emu.skyline
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.graphics.PointF
+import android.graphics.drawable.Icon
 import android.hardware.display.DisplayManager
 import android.os.*
 import android.util.Log
@@ -79,12 +84,16 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     /**
      * If the activity should return to [MainActivity] or just call [finishAffinity]
      */
-    var returnToMain : Boolean = false
+    private var returnToMain : Boolean = false
 
     /**
      * The desired refresh rate to present at in Hz
      */
-    var desiredRefreshRate = 60f
+    private var desiredRefreshRate = 60f
+
+    private val muteIntentAction = "$packageName.EMULATOR_MUTE"
+    private lateinit var pictureInPictureParamsBuilder : PictureInPictureParams.Builder
+    private lateinit var muteReceiver : BroadcastReceiver
 
     @Inject
     lateinit var appSettings : AppSettings
@@ -263,8 +272,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             binding.onScreenControllerToggle.setOnApplyWindowInsetsListener(insetsOrMarginHandler)
         }
 
+        val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
+        val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(muteIntentAction), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
+
+        pictureInPictureParamsBuilder = PictureInPictureParams.Builder().setActions(mutableListOf(muteRemoteAction))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(true).build())
+            pictureInPictureParamsBuilder.setAutoEnterEnabled(true)
+
+        setPictureInPictureParams(pictureInPictureParamsBuilder.build())
 
         binding.gameView.holder.addCallback(this)
 
@@ -352,6 +368,17 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
+            muteReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent) {
+                    if (intent.action == muteIntentAction)
+                        changeAudioStatus(false)
+                }
+            }
+
+            IntentFilter(muteIntentAction).also {
+                registerReceiver(muteReceiver, it)
+            }
+
             binding.onScreenControllerView.isGone = true
             binding.onScreenControllerToggle.isGone = true
         } else {
@@ -362,9 +389,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             binding.onScreenControllerToggle.apply {
                 isGone = binding.onScreenControllerView.isGone
             }
+
+            try {
+                if (this::muteReceiver.isInitialized)
+                    unregisterReceiver(muteReceiver)
+            } catch (ignored: Exception) {
+                // Perfectly acceptable and should be ignored
+            }
         }
     }
-
 
     /**
      * Stop the currently executing ROM and replace it with the one specified in the new intent
@@ -378,8 +411,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     override fun onUserLeaveHint() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
-            enterPictureInPictureMode(PictureInPictureParams.Builder().build())
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !isInPictureInPictureMode)
+            enterPictureInPictureMode(pictureInPictureParamsBuilder.build())
     }
 
     override fun onDestroy() {
