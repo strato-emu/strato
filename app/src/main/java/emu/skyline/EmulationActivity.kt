@@ -91,6 +91,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     private var desiredRefreshRate = 60f
 
+    private var isEmulatorPaused = false
+
     private lateinit var pictureInPictureParamsBuilder : PictureInPictureParams.Builder
     private val pauseIntentAction = "$packageName.EMULATOR_PAUSE"
     private val muteIntentAction = "$packageName.EMULATOR_MUTE"
@@ -343,18 +345,37 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             setOnClickListener { binding.onScreenControllerView.isInvisible = !binding.onScreenControllerView.isInvisible }
         }
 
+        binding.onScreenPauseToggle.apply {
+            isGone = binding.onScreenControllerView.isGone
+            setOnClickListener {
+                if (isEmulatorPaused) {
+                    resumeEmulator()
+                    binding.onScreenPauseToggle.setImageResource(R.drawable.ic_pause)
+                } else {
+                    pauseEmulator()
+                    binding.onScreenPauseToggle.setImageResource(R.drawable.ic_play)
+                }
+            }
+        }
+
         executeApplication(intent!!)
     }
 
+    @SuppressWarnings("WeakerAccess")
     fun pauseEmulator() {
+        if (isEmulatorPaused) return
         setSurface(null)
         changeAudioStatus(false)
+        isEmulatorPaused = true
     }
 
+    @SuppressWarnings("WeakerAccess")
     fun resumeEmulator() {
+        if (!isEmulatorPaused) return
         gameSurface?.let { setSurface(it) }
         if (!emulationSettings.isAudioOutputDisabled)
             changeAudioStatus(true)
+        isEmulatorPaused = false
     }
 
     override fun onPause() {
@@ -414,6 +435,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
             binding.onScreenControllerView.isGone = true
             binding.onScreenControllerToggle.isGone = true
+            binding.onScreenPauseToggle.isGone = true
         } else {
             try {
                 if (this::pictureInPictureReceiver.isInitialized)
@@ -429,6 +451,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 isGone = controllerType == ControllerType.None || !appSettings.onScreenControl
             }
             binding.onScreenControllerToggle.apply {
+                isGone = binding.onScreenControllerView.isGone
+            }
+            binding.onScreenPauseToggle.apply {
                 isGone = binding.onScreenControllerView.isGone
             }
         }
