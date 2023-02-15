@@ -1,0 +1,162 @@
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="category_system"
+        android:title="@string/system">
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:summaryOff="@string/handheld_enabled"
+            android:summaryOn="@string/docked_enabled"
+            app:key="is_docked"
+            app:title="@string/use_docked" />
+        <emu.skyline.preference.CustomEditTextPreference
+            android:defaultValue="@string/username_default"
+            app:key="username_value"
+            app:limit="31"
+            app:title="@string/username" />
+        <emu.skyline.preference.ProfilePicturePreference
+            app:key="profile_picture_value"
+            app:title="@string/profile_picture" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="1"
+            android:entries="@array/system_languages"
+            android:entryValues="@array/system_languages_val"
+            app:key="system_language"
+            app:refreshRequired="true"
+            app:title="@string/system_language"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="-1"
+            android:entries="@array/system_region"
+            android:entryValues="@array/system_region_val"
+            app:key="system_region"
+            app:title="@string/system_region"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_presentation"
+        android:title="@string/display">
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="6"
+            android:entries="@array/orientation_entries"
+            android:entryValues="@array/orientation_values"
+            app:key="orientation"
+            app:title="@string/screen_orientation"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/aspect_ratios"
+            app:key="aspect_ratio"
+            app:title="@string/aspect_ratio"
+            app:useSimpleSummaryProvider="true" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/respect_display_cutout_disabled"
+            android:summaryOn="@string/respect_display_cutout_enabled"
+            app:key="respect_display_cutout"
+            app:title="@string/respect_display_cutout" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:summaryOff="@string/triple_buffering_disabled"
+            android:summaryOn="@string/triple_buffering_enabled"
+            app:key="force_triple_buffering"
+            app:title="@string/force_triple_buffering" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:dependency="force_triple_buffering"
+            android:summaryOff="@string/disable_frame_throttling_disabled"
+            android:summaryOn="@string/disable_frame_throttling_enabled"
+            app:key="disable_frame_throttling"
+            app:title="@string/disable_frame_throttling" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/max_refresh_rate_disabled"
+            android:summaryOn="@string/max_refresh_rate_enabled"
+            app:key="max_refresh_rate"
+            app:title="@string/max_refresh_rate" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_gpu"
+        android:title="@string/gpu">
+        <emu.skyline.preference.GpuDriverPreference
+            app:key="gpu_driver"
+            app:title="@string/gpu_driver_config" />
+        <SeekBarPreference
+            android:defaultValue="4"
+            android:max="6"
+            android:min="1"
+            android:summary="@string/executor_slot_count_scale_desc"
+            app:key="executor_slot_count_scale"
+            app:showSeekBarValue="true"
+            app:title="@string/executor_slot_count_scale" />
+        <SeekBarPreference
+            android:defaultValue="256"
+            android:max="1024"
+            android:min="0"
+            android:summary="@string/executor_flush_threshold_desc"
+            app:key="executor_flush_threshold"
+            app:showSeekBarValue="true"
+            app:title="@string/executor_flush_threshold" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summary="@string/use_direct_memory_import_desc"
+            app:key="use_direct_memory_import"
+            app:title="@string/use_direct_memory_import" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summary="@string/force_max_gpu_clocks_desc"
+            app:key="force_max_gpu_clocks"
+            app:title="@string/force_max_gpu_clocks" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/shader_cache_enabled"
+            android:summaryOn="@string/shader_cache_disabled"
+            app:key="disable_shader_cache"
+            app:title="@string/shader_cache" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_hacks"
+        android:title="@string/hacks">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/enable_fast_gpu_readback_disabled"
+            android:summaryOn="@string/enable_fast_gpu_readback_enabled"
+            app:key="enable_fast_gpu_readback_hack"
+            app:title="@string/enable_fast_gpu_readback" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:dependency="enable_fast_gpu_readback_hack"
+            android:summaryOff="@string/enable_fast_readback_writes_disabled"
+            android:summaryOn="@string/enable_fast_readback_writes_enabled"
+            app:key="enable_fast_readback_writes"
+            app:title="@string/enable_fast_readback_writes" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/disable_subgroup_shuffle_disabled"
+            android:summaryOn="@string/disable_subgroup_shuffle_enabled"
+            app:key="disable_subgroup_shuffle"
+            app:title="@string/disable_subgroup_shuffle" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_audio"
+        android:title="@string/audio"
+        app:isPreferenceVisible="true">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/disable_audio_output_disabled"
+            android:summaryOn="@string/disable_audio_output_enabled"
+            app:key="is_audio_output_disabled"
+            app:title="@string/disable_audio_output" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_debug"
+        android:title="@string/debug"
+        app:isPreferenceVisible="false">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/validation_layer_disabled"
+            android:summaryOn="@string/validation_layer_enabled"
+            app:key="validation_layer"
+            app:title="@string/validation_layer" />
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

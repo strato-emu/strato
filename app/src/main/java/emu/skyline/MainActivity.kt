@@ -23,7 +23,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.documentfile.provider.DocumentFile
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
@@ -37,9 +36,9 @@ import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import emu.skyline.loader.RomFormat
 import emu.skyline.provider.DocumentsProvider
-import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.settings.PreferenceSettings
 import emu.skyline.settings.SettingsActivity
+import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -113,7 +112,7 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsHelper.applyToActivity(binding.root, binding.appList)
 
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
+        PreferenceSettings.setDefaultValues(this)
 
         adapter.apply {
             setHeaderItems(listOf(HeaderRomFilterItem(formatOrder, if (preferenceSettings.romFormatFilter == 0) null else formatOrder[preferenceSettings.romFormatFilter - 1]) { romFormat ->

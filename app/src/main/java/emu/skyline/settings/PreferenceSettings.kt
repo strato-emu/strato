@@ -7,6 +7,7 @@ package emu.skyline.settings
 
 import android.content.Context
 import android.content.pm.ActivityInfo
+import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import emu.skyline.R
 import emu.skyline.utils.sharedPreferences
@@ -70,5 +71,13 @@ class PreferenceSettings @Inject constructor(@ApplicationContext private val con
 
     companion object {
         const val SYSTEM_GPU_DRIVER = "system"
+
+        /**
+         * Sets the default values for global preferences
+         */
+        fun setDefaultValues(context : Context) {
+            PreferenceManager.setDefaultValues(context, R.xml.app_preferences, false)
+            PreferenceManager.setDefaultValues(context, R.xml.emulation_preferences, false)
+        }
     }
 }

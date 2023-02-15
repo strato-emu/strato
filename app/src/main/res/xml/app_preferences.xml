@@ -1,0 +1,75 @@
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="category_emulator"
+        android:title="@string/emulator">
+        <emu.skyline.preference.DocumentsProviderPreference
+            app:key="document_provider"
+            app:summary="@string/open_data_directory_summary"
+            app:title="@string/open_data_directory" />
+        <emu.skyline.preference.ThemePreference
+            android:defaultValue="2"
+            android:entries="@array/app_theme"
+            app:key="app_theme"
+            app:title="@string/theme"
+            app:useSimpleSummaryProvider="true" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/perf_stats_desc_off"
+            android:summaryOn="@string/perf_stats_desc_on"
+            app:key="perf_stats"
+            app:title="@string/perf_stats" />
+        <emu.skyline.preference.LogLevelPreference
+            android:defaultValue="2"
+            android:entries="@array/log_level"
+            app:key="log_level"
+            app:title="@string/log_level"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_applist"
+        android:title="@string/app_list"
+        app:initialExpandedChildrenCount="3">
+        <emu.skyline.preference.FolderPickerPreference
+            app:key="search_location"
+            app:title="@string/search_location" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="1"
+            android:entries="@array/layout_type"
+            app:key="layout_type"
+            app:title="@string/layout_type"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/sort_apps_by"
+            app:key="sort_apps_by"
+            app:refreshRequired="true"
+            app:title="@string/sort_apps_by"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.RefreshCheckBoxPreference
+            android:defaultValue="true"
+            android:summaryOff="@string/group_by_format_desc_off"
+            android:summaryOn="@string/group_by_format_desc_on"
+            app:key="group_by_format"
+            app:refreshRequired="true"
+            app:title="@string/group_by_format" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/select_action_desc_off"
+            android:summaryOn="@string/select_action_desc_on"
+            app:key="select_action"
+            app:title="@string/select_action" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_keys"
+        android:title="@string/keys">
+        <emu.skyline.preference.KeyPickerPreference
+            app:key="prod_keys"
+            app:title="@string/prod_keys"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.KeyPickerPreference
+            app:key="title_keys"
+            app:title="@string/title_keys"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

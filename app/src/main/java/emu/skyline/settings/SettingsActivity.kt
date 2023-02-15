@@ -10,10 +10,7 @@ import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.*
-import androidx.preference.CheckBoxPreference
-import androidx.preference.Preference
-import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.*
 import emu.skyline.BuildConfig
 import emu.skyline.R
 import emu.skyline.databinding.SettingsActivityBinding
@@ -92,10 +89,13 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         /**
-         * This constructs the preferences from [R.xml.preferences]
+         * This constructs the preferences from XML preference resources
          */
         override fun onCreatePreferences(savedInstanceState : Bundle?, rootKey : String?) {
-            setPreferencesFromResource(R.xml.preferences, rootKey)
+            addPreferencesFromResource(R.xml.app_preferences)
+            addPreferencesFromResource(R.xml.game_preferences)
+            addPreferencesFromResource(R.xml.input_preferences)
+            addPreferencesFromResource(R.xml.credits_preferences)
 
             // Uncheck `disable_frame_throttling` if `force_triple_buffering` gets disabled
             val disableFrameThrottlingPref = findPreference<CheckBoxPreference>("disable_frame_throttling")!!

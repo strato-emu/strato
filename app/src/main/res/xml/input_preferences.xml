@@ -1,0 +1,16 @@
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="category_input"
+        android:title="@string/input"
+        app:initialExpandedChildrenCount="4">
+        <emu.skyline.preference.ControllerPreference index="0" />
+        <emu.skyline.preference.ControllerPreference index="1" />
+        <emu.skyline.preference.ControllerPreference index="2" />
+        <emu.skyline.preference.ControllerPreference index="3" />
+        <emu.skyline.preference.ControllerPreference index="4" />
+        <emu.skyline.preference.ControllerPreference index="5" />
+        <emu.skyline.preference.ControllerPreference index="6" />
+        <emu.skyline.preference.ControllerPreference index="7" />
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>
