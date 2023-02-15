@@ -3,9 +3,6 @@
     <PreferenceCategory
         android:key="category_emulator"
         android:title="@string/emulator">
-        <emu.skyline.preference.FolderPickerPreference
-            app:key="search_location"
-            app:title="@string/search_location" />
         <emu.skyline.preference.DocumentsProviderPreference
             app:key="document_provider"
             app:summary="@string/open_data_directory_summary"
@@ -16,32 +13,6 @@
             app:key="app_theme"
             app:title="@string/theme"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.IntegerListPreference
-            android:defaultValue="1"
-            android:entries="@array/layout_type"
-            app:key="layout_type"
-            app:title="@string/layout_type"
-            app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.RefreshCheckBoxPreference
-            android:defaultValue="true"
-            android:summaryOff="@string/group_by_format_desc_off"
-            android:summaryOn="@string/group_by_format_desc_on"
-            app:key="group_by_format"
-            app:refreshRequired="true"
-            app:title="@string/group_by_format" />
-        <emu.skyline.preference.IntegerListPreference
-            android:defaultValue="0"
-            android:entries="@array/sort_apps_by"
-            app:key="sort_apps_by"
-            app:refreshRequired="true"
-            app:title="@string/sort_apps_by"
-            app:useSimpleSummaryProvider="true" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:summaryOff="@string/select_action_desc_off"
-            android:summaryOn="@string/select_action_desc_on"
-            app:key="select_action"
-            app:title="@string/select_action" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:summaryOff="@string/perf_stats_desc_off"
@@ -54,9 +25,40 @@
             app:key="log_level"
             app:title="@string/log_level"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.GpuDriverPreference
-            app:key="gpu_driver"
-            app:title="@string/gpu_driver_config" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_applist"
+        android:title="@string/app_list"
+        app:initialExpandedChildrenCount="3">
+        <emu.skyline.preference.FolderPickerPreference
+            app:key="search_location"
+            app:title="@string/search_location" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="1"
+            android:entries="@array/layout_type"
+            app:key="layout_type"
+            app:title="@string/layout_type"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/sort_apps_by"
+            app:key="sort_apps_by"
+            app:refreshRequired="true"
+            app:title="@string/sort_apps_by"
+            app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.RefreshCheckBoxPreference
+            android:defaultValue="true"
+            android:summaryOff="@string/group_by_format_desc_off"
+            android:summaryOn="@string/group_by_format_desc_on"
+            app:key="group_by_format"
+            app:refreshRequired="true"
+            app:title="@string/group_by_format" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/select_action_desc_off"
+            android:summaryOn="@string/select_action_desc_on"
+            app:key="select_action"
+            app:title="@string/select_action" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_keys"
@@ -113,6 +115,18 @@
             app:key="orientation"
             app:title="@string/screen_orientation"
             app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.IntegerListPreference
+            android:defaultValue="0"
+            android:entries="@array/aspect_ratios"
+            app:key="aspect_ratio"
+            app:title="@string/aspect_ratio"
+            app:useSimpleSummaryProvider="true" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/respect_display_cutout_disabled"
+            android:summaryOn="@string/respect_display_cutout_enabled"
+            app:key="respect_display_cutout"
+            app:title="@string/respect_display_cutout" />
         <CheckBoxPreference
             android:defaultValue="true"
             android:summaryOff="@string/triple_buffering_disabled"
@@ -132,34 +146,29 @@
             android:summaryOn="@string/max_refresh_rate_enabled"
             app:key="max_refresh_rate"
             app:title="@string/max_refresh_rate" />
-        <emu.skyline.preference.IntegerListPreference
-            android:defaultValue="0"
-            android:entries="@array/aspect_ratios"
-            app:key="aspect_ratio"
-            app:title="@string/aspect_ratio"
-            app:useSimpleSummaryProvider="true" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:summaryOff="@string/respect_display_cutout_disabled"
-            android:summaryOn="@string/respect_display_cutout_enabled"
-            app:key="respect_display_cutout"
-            app:title="@string/respect_display_cutout" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_gpu"
+        android:title="@string/gpu">
+        <emu.skyline.preference.GpuDriverPreference
+            app:key="gpu_driver"
+            app:title="@string/gpu_driver_config" />
         <SeekBarPreference
-            android:min="1"
             android:defaultValue="4"
             android:max="6"
+            android:min="1"
             android:summary="@string/executor_slot_count_scale_desc"
             app:key="executor_slot_count_scale"
-            app:title="@string/executor_slot_count_scale"
-            app:showSeekBarValue="true" />
+            app:showSeekBarValue="true"
+            app:title="@string/executor_slot_count_scale" />
         <SeekBarPreference
-            android:min="0"
             android:defaultValue="256"
             android:max="1024"
+            android:min="0"
             android:summary="@string/executor_flush_threshold_desc"
             app:key="executor_flush_threshold"
-            app:title="@string/executor_flush_threshold"
-            app:showSeekBarValue="true" />
+            app:showSeekBarValue="true"
+            app:title="@string/executor_flush_threshold" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:summary="@string/use_direct_memory_import_desc"
@@ -237,8 +246,7 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_credits"
-        android:title="@string/credits">
-    </PreferenceCategory>
+        android:title="@string/credits" />
     <PreferenceCategory
         android:key="category_licenses"
         android:title="@string/licenses"
