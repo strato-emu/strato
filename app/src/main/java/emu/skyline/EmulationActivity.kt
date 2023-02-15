@@ -346,13 +346,24 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         executeApplication(intent!!)
     }
 
+    fun pauseEmulator() {
+        setSurface(null)
+        changeAudioStatus(false)
+    }
+
+    fun resumeEmulator() {
+        gameSurface?.let { setSurface(it) }
+        if (!emulationSettings.isAudioOutputDisabled)
+            changeAudioStatus(true)
+    }
+
     override fun onPause() {
         super.onPause()
 
         if (emulationSettings.forceMaxGpuClocks)
             GpuDriverHelper.forceMaxGpuClocks(false)
 
-        changeAudioStatus(false)
+        pauseEmulator()
     }
 
     override fun onStart() {
@@ -368,7 +379,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onResume() {
         super.onResume()
 
-        changeAudioStatus(true)
+        resumeEmulator()
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             @Suppress("DEPRECATION")
@@ -387,7 +398,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             pictureInPictureReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context : Context?, intent : Intent) {
                     if (intent.action == pauseIntentAction)
-                        setSurface(null)
+                        pauseEmulator()
                     else if (intent.action == muteIntentAction)
                         changeAudioStatus(false)
                 }
@@ -411,10 +422,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 // Perfectly acceptable and should be ignored
             }
 
-            gameSurface?.let { setSurface(it) }
-
-            if (!emulationSettings.isAudioOutputDisabled)
-                changeAudioStatus(true)
+            resumeEmulator()
             
             binding.onScreenControllerView.apply {
                 controllerType = inputHandler.getFirstControllerType()
