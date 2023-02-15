@@ -23,6 +23,10 @@
     <string name="invalid_file">Invalid file</string>
     <string name="missing_title_key">Missing title key</string>
     <string name="incomplete_prod_keys">Incomplete production keys</string>
+    <!-- Picture-In-Picture -->
+    <string name="pause">Pause</string>
+    <string name="pause_emulator">Pause emulator process</string>
+    <string name="mute">Mute</string>
     <!-- Settings - Content -->
     <string name="content">Content</string>
     <string name="open_data_directory">View Internal Directory</string>
@@ -87,7 +91,6 @@
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
-    <string name="mute">Mute</string>
     <string name="disable_audio_output">Disable Audio Output</string>
     <string name="disable_audio_output_enabled">Audio output is disabled</string>
     <string name="disable_audio_output_disabled">Audio output is enabled</string>

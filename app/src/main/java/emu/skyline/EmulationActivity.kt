@@ -91,9 +91,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      */
     private var desiredRefreshRate = 60f
 
-    private val muteIntentAction = "$packageName.EMULATOR_MUTE"
     private lateinit var pictureInPictureParamsBuilder : PictureInPictureParams.Builder
-    private lateinit var muteReceiver : BroadcastReceiver
+    private val pauseIntentAction = "$packageName.EMULATOR_PAUSE"
+    private val muteIntentAction = "$packageName.EMULATOR_MUTE"
+    private lateinit var pictureInPictureReceiver : BroadcastReceiver
 
     @Inject
     lateinit var appSettings : AppSettings
@@ -104,6 +105,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     lateinit var inputManager : InputManager
 
     lateinit var inputHandler : InputHandler
+
+    private var gameSurface : Surface? = null
 
     /**
      * This is the entry point into the emulation code for libskyline
@@ -274,12 +277,22 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         pictureInPictureParamsBuilder = PictureInPictureParams.Builder()
 
+        val pictureInPictureActions : MutableList<RemoteAction> = mutableListOf()
+        val pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+        val pauseIcon = Icon.createWithResource(this, R.drawable.ic_pause)
+        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(pauseIntentAction), pendingFlags)
+        val pauseRemoteAction = RemoteAction(pauseIcon, getString(R.string.pause), getString(R.string.pause_emulator), pausePendingIntent)
+        pictureInPictureActions.add(pauseRemoteAction)
+
         if (!emulationSettings.isAudioOutputDisabled) {
             val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
-            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(muteIntentAction), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(muteIntentAction), pendingFlags)
             val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
-            pictureInPictureParamsBuilder.setActions(mutableListOf(muteRemoteAction))
+            pictureInPictureActions.add(muteRemoteAction)
         }
+
+        pictureInPictureParamsBuilder.setActions(pictureInPictureActions)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
             pictureInPictureParamsBuilder.setAutoEnterEnabled(true)
 
@@ -371,32 +384,37 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
-            if (!emulationSettings.isAudioOutputDisabled) {
-                muteReceiver = object : BroadcastReceiver() {
-                    override fun onReceive(context : Context?, intent : Intent) {
-                        if (intent.action == muteIntentAction)
-                            changeAudioStatus(false)
-                    }
+            pictureInPictureReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context : Context?, intent : Intent) {
+                    if (intent.action == pauseIntentAction)
+                        setSurface(null)
+                    else if (intent.action == muteIntentAction)
+                        changeAudioStatus(false)
                 }
+            }
 
-                IntentFilter(muteIntentAction).also {
-                    registerReceiver(muteReceiver, it)
-                }
+            IntentFilter().apply {
+                addAction(pauseIntentAction)
+                if (!emulationSettings.isAudioOutputDisabled)
+                    addAction(muteIntentAction)
+            }.also {
+                registerReceiver(pictureInPictureReceiver, it)
             }
 
             binding.onScreenControllerView.isGone = true
             binding.onScreenControllerToggle.isGone = true
         } else {
-            if (!emulationSettings.isAudioOutputDisabled) {
-                changeAudioStatus(true)
-
-                try {
-                    if (this::muteReceiver.isInitialized)
-                        unregisterReceiver(muteReceiver)
-                } catch (ignored : Exception) {
-                    // Perfectly acceptable and should be ignored
-                }
+            try {
+                if (this::pictureInPictureReceiver.isInitialized)
+                    unregisterReceiver(pictureInPictureReceiver)
+            } catch (ignored : Exception) {
+                // Perfectly acceptable and should be ignored
             }
+
+            setSurface(gameSurface)
+
+            if (!emulationSettings.isAudioOutputDisabled)
+                changeAudioStatus(true)
             
             binding.onScreenControllerView.apply {
                 controllerType = inputHandler.getFirstControllerType()
@@ -447,8 +465,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             holder.surface.setFrameRate(desiredRefreshRate, if (emulationSettings.maxRefreshRate) Surface.FRAME_RATE_COMPATIBILITY_DEFAULT else Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
 
         while (emulationThread!!.isAlive)
-            if (setSurface(holder.surface))
+            if (setSurface(holder.surface)) {
+                gameSurface = holder.surface
                 return
+            }
     }
 
     /**
@@ -464,8 +484,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     override fun surfaceDestroyed(holder : SurfaceHolder) {
         Log.d(Tag, "surfaceDestroyed Holder: $holder")
         while (emulationThread!!.isAlive)
-            if (setSurface(null))
+            if (setSurface(null)) {
+                gameSurface = null
                 return
+            }
     }
 
     override fun dispatchKeyEvent(event : KeyEvent) : Boolean {
