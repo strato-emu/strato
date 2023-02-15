@@ -411,7 +411,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 // Perfectly acceptable and should be ignored
             }
 
-            setSurface(gameSurface)
+            gameSurface?.let { setSurface(it) }
 
             if (!emulationSettings.isAudioOutputDisabled)
                 changeAudioStatus(true)
