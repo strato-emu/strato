@@ -4,6 +4,13 @@
 #include "layout.h"
 
 namespace skyline::gpu::texture {
+    #pragma pack(push, 0)
+    struct u96 {
+        u64 high;
+        u32 low;
+    };
+    #pragma pack(pop)
+
     // Reference on Block-linear tiling: https://gist.github.com/PixelyIon/d9c35050af0ef5690566ca9f0965bc32
     constexpr size_t SectorWidth{16}; //!< The width of a sector in bytes
     constexpr size_t SectorHeight{2}; //!< The height of a sector in lines
@@ -201,6 +208,118 @@ namespace skyline::gpu::texture {
         }
     }
 
+    /**
+     * @brief Copies pixel data between a pitch and part of a blocklinear texture
+     * @tparam BlockLinearToPitch Whether to copy from a part of a blocklinear texture to a pitch texture or a pitch texture to a part of a blocklinear texture
+     * @note The function assumes that the pitch texture is always equal or smaller than the blocklinear texture
+     */
+    template<bool BlockLinearToPitch>
+    void CopyBlockLinearSubrectInternal(Dimensions pitchDimensions, Dimensions blockLinearDimensions,
+                                        size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, u32 pitchAmount,
+                                        size_t gobBlockHeight, size_t gobBlockDepth,
+                                        u8 *blockLinear, u8 *pitch,
+                                        u32 originX, u32 originY) {
+        size_t pitchTextureWidth{util::DivideCeil<size_t>(pitchDimensions.width, formatBlockWidth)};
+        size_t pitchTextureWidthBytes{pitchTextureWidth * formatBpb};
+        size_t blockLinearTextureWidthAlignedBytes{util::AlignUp(util::DivideCeil<size_t>(blockLinearDimensions.width, formatBlockWidth) * formatBpb, GobWidth)};
+
+        originX = util::DivideCeil<u32>(originX, static_cast<u32>(formatBlockWidth));
+        size_t originXBytes{originX * formatBpb};
+
+        if (formatBpb != 12) [[likely]] {
+            size_t startingBlockXBytes{util::AlignUp(originXBytes, GobWidth) - originXBytes};
+            while (formatBpb != 16) {
+                if (util::IsAligned(pitchTextureWidthBytes - startingBlockXBytes, formatBpb << 1)
+                && util::IsAligned(startingBlockXBytes, formatBpb << 1)) {
+                    pitchTextureWidth /= 2;
+                    formatBpb <<= 1;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            formatBpb = 4;
+            pitchTextureWidth *= 3;
+        }
+
+        size_t pitchTextureHeight{util::DivideCeil<size_t>(pitchDimensions.height, formatBlockHeight)};
+        size_t robHeight{gobBlockHeight * GobHeight};
+
+        originY = util::DivideCeil<u32>(originY, static_cast<u32>(formatBlockHeight));
+
+        size_t alignedDepth{util::AlignUp(blockLinearDimensions.depth, gobBlockDepth)};
+
+        size_t pitchBytes{pitchAmount ? pitchAmount : pitchTextureWidthBytes};
+
+        size_t robSize{blockLinearTextureWidthAlignedBytes * robHeight * alignedDepth};
+        size_t blockSize{robHeight * GobWidth * alignedDepth};
+
+        u8 *pitchOffset{pitch};
+
+        auto copyTexture{[&]<typename FORMATBPB>() __attribute__((always_inline)) {
+            for (size_t slice{}; slice < blockLinearDimensions.depth; ++slice, blockLinear += (GobHeight * GobWidth * gobBlockHeight)) {
+                u64 robOffset{util::AlignDown(originY, robHeight) * blockLinearTextureWidthAlignedBytes * alignedDepth};
+                for (size_t line{}; line < pitchTextureHeight; ++line, pitchOffset += pitchBytes) {
+                    // XYZ Offset in entire ROBs
+                    if (line && !((originY + line) & (robHeight - 1))) [[unlikely]]
+                        robOffset += robSize;
+                    // Y Offset in entire GOBs in current block
+                    size_t GobYOffset{util::AlignDown((originY + line) & (robHeight - 1), GobHeight) * GobWidth};
+                    // Y Offset inside current GOB
+                    GobYOffset += (((originY + line) & 0x6) << 5) + (((originY + line) & 0x1) << 4);
+
+                    u8 *deSwizzledOffset{pitchOffset};
+                    u8 *swizzledYZOffset{blockLinear + robOffset + GobYOffset};
+                    u8 *swizzledOffset{};
+
+                    size_t xBytes{originXBytes};
+                    size_t GobXOffset{};
+
+                    size_t blockOffset{util::AlignDown(xBytes, GobWidth) * robHeight * alignedDepth};
+
+                    for (size_t pixel{}; pixel < pitchTextureWidth; ++pixel, deSwizzledOffset += formatBpb, xBytes += formatBpb) {
+                        // XYZ Offset in entire blocks in current ROB
+                        if (pixel && !(xBytes & 0x3F)) [[unlikely]]
+                            blockOffset += blockSize;
+
+                        // X Offset inside current GOB
+                        GobXOffset = ((xBytes & 0x20) << 3) + (xBytes & 0xF) + ((xBytes & 0x10) << 1);
+
+                        swizzledOffset = swizzledYZOffset + blockOffset + GobXOffset;
+
+                        if constexpr (BlockLinearToPitch)
+                            *reinterpret_cast<FORMATBPB *>(deSwizzledOffset) = *reinterpret_cast<FORMATBPB *>(swizzledOffset);
+                        else
+                            *reinterpret_cast<FORMATBPB *>(swizzledOffset) = *reinterpret_cast<FORMATBPB *>(deSwizzledOffset);
+                    }
+                }
+            }
+        }};
+
+        switch (formatBpb) {
+            case 1: {
+                copyTexture.template operator()<u8>();
+                break;
+            }
+            case 2: {
+                copyTexture.template operator()<u16>();
+                break;
+            }
+            case 4: {
+                copyTexture.template operator()<u32>();
+                break;
+            }
+            case 8: {
+                copyTexture.template operator()<u64>();
+                break;
+            }
+            case 16: {
+                copyTexture.template operator()<u128>();
+                break;
+            }
+        }
+    }
+
     void CopyBlockLinearToLinear(Dimensions dimensions, size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, size_t gobBlockHeight, size_t gobBlockDepth, u8 *blockLinear, u8 *linear) {
         CopyBlockLinearInternal<true>(
             dimensions,
@@ -221,6 +340,20 @@ namespace skyline::gpu::texture {
             blockLinear, pitch
         );
     }
+
+    void CopyBlockLinearToPitchSubrect(Dimensions pitchDimensions, Dimensions blockLinearDimensions,
+                                       size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, u32 pitchAmount,
+                                       size_t gobBlockHeight, size_t gobBlockDepth,
+                                       u8 *blockLinear, u8 *pitch,
+                                       u32 originX, u32 originY) {
+        CopyBlockLinearSubrectInternal<true>(pitchDimensions, blockLinearDimensions,
+                                             formatBlockWidth, formatBlockHeight, formatBpb, pitchAmount,
+                                             gobBlockHeight, gobBlockDepth,
+                                             blockLinear, pitch,
+                                             originX, originY
+        );
+    }
+
     void CopyBlockLinearToLinear(const GuestTexture &guest, u8 *blockLinear, u8 *linear) {
         CopyBlockLinearInternal<true>(
             guest.dimensions,
@@ -249,6 +382,32 @@ namespace skyline::gpu::texture {
             blockLinear, pitch
         );
     }
+
+    void CopyLinearToBlockLinearSubrect(Dimensions linearDimensions, Dimensions blockLinearDimensions,
+                                       size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb,
+                                       size_t gobBlockHeight, size_t gobBlockDepth,
+                                       u8 *linear, u8 *blockLinear,
+                                       u32 originX, u32 originY) {
+        CopyBlockLinearSubrectInternal<false>(linearDimensions, blockLinearDimensions,
+                                              formatBlockWidth, formatBlockHeight,
+                                              formatBpb, 0,
+                                              gobBlockHeight, gobBlockDepth,
+                                              blockLinear, linear,
+                                              originX, originY
+        );
+    }
+
+    void CopyPitchToBlockLinearSubrect(Dimensions pitchDimensions, Dimensions blockLinearDimensions,
+                                       size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, u32 pitchAmount,
+                                       size_t gobBlockHeight, size_t gobBlockDepth,
+                                       u8 *pitch, u8 *blockLinear,
+                                       u32 originX, u32 originY) {
+        CopyBlockLinearSubrectInternal<false>(pitchDimensions, blockLinearDimensions,
+                                              formatBlockWidth, formatBlockHeight,
+                                              formatBpb, pitchAmount,
+                                              gobBlockHeight, gobBlockDepth,
+                                              blockLinear, pitch,
+                                              originX, originY
         );
     }
 
