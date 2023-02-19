@@ -41,20 +41,46 @@ namespace skyline::gpu::texture {
                                  u8 *blockLinear, u8 *linear);
 
     /**
+     * @brief Copies the contents of a blocklinear texture to a pitch texture
+     */
+    void CopyBlockLinearToPitch(Dimensions dimensions,
+                                size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, u32 pitchAmount,
+                                size_t gobBlockHeight, size_t gobBlockDepth,
+                                u8 *blockLinear, u8 *pitch);
+    /**
      * @brief Copies the contents of a blocklinear guest texture to a linear output buffer
      */
     void CopyBlockLinearToLinear(const GuestTexture &guest, u8 *blockLinear, u8 *linear);
 
     /**
-     * @brief Copies the contents of a blocklinear texture to a linear output buffer
+     * @brief Copies the contents of a linear buffer to a blocklinear texture
      */
     void CopyLinearToBlockLinear(Dimensions dimensions,
-                                 size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb,
+                                size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb,
+                                size_t gobBlockHeight, size_t gobBlockDepth,
+                                u8 *linear, u8 *blockLinear);
+
+    /**
+     * @brief Copies the contents of a pitch texture to a blocklinear texture
+     */
+    void CopyPitchToBlockLinear(Dimensions dimensions,
+                                 size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, u32 pitchAmount,
                                  size_t gobBlockHeight, size_t gobBlockDepth,
-                                 u8 *linear, u8 *blockLinear);
+                                 u8 *pitch, u8 *blockLinear);
 
     /**
      * @brief Copies the contents of a blocklinear guest texture to a linear output buffer
+    /**
+     * @brief Copies the contents of a pitch texture to a part of a blocklinear texture
+     */
+    void CopyPitchToBlockLinearSubrect(Dimensions pitchDimensions, Dimensions blockLinearDimensions,
+                                 size_t formatBlockWidth, size_t formatBlockHeight, size_t formatBpb, u32 pitchAmount,
+                                 size_t gobBlockHeight, size_t gobBlockDepth,
+                                 u8 *pitch, u8 *blockLinear,
+                                 u32 originX, u32 originY);
+
+    /**
+     * @brief Copies the contents of a linear guest texture to a blocklinear texture
      */
     void CopyLinearToBlockLinear(const GuestTexture &guest, u8 *linear, u8 *blockLinear);
 
