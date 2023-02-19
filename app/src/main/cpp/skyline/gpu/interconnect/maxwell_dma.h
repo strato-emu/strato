@@ -22,8 +22,6 @@ namespace skyline::gpu::interconnect {
      */
     class MaxwellDma {
       private:
-        using IOVA = soc::gm20b::IOVA;
-
         GPU &gpu;
         soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
@@ -31,6 +29,6 @@ namespace skyline::gpu::interconnect {
       public:
         MaxwellDma(GPU &gpu, soc::gm20b::ChannelContext &channelCtx);
 
-        void Copy(IOVA dst, IOVA src, size_t size);
+        void Copy(span<u8> dstMapping, span<u8> srcMapping);
     };
 }

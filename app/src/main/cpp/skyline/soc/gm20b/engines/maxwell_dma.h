@@ -23,16 +23,21 @@ namespace skyline::soc::gm20b::engine {
         host1x::SyncpointSet &syncpoints;
         ChannelContext &channelCtx;
         gpu::interconnect::MaxwellDma interconnect;
+        std::vector<u8> copyCache;
 
         void HandleMethod(u32 method, u32 argument);
+
+        void DmaCopy();
+
+        void HandleCopy(TranslatedAddressRange srcMappings, TranslatedAddressRange dstMappings, size_t srcSize, size_t dstSize, auto copyCallback);
+
+        void CopyBlockLinearToPitch();
+
+        void CopyPitchToBlockLinear();
 
         void LaunchDma();
 
         void ReleaseSemaphore();
-
-        void CopyPitchToBlockLinear();
-
-        void CopyBlockLinearToPitch();
 
       public:
         /**

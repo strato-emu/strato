@@ -8,26 +8,18 @@
 #include "maxwell_dma.h"
 
 namespace skyline::gpu::interconnect {
-    using IOVA = soc::gm20b::IOVA;
-
     MaxwellDma::MaxwellDma(GPU &gpu, soc::gm20b::ChannelContext &channelCtx)
         : gpu{gpu},
           channelCtx{channelCtx},
           executor{channelCtx.executor} {}
 
-    void MaxwellDma::Copy(IOVA dst, IOVA src, size_t size) {
-        auto srcMappings{channelCtx.asCtx->gmmu.TranslateRange(src, size)};
-        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(dst, size)};
-
-        if (srcMappings.size() > 1 || dstMappings.size() > 1)
-            Logger::Warn("Split mapping are unsupported for DMA copies");
-
-        auto srcBuf{gpu.buffer.FindOrCreate(srcMappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+    void MaxwellDma::Copy(span<u8> dstMapping, span<u8> srcMapping) {
+        auto srcBuf{gpu.buffer.FindOrCreate(srcMapping, executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
             executor.AttachLockedBuffer(buffer, std::move(lock));
         })};
         ContextLock srcBufLock{executor.tag, srcBuf};
 
-        auto dstBuf{gpu.buffer.FindOrCreate(dstMappings.front(), executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+        auto dstBuf{gpu.buffer.FindOrCreate(dstMapping, executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
             executor.AttachLockedBuffer(buffer, std::move(lock));
         })};
         ContextLock dstBufLock{executor.tag, dstBuf};
