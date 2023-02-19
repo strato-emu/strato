@@ -182,8 +182,6 @@ namespace skyline::soc::gm20b::engine {
                     NoWrite = 6
                 };
 
-                Address address;
-
                 Swizzle dstX : 3;
                 u8 _pad0_ : 1;
                 Swizzle dstY : 3;
@@ -212,7 +210,7 @@ namespace skyline::soc::gm20b::engine {
                     return numDstComponentsMinusOne + 1;
                 }
             };
-            static_assert(sizeof(RemapComponents) == 0xC);
+            static_assert(sizeof(RemapComponents) == 0x4);
 
             Register<0x1C2, RemapComponents> remapComponents;
 
