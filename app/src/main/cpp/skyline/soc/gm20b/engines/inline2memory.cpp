@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <gpu/texture/layout.h>
 #include <soc/gm20b/channel.h>
 #include "inline2memory.h"
 
@@ -19,13 +20,52 @@ namespace skyline::soc::gm20b::engine {
         if (state.launchDma.completion == RegisterState::DmaCompletionType::ReleaseSemaphore)
             throw exception("Semaphore release on I2M completion is not supported!");
 
-        if (state.launchDma.layout == RegisterState::DmaDstMemoryLayout::Pitch && state.lineCount == 1) {
-            Logger::Debug("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
+        Logger::Debug("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
+        if (state.launchDma.layout == RegisterState::DmaDstMemoryLayout::Pitch) {
             channelCtx.channelSequenceNumber++;
-            interconnect.Upload(u64{state.offsetOut}, span{buffer});
+
+            auto srcBuffer{span{buffer}.cast<u8>()};
+            for (u32 line{}, pitchOffset{}; line < state.lineCount; ++line, pitchOffset += state.pitchOut)
+                interconnect.Upload(u64{state.offsetOut + pitchOffset}, srcBuffer.subspan(state.lineLengthIn * line, state.lineLengthIn));
+
         } else {
             channelCtx.executor.Submit();
-            Logger::Warn("Non-linear I2M uploads are not supported!");
+
+            gpu::texture::Dimensions srcDimensions{state.lineLengthIn, state.lineCount, state.dstDepth};
+
+            gpu::texture::Dimensions dstDimensions{state.dstWidth, state.dstHeight, state.dstDepth};
+            size_t dstSize{GetBlockLinearLayerSize(dstDimensions, 1, 1, 1, 1 << (u8)state.dstBlockSize.height, 1 << (u8)state.dstBlockSize.depth)};
+
+            auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(state.offsetOut, dstSize)};
+
+            auto inlineCopy{[&](u8 *dst){
+                // The I2M engine only supports a formatBpb of 1
+                if ((srcDimensions.width != dstDimensions.width) || (srcDimensions.height != dstDimensions.height))
+                    gpu::texture::CopyLinearToBlockLinearSubrect(srcDimensions, dstDimensions,
+                                                                 1, 1, 1,
+                                                                 1 << static_cast<u8>(state.dstBlockSize.height), 1 << static_cast<u8>(state.dstBlockSize.depth),
+                                                                 span{buffer}.cast<u8>().data(), dst,
+                                                                 state.originBytesX, state.originSamplesY
+                    );
+                else
+                    gpu::texture::CopyLinearToBlockLinear(dstDimensions,
+                                                          1, 1, 1,
+                                                          1 << static_cast<u8>(state.dstBlockSize.height), 1 << static_cast<u8>(state.dstBlockSize.depth),
+                                                          span{buffer}.cast<u8>().data(), dst
+                    );
+            }};
+
+            if (dstMappings.size() != 1) {
+                // We create a temporary buffer to hold the blockLinear texture if mappings are split
+                // NOTE: We don't reserve memory here since such copies on this engine are rarely used
+                std::vector<u8> tempBuffer(dstSize);
+
+                inlineCopy(tempBuffer.data());
+
+                interconnect.Upload(u64{state.offsetOut}, span{tempBuffer});
+            } else {
+                inlineCopy(dstMappings.front().data());
+            }
         }
     }
 

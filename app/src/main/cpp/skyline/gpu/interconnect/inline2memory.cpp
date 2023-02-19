@@ -44,12 +44,12 @@ namespace skyline::gpu::interconnect {
         });
     }
 
-    void Inline2Memory::Upload(IOVA dst, span<u32> src) {
-        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(dst, src.size_bytes())};
+    void Inline2Memory::Upload(IOVA dst, span<u8> src) {
+        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(dst, src.size())};
 
         size_t offset{};
         for (auto mapping : dstMappings) {
-            UploadSingleMapping(mapping, src.cast<u8>().subspan(offset, mapping.size()));
+            UploadSingleMapping(mapping, src.subspan(offset, mapping.size()));
             offset += mapping.size();
         }
     }

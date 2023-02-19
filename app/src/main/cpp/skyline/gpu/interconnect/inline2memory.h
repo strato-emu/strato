@@ -33,6 +33,6 @@ namespace skyline::gpu::interconnect {
       public:
         Inline2Memory(GPU &gpu, soc::gm20b::ChannelContext &channelCtx);
 
-        void Upload(IOVA dst, span<u32> src);
+        void Upload(IOVA dst, span<u8> src);
     };
 }
