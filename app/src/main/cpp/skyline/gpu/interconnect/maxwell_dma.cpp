@@ -52,4 +52,32 @@ namespace skyline::gpu::interconnect {
             });
         });
     }
+
+    void MaxwellDma::Clear(span<u8> mapping, u32 value) {
+        if (!util::IsAligned(mapping.size(), 4))
+            throw exception("Cleared buffer's size is not aligned to 4 bytes!");
+
+        auto clearBuf{gpu.buffer.FindOrCreate(mapping, executor.tag, [this](std::shared_ptr<Buffer> buffer, ContextLock<Buffer> &&lock) {
+            executor.AttachLockedBuffer(buffer, std::move(lock));
+        })};
+        executor.AttachBuffer(clearBuf);
+
+        clearBuf.GetBuffer()->BlockSequencedCpuBackingWrites();
+        clearBuf.GetBuffer()->MarkGpuDirty();
+
+        executor.AddOutsideRpCommand([clearBuf, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu) {
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eTransfer, {}, vk::MemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eMemoryRead,
+                .dstAccessMask = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite
+            }, {}, {});
+
+            auto clearBufBinding{clearBuf.GetBinding(gpu)};
+            commandBuffer.fillBuffer(clearBufBinding.buffer, clearBufBinding.offset, clearBufBinding.size, value);
+
+            commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands, {}, vk::MemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+            }, {}, {});
+        });
+    }
 }
