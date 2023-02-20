@@ -125,6 +125,11 @@
             app:title="@string/force_max_gpu_clocks" />
         <CheckBoxPreference
             android:defaultValue="false"
+            android:summary="@string/free_guest_texture_memory_desc"
+            app:key="free_guest_texture_memory"
+            app:title="@string/free_guest_texture_memory" />
+        <CheckBoxPreference
+            android:defaultValue="false"
             android:summaryOff="@string/shader_cache_enabled"
             android:summaryOn="@string/shader_cache_disabled"
             app:key="disable_shader_cache"

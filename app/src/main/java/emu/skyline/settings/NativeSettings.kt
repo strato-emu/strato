@@ -35,6 +35,7 @@ data class NativeSettings(
     var executorFlushThreshold : Int,
     var useDirectMemoryImport : Boolean,
     var forceMaxGpuClocks : Boolean,
+    var freeGuestTextureMemory : Boolean,
     var disableShaderCache : Boolean,
 
     // Hacks
@@ -60,6 +61,7 @@ data class NativeSettings(
         pref.executorFlushThreshold,
         pref.useDirectMemoryImport,
         pref.forceMaxGpuClocks,
+        pref.freeGuestTextureMemory,
         pref.disableShaderCache,
         pref.enableFastGpuReadbackHack,
         pref.enableFastReadbackWrites,

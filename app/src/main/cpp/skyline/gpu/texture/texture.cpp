@@ -225,7 +225,7 @@ namespace skyline::gpu {
                 return true; // If the texture is already CPU dirty or we can transition it to being CPU dirty then we don't need to do anything
             }
 
-            if (texture->accumulatedGuestWaitTime > SkipReadbackHackWaitTimeThreshold && *texture->gpu.state.settings->enableFastGpuReadbackHack) {
+            if (texture->accumulatedGuestWaitTime > SkipReadbackHackWaitTimeThreshold && *texture->gpu.state.settings->enableFastGpuReadbackHack && !texture->memoryFreed) {
                 texture->dirtyState = DirtyState::Clean;
                 return true;
             }
@@ -494,6 +494,14 @@ namespace skyline::gpu {
         }
     }
 
+    void Texture::FreeGuest() {
+        // Avoid freeing memory if the backing format doesn't match, as otherwise texture data would be lost on the guest side, also avoid if fast readback is active
+        if (*gpu.state.settings->freeGuestTextureMemory && guest->format == format && !(accumulatedGuestWaitTime > SkipReadbackHackWaitTimeThreshold && *gpu.state.settings->enableFastGpuReadbackHack)) {
+            gpu.state.process->memory.FreeMemory(mirror);
+            memoryFreed = true;
+        }
+    }
+
     Texture::Texture(GPU &gpu, BackingType &&backing, texture::Dimensions dimensions, texture::Format format, vk::ImageLayout layout, vk::ImageTiling tiling, vk::ImageCreateFlags flags, vk::ImageUsageFlags usage, u32 levelCount, u32 layerCount, vk::SampleCountFlagBits sampleCount)
         : gpu(gpu),
           backing(std::move(backing)),
@@ -721,6 +729,10 @@ namespace skyline::gpu {
         if (!guest)
             return;
 
+        // FIXME (TEXMAN): This should really be tracked on the texture usage side
+        if (!*gpu.state.settings->freeGuestTextureMemory && !everUsedAsRt)
+            gpuDirty = false;
+
         TRACE_EVENT("gpu", "Texture::SynchronizeHost");
         {
             std::scoped_lock lock{stateMutex};
@@ -728,7 +740,7 @@ namespace skyline::gpu {
                 // If a texture is Clean then we can just transition it to being GPU dirty and retrap it
                 dirtyState = DirtyState::GpuDirty;
                 gpu.state.nce->TrapRegions(*trapHandle, false);
-                gpu.state.process->memory.FreeMemory(mirror);
+                FreeGuest();
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return; // If the texture has not been modified on the CPU, there is no need to synchronize it
@@ -755,8 +767,8 @@ namespace skyline::gpu {
         {
             std::scoped_lock lock{stateMutex};
 
-            if (dirtyState != DirtyState::CpuDirty && gpuDirty)
-                gpu.state.process->memory.FreeMemory(mirror); // All data can be paged out from the guest as the guest mirror won't be used
+            if (dirtyState == DirtyState::GpuDirty)
+                FreeGuest();
         }
     }
 
@@ -765,13 +777,16 @@ namespace skyline::gpu {
             return;
 
         TRACE_EVENT("gpu", "Texture::SynchronizeHostInline");
+        // FIXME (TEXMAN): This should really be tracked on the texture usage side
+        if (!*gpu.state.settings->freeGuestTextureMemory && !everUsedAsRt)
+            gpuDirty = false;
 
         {
             std::scoped_lock lock{stateMutex};
             if (gpuDirty && dirtyState == DirtyState::Clean) {
                 dirtyState = DirtyState::GpuDirty;
                 gpu.state.nce->TrapRegions(*trapHandle, false);
-                gpu.state.process->memory.FreeMemory(mirror);
+                FreeGuest();
                 return;
             } else if (dirtyState != DirtyState::CpuDirty) {
                 return;
@@ -792,8 +807,8 @@ namespace skyline::gpu {
         {
             std::scoped_lock lock{stateMutex};
 
-            if (dirtyState != DirtyState::CpuDirty && gpuDirty)
-                gpu.state.process->memory.FreeMemory(mirror); // All data can be paged out from the guest as the guest mirror won't be used
+            if (dirtyState == DirtyState::GpuDirty)
+                FreeGuest();
         }
     }
 
@@ -815,6 +830,7 @@ namespace skyline::gpu {
             }
 
             dirtyState = cpuDirty ? DirtyState::CpuDirty : DirtyState::Clean;
+            memoryFreed = false;
         }
 
         if (layout == vk::ImageLayout::eUndefined || format != guest->format)
@@ -1008,6 +1024,7 @@ namespace skyline::gpu {
         lastRenderPassIndex = renderPassIndex;
 
         if (renderPassUsage == texture::RenderPassUsage::RenderTarget) {
+            everUsedAsRt = true;
             pendingStageMask = vk::PipelineStageFlagBits::eVertexShader |
                 vk::PipelineStageFlagBits::eTessellationControlShader |
                 vk::PipelineStageFlagBits::eTessellationEvaluationShader |
@@ -1030,6 +1047,9 @@ namespace skyline::gpu {
     }
 
     void Texture::PopulateReadBarrier(vk::PipelineStageFlagBits dstStage, vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+        if (!guest)
+            return;
+
         readStageMask |= dstStage;
 
         if (!(pendingStageMask & dstStage))

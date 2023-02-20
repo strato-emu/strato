@@ -48,6 +48,7 @@ class EmulationSettings private constructor(context : Context, prefName : String
     var executorFlushThreshold by sharedPreferences(context, 256, prefName = prefName)
     var useDirectMemoryImport by sharedPreferences(context, false, prefName = prefName)
     var forceMaxGpuClocks by sharedPreferences(context, false, prefName = prefName)
+    var freeGuestTextureMemory by sharedPreferences(context, true, prefName = prefName)
     var disableShaderCache by sharedPreferences(context, false, prefName = prefName)
 
     // Hacks

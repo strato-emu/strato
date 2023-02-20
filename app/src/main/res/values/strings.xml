@@ -110,6 +110,8 @@
     <string name="force_max_gpu_clocks">Force Maximum GPU Clocks</string>
     <string name="force_max_gpu_clocks_desc">Forces the GPU to run at its maximum possible clock speed (May cause excessive heating and power usage)</string>
     <string name="force_max_gpu_clocks_desc_unsupported">Your device does not support forcing maximum GPU clocks</string>
+    <string name="free_guest_texture_memory">Free Guest Texture Memory</string>
+    <string name="free_guest_texture_memory_desc">Allows guest texture data to be freed from memory when unneeded (Can rarely cause crashes)</string>
     <string name="shader_cache">Disable Shader Cache</string>
     <string name="shader_cache_disabled">Cached shaders won\'t be loaded, will cause stutters</string>
     <string name="shader_cache_enabled">Cached shaders will be loaded, can heavily reduce stuttering</string>
