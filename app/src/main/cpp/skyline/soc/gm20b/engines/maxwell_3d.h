@@ -182,8 +182,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x458, std::array<type::VertexAttribute, type::VertexAttributeCount>> vertexAttributes;
 
-            Register<0x484, u32> invalidateSamplerCacheAll;
-            Register<0x485, u32> invalidateTextureHeaderCacheAll;
+            Register<0x483, u32> invalidateSamplerCacheAll;
+            Register<0x484, u32> invalidateTextureHeaderCacheAll;
 
             struct DrawVertexArrayBeginEndInstance {
                 u16 startIndex;

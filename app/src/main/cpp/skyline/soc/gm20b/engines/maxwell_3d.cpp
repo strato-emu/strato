@@ -384,6 +384,14 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 registers.raw[0xD00] = 1;
             })
 
+            ENGINE_CASE(invalidateSamplerCacheAll, {
+                channelCtx.executor.Submit();
+            })
+
+            ENGINE_CASE(invalidateTextureHeaderCacheAll, {
+                channelCtx.executor.Submit();
+            })
+
             // Begin a batch constant buffer update, this case will never be reached if a batch update is currently active
             #define LOAD_CONSTANT_BUFFER_CALLBACKS(z, index, data_)                                      \
             ENGINE_STRUCT_ARRAY_CASE(loadConstantBuffer, data, index, {                       \
