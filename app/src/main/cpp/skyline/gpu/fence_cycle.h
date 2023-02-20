@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <vulkan/vulkan_raii.hpp>
 #include <common.h>
+#include <common/spin_lock.h>
 #include <common/atomic_forward_list.h>
 
 namespace skyline::gpu {
@@ -34,14 +35,18 @@ namespace skyline::gpu {
 
         AtomicForwardList<std::shared_ptr<void>> dependencies; //!< A list of all dependencies on this fence cycle
         AtomicForwardList<std::shared_ptr<FenceCycle>> chainedCycles; //!< A list of all chained FenceCycles, this is used to express multi-fence dependencies
+        SharedSpinLock chainMutex;
 
         /**
          * @brief Destroy all the dependencies of this cycle
-         * @note We cannot delete the chained cycles associated with this fence as they may be iterated over during the deletion, it is only safe to delete them during the destruction of the cycle
          */
         void DestroyDependencies() {
-            if (!alreadyDestroyed.test_and_set(std::memory_order_release))
+            if (!alreadyDestroyed.test_and_set(std::memory_order_release)) {
                 dependencies.Clear();
+                semaphoreUnsignalCycle = {};
+                std::scoped_lock lock{chainMutex};
+                chainedCycles.Clear();
+            }
         }
 
       public:
@@ -108,9 +113,13 @@ namespace skyline::gpu {
                 return;
 
             lock.unlock();
-            chainedCycles.Iterate([&](const auto &cycle) {
-                cycle->WaitSubmit();
-            });
+            {
+                std::shared_lock chainLock{chainMutex};
+
+                chainedCycles.Iterate([&](const auto &cycle) {
+                    cycle->WaitSubmit();
+                });
+            }
             lock.lock();
 
             submitCondition.wait(lock, [this] { return submitted; });
@@ -122,14 +131,19 @@ namespace skyline::gpu {
          */
         void Wait(bool shouldDestroy = false) {
             if (signalled.test(std::memory_order_consume)) {
-                if (shouldDestroy)
+                if (shouldDestroy) {
+                    std::unique_lock lock{mutex};
                     DestroyDependencies();
+                }
                 return;
             }
 
-            chainedCycles.Iterate([shouldDestroy](auto &cycle) {
-                cycle->Wait(shouldDestroy);
-            });
+            {
+                std::shared_lock lock{chainMutex};
+                chainedCycles.Iterate([shouldDestroy](auto &cycle) {
+                    cycle->Wait(shouldDestroy);
+                });
+            }
 
             std::unique_lock lock{mutex};
 
@@ -168,16 +182,27 @@ namespace skyline::gpu {
          */
         bool Poll(bool quick = true, bool shouldDestroy = false) {
             if (signalled.test(std::memory_order_consume)) {
-                if (shouldDestroy)
+                if (shouldDestroy) {
+                    std::unique_lock lock{mutex, std::try_to_lock};
+                    if (!lock)
+                        return false;
+
                     DestroyDependencies();
+                }
                 return true;
             }
 
             if (quick)
                 return false; // We need to return early if we're not waiting on the fence
 
-            if (!chainedCycles.AllOf([=](auto &cycle) { return cycle->Poll(quick, shouldDestroy); }))
-                return false;
+            {
+                std::shared_lock lock{chainMutex, std::try_to_lock};
+                if (!lock)
+                    return false;
+
+                if (!chainedCycles.AllOf([=](auto &cycle) { return cycle->Poll(quick, shouldDestroy); }))
+                    return false;
+            }
 
             std::unique_lock lock{mutex, std::try_to_lock};
             if (!lock)
@@ -228,8 +253,10 @@ namespace skyline::gpu {
          * @param cycle The cycle to chain to this one, this is nullable and this function will be a no-op if this is nullptr
          */
         void ChainCycle(const std::shared_ptr<FenceCycle> &cycle) {
-            if (cycle && !signalled.test(std::memory_order_consume) && cycle.get() != this && !cycle->Poll())
+            if (cycle && !signalled.test(std::memory_order_consume) && cycle.get() != this && !cycle->Poll()) {
+                std::shared_lock lock{chainMutex};
                 chainedCycles.Append(cycle); // If the cycle isn't the current cycle or already signalled, we need to chain it
+            }
         }
 
         /**
