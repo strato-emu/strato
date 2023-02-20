@@ -718,6 +718,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     static_assert(sizeof(ViewportClipControl) == sizeof(u32));
 
     union CtWrite {
+        bool Any() const {
+            return rEnable || gEnable || bEnable || aEnable;
+        }
+
         u32 raw;
 
         struct {

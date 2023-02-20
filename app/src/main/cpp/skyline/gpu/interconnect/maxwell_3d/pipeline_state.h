@@ -234,6 +234,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         dirty::BoundSubresource<EngineRegisters> engine;
 
       public:
+        std::bitset<engine::ColorTargetCount> writtenCtMask{};
+
         ColorBlendState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
         void Flush(PackedPipelineState &packedState);

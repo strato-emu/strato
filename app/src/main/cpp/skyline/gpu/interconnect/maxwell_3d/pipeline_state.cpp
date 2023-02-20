@@ -300,6 +300,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void ColorBlendState::Flush(PackedPipelineState &packedState) {
         packedState.logicOpEnable = engine->logicOp.enable;
         packedState.SetLogicOp(engine->logicOp.func);
+        writtenCtMask.reset();
 
         for (u32 i{}; i < engine::ColorTargetCount; i++) {
             auto ctWrite{[&]() {
@@ -315,6 +316,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blendPerTargets[i]);
             else
                 packedState.SetAttachmentBlendState(i, enable, ctWrite, engine->blend);
+
+            writtenCtMask.set(i, ctWrite.Any());
         }
     }
 
@@ -392,10 +395,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
             shaderBinaries[i] = stage.binary;
         }
 
+        colorBlend.Update(packedState);
+
         colorAttachments.clear();
         packedState.colorRenderTargetFormats = {};
         for (size_t i{}; i < engine::ColorTargetCount; i++) {
-            if (i < ctSelect.count) {
+            if (i < ctSelect.count && colorBlend.Get().writtenCtMask.test(i)) {
                 const auto &rt{colorRenderTargets[ctSelect[i]].UpdateGet(ctx, packedState)};
                 const auto view{rt.view.get()};
                 packedState.SetColorRenderTargetFormat(ctSelect[i], rt.format);
@@ -417,7 +422,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
         tessellation.Update(packedState);
         rasterization.Update(packedState);
         depthStencil.Update(packedState);
-        colorBlend.Update(packedState);
         transformFeedback.Update(packedState);
         globalShaderConfig.Update(packedState);
 
