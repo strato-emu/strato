@@ -198,6 +198,11 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x48A, type::ZtSize> ztSize;
 
+            struct DrawAuto {
+                u32 byteCount;
+            };
+            Register<0x48F, DrawAuto> drawAuto;
+
             Register<0x48D, type::SamplerBinding> samplerBinding; //!< If enabled, the TSC index in a bindless texture handle is ignored and the TIC index is used as the TSC index, otherwise the TSC index from the bindless texture handle is used
 
             Register<0x490, std::array<u32, 8>> postVtgShaderAttributeSkipMask;

@@ -271,6 +271,18 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 throw exception("drawInlineIndex2X16 not implemented!");
             })
 
+            ENGINE_STRUCT_CASE(drawZeroIndex, count, {
+                throw exception("drawZeroIndex not implemented!");
+            })
+
+            ENGINE_STRUCT_CASE(drawAuto, byteCount, {
+                throw exception("drawAuto not implemented!");
+            })
+
+            ENGINE_CASE(drawInlineIndex, {
+                throw exception("drawInlineIndex not implemented!");
+            })
+
             ENGINE_STRUCT_CASE(drawIndexBuffer, count, {
                 // Defer the draw until the first non-draw operation to allow for detecting instanced draws (see DeferredDrawState comment)
                 deferredDraw.Set(count, registers.indexBuffer->first,
