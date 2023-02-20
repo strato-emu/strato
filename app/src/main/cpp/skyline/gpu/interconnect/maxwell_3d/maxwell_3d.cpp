@@ -182,18 +182,22 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 ctx.executor.AttachTexture(&*view);
 
                 bool viewHasDepth{view->range.aspectMask & vk::ImageAspectFlagBits::eDepth}, viewHasStencil{view->range.aspectMask & vk::ImageAspectFlagBits::eStencil};
+                vk::ImageAspectFlags clearAspectMask{(clearSurface.zEnable ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlags{}) |
+                                                     (clearSurface.stencilEnable ? vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlags{})};
+                clearAspectMask &= view->range.aspectMask;
+
                 vk::ClearDepthStencilValue clearValue{
                     .depth = clearEngineRegisters.depthClearValue,
                     .stencil = clearEngineRegisters.stencilClearValue
                 };
 
-                if (!viewHasDepth && !viewHasStencil) {
+                if (!clearAspectMask) {
                     Logger::Warn("Depth stencil RT used in clear lacks depth or stencil aspects"); // TODO: Drop this check after texman rework
                     return;
                 }
 
-                if (needsAttachmentClearCmd(view) || (!clearSurface.stencilEnable && viewHasStencil) || (!clearSurface.zEnable && viewHasDepth)) { // Subpass clears write to all aspects of the texture, so we can't use them when only one component is enabled
-                    clearAttachments.push_back({.aspectMask = view->range.aspectMask, .clearValue = clearValue});
+                if (needsAttachmentClearCmd(view) || (clearAspectMask != view->range.aspectMask)) { // Subpass clears write to all aspects of the texture, so we can't use them when only one component is enabled
+                    clearAttachments.push_back({.aspectMask = clearAspectMask, .clearValue = clearValue});
                     depthStencilView = view;
                 } else {
                     ctx.executor.AddClearDepthStencilSubpass(&*view, clearValue);
