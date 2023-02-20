@@ -243,11 +243,11 @@ namespace skyline::gpu::interconnect {
             std::fill(textureHeaderCache.begin(), textureHeaderCache.end(), CacheEntry{});
         } else if (textureHeaders.size() > index && textureHeaderCache[index].view) {
             auto &cached{textureHeaderCache[index]};
-            if (cached.executionTag == ctx.executor.executionTag)
+            if (cached.sequenceNumber == ctx.channelCtx.channelSequenceNumber)
                 return cached.view;
 
             if (cached.tic == textureHeaders[index] && !cached.view->texture->replaced) {
-                cached.executionTag = ctx.executor.executionTag;
+                cached.sequenceNumber = ctx.channelCtx.channelSequenceNumber;
                 return cached.view;
             }
         }
@@ -346,18 +346,17 @@ namespace skyline::gpu::interconnect {
 
             auto mappings{ctx.channelCtx.asCtx->gmmu.TranslateRange(textureHeader.Iova(), guest.GetSize())};
             guest.mappings.assign(mappings.begin(), mappings.end());
-            if (guest.mappings.empty() || !guest.mappings.front().valid()) {
+            if (guest.mappings.empty() || !guest.mappings.front().valid() || guest.mappings.front().empty()) {
                 Logger::Warn("Unmapped texture in pool: 0x{:X}", textureHeader.Iova());
                 if (!nullTextureView)
                     nullTextureView = CreateNullTexture(ctx);
 
                 return nullTextureView.get();
             }
-
             texture = ctx.gpu.texture.FindOrCreate(guest, ctx.executor.tag);
         }
 
-        textureHeaderCache[index] = {textureHeader, texture.get(), ctx.executor.executionTag};
+        textureHeaderCache[index] = {textureHeader, texture.get(), ctx.channelCtx.channelSequenceNumber};
         return texture.get();
     }
 
