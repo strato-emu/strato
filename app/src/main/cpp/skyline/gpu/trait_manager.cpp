@@ -58,7 +58,7 @@ namespace skyline::gpu {
                 EXT_SET("VK_KHR_uniform_buffer_standard_layout", supportsUniformBufferStandardLayout);
                 EXT_SET("VK_EXT_primitive_topology_list_restart", hasPrimitiveTopologyListRestartExt);
                 EXT_SET("VK_EXT_transform_feedback", hasTransformFeedbackExt);
-                EXT_SET("VK_EXT_extended_dynamic_state", hasExtendedDynamicStateExt);
+                EXT_SET_COND("VK_EXT_extended_dynamic_state", hasExtendedDynamicStateExt, !quirks.brokenDynamicStateVertexBindings);
                 EXT_SET("VK_EXT_robustness2", hasRobustness2Ext);
             }
 
@@ -260,6 +260,10 @@ namespace skyline::gpu {
             }
 
             case vk::DriverId::eArmProprietary: {
+                if (deviceProperties.driverVersion < VK_MAKE_VERSION(42, 0, 0))
+                    brokenDynamicStateVertexBindings = true;
+
+                vkImageMutableFormatCostly = true; // Disables AFBC in some cases
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
                 break;
             }
