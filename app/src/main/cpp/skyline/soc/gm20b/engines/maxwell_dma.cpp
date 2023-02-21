@@ -95,8 +95,8 @@ namespace skyline::soc::gm20b::engine {
                     (registers.remapComponents->dstZ == Registers::RemapComponents::Swizzle::ConstA) &&
                     (registers.remapComponents->dstW == Registers::RemapComponents::Swizzle::ConstA) &&
                     (registers.remapComponents->ComponentSize() == 4)) {
-                    for (size_t currMapping{dstMappings.size()}; currMapping; --currMapping)
-                        interconnect.Clear(dstMappings[currMapping], *registers.remapConstA);
+                    for (auto mapping : dstMappings)
+                        interconnect.Clear(mapping, *registers.remapConstA);
                 } else {
                     Logger::Warn("Remapped DMA copies are unimplemented!");
                 }

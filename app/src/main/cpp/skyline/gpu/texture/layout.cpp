@@ -116,8 +116,9 @@ namespace skyline::gpu::texture {
         size_t surfaceHeightLines{util::DivideCeil<size_t>(dimensions.height, formatBlockHeight)};
         size_t surfaceHeightRobs{surfaceHeightLines / robHeight}; //!< The height of the surface in ROBs excluding padding ROBs
 
-        size_t blockDepth{std::min<size_t>(dimensions.depth, gobBlockDepth)};
-        size_t blockPaddingZ{GobWidth * GobHeight * blockHeight * (gobBlockDepth - blockDepth)};
+        size_t depthMobCount{util::DivideCeil<size_t>(dimensions.depth, gobBlockDepth)}; //!< The depth of the surface in MOBs (Matrix of Blocks)
+        size_t blockDepth{util::AlignUp(dimensions.depth, gobBlockDepth) - dimensions.depth};
+        size_t blockPaddingZ{gobBlockDepth != 1 ? GobWidth * GobHeight * blockHeight * blockDepth : 0};
 
         bool hasPaddingBlock{robWidthUnalignedBytes != robWidthBytes};
         size_t blockPaddingOffset{hasPaddingBlock ? (GobWidth - (robWidthBytes - robWidthUnalignedBytes)) : 0};
@@ -129,9 +130,9 @@ namespace skyline::gpu::texture {
 
         u8 *sector{blockLinear};
 
-        auto deswizzleRob{[&](u8 *pitchRob, auto isLastRob, size_t blockPaddingY = 0, size_t blockExtentY = 0) {
+        auto deswizzleRob{[&](u8 *pitchRob, auto isLastRob, size_t depthSliceCount, size_t blockPaddingY = 0, size_t blockExtentY = 0) {
             auto deswizzleBlock{[&](u8 *pitchBlock, auto copySector) __attribute__((always_inline)) {
-                for (size_t gobZ{}; gobZ < blockDepth; gobZ++) { // Every Block contains `blockDepth` Z-axis GOBs (Slices)
+                for (size_t gobZ{}; gobZ < depthSliceCount; gobZ++) { // Every Block contains `depthSliceCount` slices, excluding padding
                     u8 *pitchGob{pitchBlock};
                     for (size_t gobY{}; gobY < blockHeight; gobY++) { // Every Block contains `blockHeight` Y-axis GOBs
                         #pragma clang loop unroll_count(SectorLinesInGob)
@@ -158,7 +159,8 @@ namespace skyline::gpu::texture {
                     pitchBlock += gobZOffset; // Increment the linear block to the next Z-axis GOB
                 }
 
-                sector += blockPaddingZ; // Skip over any padding Z-axis GOBs
+                if (depthSliceCount != gobBlockDepth) [[unlikely]]
+                    sector += blockPaddingZ; // Skip over any padding Z-axis GOBs
             }};
 
             for (size_t block{}; block < robWidthBlocks; block++) { // Every ROB contains `surfaceWidthBlocks` blocks (excl. padding block)
@@ -183,28 +185,34 @@ namespace skyline::gpu::texture {
                             else
                                 std::memcpy(sector, linearSector + pixelOffset, formatBpb);
                         }
-
-                        sector += formatBpb;
                         xT += formatBpb;
                     }
+
+                    sector += SectorWidth;
                 });
         }};
 
-        u8 *pitchRob{pitch};
-        for (size_t rob{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs (excl. padding ROB)
-            deswizzleRob(pitchRob, std::false_type{});
-            pitchRob += robBytes; // Increment the linear ROB to the next ROB
-        }
+        for (size_t currMob{}; currMob < depthMobCount; ++currMob, pitch += gobZOffset * gobBlockDepth) {
+            u8 *pitchRob{pitch};
+            size_t sliceCount{(currMob + 1) == depthMobCount ? gobBlockDepth - blockDepth : gobBlockDepth};
+            for (size_t rob{}; rob < surfaceHeightRobs; rob++) { // Every Surface contains `surfaceHeightRobs` ROBs (excl. padding ROB)
+                deswizzleRob(pitchRob, std::false_type{}, sliceCount);
+                pitchRob += robBytes; // Increment the linear ROB to the next ROB
+            }
 
-        if (surfaceHeightLines % robHeight != 0) {
-            blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - (surfaceHeightRobs * robHeight)) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
+            if (surfaceHeightLines % robHeight != 0) {
+                blockHeight = (util::AlignUp(surfaceHeightLines, GobHeight) - (surfaceHeightRobs * robHeight)) / GobHeight; // Calculate the amount of Y GOBs which aren't padding
 
-            deswizzleRob(
-                pitchRob,
-                std::true_type{},
-                (gobBlockHeight - blockHeight) * (GobWidth * GobHeight), // Calculate padding at the end of a block to skip
-                util::IsAligned(surfaceHeightLines, GobHeight) ? GobHeight : surfaceHeightLines - util::AlignDown(surfaceHeightLines, GobHeight) // Calculate the line relative to the start of the last GOB that is the cut-off point for the image
-            );
+                deswizzleRob(
+                    pitchRob,
+                    std::true_type{},
+                    sliceCount,
+                    (gobBlockHeight - blockHeight) * (GobWidth * GobHeight), // Calculate padding at the end of a block to skip
+                    util::IsAligned(surfaceHeightLines, GobHeight) ? GobHeight : surfaceHeightLines - util::AlignDown(surfaceHeightLines, GobHeight) // Calculate the line relative to the start of the last GOB that is the cut-off point for the image
+                );
+
+                blockHeight = gobBlockHeight;
+            }
         }
     }
 
@@ -247,50 +255,56 @@ namespace skyline::gpu::texture {
 
         originY = util::DivideCeil<u32>(originY, static_cast<u32>(formatBlockHeight));
 
-        size_t alignedDepth{util::AlignUp(blockLinearDimensions.depth, gobBlockDepth)};
+        size_t depthMobCount{util::DivideCeil<size_t>(blockLinearDimensions.depth, gobBlockDepth)};  //!< The depth of the surface in MOBs (Matrix of Blocks)
+        size_t lastMobSliceCount{gobBlockDepth - (util::AlignUp(blockLinearDimensions.depth, gobBlockDepth) - blockLinearDimensions.depth)};
 
         size_t pitchBytes{pitchAmount ? pitchAmount : pitchTextureWidthBytes};
 
-        size_t robSize{blockLinearTextureWidthAlignedBytes * robHeight * alignedDepth};
-        size_t blockSize{robHeight * GobWidth * alignedDepth};
+        size_t robSize{blockLinearTextureWidthAlignedBytes * robHeight * gobBlockDepth};
+        size_t robPerMob{util::DivideCeil<size_t>(util::DivideCeil<size_t>(blockLinearDimensions.height, formatBlockHeight), robHeight)};
+        size_t blockSize{robHeight * GobWidth * gobBlockDepth};
 
         u8 *pitchOffset{pitch};
 
         auto copyTexture{[&]<typename FORMATBPB>() __attribute__((always_inline)) {
-            for (size_t slice{}; slice < blockLinearDimensions.depth; ++slice, blockLinear += (GobHeight * GobWidth * gobBlockHeight)) {
-                u64 robOffset{util::AlignDown(originY, robHeight) * blockLinearTextureWidthAlignedBytes * alignedDepth};
-                for (size_t line{}; line < pitchTextureHeight; ++line, pitchOffset += pitchBytes) {
-                    // XYZ Offset in entire ROBs
-                    if (line && !((originY + line) & (robHeight - 1))) [[unlikely]]
-                        robOffset += robSize;
-                    // Y Offset in entire GOBs in current block
-                    size_t GobYOffset{util::AlignDown((originY + line) & (robHeight - 1), GobHeight) * GobWidth};
-                    // Y Offset inside current GOB
-                    GobYOffset += (((originY + line) & 0x6) << 5) + (((originY + line) & 0x1) << 4);
+            for (size_t currMob{}; currMob < depthMobCount; ++currMob, blockLinear += robSize * robPerMob) {
+                size_t sliceCount{(currMob + 1) == depthMobCount ? lastMobSliceCount : gobBlockDepth};
+                u64 sliceOffset{};
+                for (size_t slice{}; slice < sliceCount; ++slice, sliceOffset += (GobHeight * GobWidth * gobBlockHeight)) {
+                    u64 robOffset{util::AlignDown(originY, robHeight) * blockLinearTextureWidthAlignedBytes * gobBlockDepth};
+                    for (size_t line{}; line < pitchTextureHeight; ++line, pitchOffset += pitchBytes) {
+                        // XYZ Offset in entire ROBs
+                        if (line && !((originY + line) & (robHeight - 1))) [[unlikely]]
+                            robOffset += robSize;
+                        // Y Offset in entire GOBs in current block
+                        size_t GobYOffset{util::AlignDown((originY + line) & (robHeight - 1), GobHeight) * GobWidth};
+                        // Y Offset inside current GOB
+                        GobYOffset += (((originY + line) & 0x6) << 5) + (((originY + line) & 0x1) << 4);
 
-                    u8 *deSwizzledOffset{pitchOffset};
-                    u8 *swizzledYZOffset{blockLinear + robOffset + GobYOffset};
-                    u8 *swizzledOffset{};
+                        u8 *deSwizzledOffset{pitchOffset};
+                        u8 *swizzledYZOffset{blockLinear + robOffset + GobYOffset + sliceOffset};
+                        u8 *swizzledOffset{};
 
-                    size_t xBytes{originXBytes};
-                    size_t GobXOffset{};
+                        size_t xBytes{originXBytes};
+                        size_t GobXOffset{};
 
-                    size_t blockOffset{util::AlignDown(xBytes, GobWidth) * robHeight * alignedDepth};
+                        size_t blockOffset{util::AlignDown(xBytes, GobWidth) * robHeight * gobBlockDepth};
 
-                    for (size_t pixel{}; pixel < pitchTextureWidth; ++pixel, deSwizzledOffset += formatBpb, xBytes += formatBpb) {
-                        // XYZ Offset in entire blocks in current ROB
-                        if (pixel && !(xBytes & 0x3F)) [[unlikely]]
-                            blockOffset += blockSize;
+                        for (size_t pixel{}; pixel < pitchTextureWidth; ++pixel, deSwizzledOffset += formatBpb, xBytes += formatBpb) {
+                            // XYZ Offset in entire blocks in current ROB
+                            if (pixel && !(xBytes & 0x3F)) [[unlikely]]
+                                blockOffset += blockSize;
 
-                        // X Offset inside current GOB
-                        GobXOffset = ((xBytes & 0x20) << 3) + (xBytes & 0xF) + ((xBytes & 0x10) << 1);
+                            // X Offset inside current GOB
+                            GobXOffset = ((xBytes & 0x20) << 3) + (xBytes & 0xF) + ((xBytes & 0x10) << 1);
 
-                        swizzledOffset = swizzledYZOffset + blockOffset + GobXOffset;
+                            swizzledOffset = swizzledYZOffset + blockOffset + GobXOffset;
 
-                        if constexpr (BlockLinearToPitch)
-                            *reinterpret_cast<FORMATBPB *>(deSwizzledOffset) = *reinterpret_cast<FORMATBPB *>(swizzledOffset);
-                        else
-                            *reinterpret_cast<FORMATBPB *>(swizzledOffset) = *reinterpret_cast<FORMATBPB *>(deSwizzledOffset);
+                            if constexpr (BlockLinearToPitch)
+                                *reinterpret_cast<FORMATBPB *>(deSwizzledOffset) = *reinterpret_cast<FORMATBPB *>(swizzledOffset);
+                            else
+                                *reinterpret_cast<FORMATBPB *>(swizzledOffset) = *reinterpret_cast<FORMATBPB *>(deSwizzledOffset);
+                        }
                     }
                 }
             }
