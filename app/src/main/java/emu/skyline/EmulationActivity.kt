@@ -31,6 +31,7 @@ import androidx.core.view.updateMargins
 import androidx.fragment.app.FragmentTransaction
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import emu.skyline.BuildConfig
 import emu.skyline.applet.swkbd.SoftwareKeyboardConfig
 import emu.skyline.applet.swkbd.SoftwareKeyboardDialog
 import emu.skyline.data.AppItem
@@ -94,8 +95,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private var isEmulatorPaused = false
 
     private lateinit var pictureInPictureParamsBuilder : PictureInPictureParams.Builder
-    private val pauseIntentAction = "$packageName.EMULATOR_PAUSE"
-    private val muteIntentAction = "$packageName.EMULATOR_MUTE"
+    private val intentActionPause = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_PAUSE"
+    private val intentActionMute = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_MUTE"
     private lateinit var pictureInPictureReceiver : BroadcastReceiver
 
     @Inject
@@ -283,13 +284,13 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
         val pauseIcon = Icon.createWithResource(this, R.drawable.ic_pause)
-        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(pauseIntentAction), pendingFlags)
+        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(intentActionPause), pendingFlags)
         val pauseRemoteAction = RemoteAction(pauseIcon, getString(R.string.pause), getString(R.string.pause_emulator), pausePendingIntent)
         pictureInPictureActions.add(pauseRemoteAction)
 
         if (!emulationSettings.isAudioOutputDisabled) {
             val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
-            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(muteIntentAction), pendingFlags)
+            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(intentActionMute), pendingFlags)
             val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
             pictureInPictureActions.add(muteRemoteAction)
         }
@@ -418,17 +419,17 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         if (isInPictureInPictureMode) {
             pictureInPictureReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context : Context?, intent : Intent) {
-                    if (intent.action == pauseIntentAction)
+                    if (intent.action == intentActionPause)
                         pauseEmulator()
-                    else if (intent.action == muteIntentAction)
+                    else if (intent.action == intentActionMute)
                         changeAudioStatus(false)
                 }
             }
 
             IntentFilter().apply {
-                addAction(pauseIntentAction)
+                addAction(intentActionPause)
                 if (!emulationSettings.isAudioOutputDisabled)
-                    addAction(muteIntentAction)
+                    addAction(intentActionMute)
             }.also {
                 registerReceiver(pictureInPictureReceiver, it)
             }
