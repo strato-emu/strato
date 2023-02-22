@@ -47,7 +47,7 @@ data class NativeSettings(
     // Debug
     var validationLayer : Boolean
 ) {
-    constructor(context : Context, pref : PreferenceSettings) : this(
+    constructor(context : Context, pref : EmulationSettings) : this(
         pref.isDocked,
         pref.usernameValue,
         pref.profilePictureValue,

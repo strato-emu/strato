@@ -10,14 +10,10 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.view.InputDevice
-import android.view.KeyEvent
-import android.view.MotionEvent
-import android.view.OrientationEventListener
-import android.view.View
+import android.view.*
 import androidx.core.content.getSystemService
+import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.ByteBufferSerializable
-import emu.skyline.settings.PreferenceSettings
 import emu.skyline.utils.u64
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -26,7 +22,7 @@ import kotlin.math.abs
 /**
  * Handles input events during emulation
  */
-class InputHandler(private val inputManager : InputManager, private val preferenceSettings : PreferenceSettings) : SensorEventListener {
+class InputHandler(private val inputManager : InputManager, private val emulationSettings : EmulationSettings) : SensorEventListener {
     companion object {
         /**
          * This initializes a guest controller in libskyline
@@ -117,7 +113,7 @@ class InputHandler(private val inputManager : InputManager, private val preferen
             if (controller.type != ControllerType.None) {
                 val type = when (controller.type) {
                     ControllerType.None -> throw IllegalArgumentException()
-                    ControllerType.HandheldProController -> if (preferenceSettings.isDocked) ControllerType.ProController.id else ControllerType.HandheldProController.id
+                    ControllerType.HandheldProController -> if (emulationSettings.isDocked) ControllerType.ProController.id else ControllerType.HandheldProController.id
                     ControllerType.ProController, ControllerType.JoyConLeft, ControllerType.JoyConRight -> controller.type.id
                 }
 

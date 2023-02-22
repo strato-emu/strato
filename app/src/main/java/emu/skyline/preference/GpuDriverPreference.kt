@@ -13,8 +13,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
+import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.GpuDriverHelper
-import emu.skyline.settings.PreferenceSettings
 import emu.skyline.R as SkylineR
 
 /**
@@ -29,9 +29,9 @@ class GpuDriverPreference @JvmOverloads constructor(context : Context, attrs : A
         val supportsCustomDriverLoading = GpuDriverHelper.supportsCustomDriverLoading()
         if (supportsCustomDriverLoading) {
             summaryProvider = SummaryProvider<GpuDriverPreference> {
-                sharedPreferences?.getString(key, PreferenceSettings.SYSTEM_GPU_DRIVER)?.let {
+                sharedPreferences?.getString(key, EmulationSettings.SYSTEM_GPU_DRIVER)?.let {
                     var driver = it
-                    if (it == PreferenceSettings.SYSTEM_GPU_DRIVER)
+                    if (it == EmulationSettings.SYSTEM_GPU_DRIVER)
                         driver = context.getString(SkylineR.string.system_driver)
 
                     context.getString(SkylineR.string.gpu_driver_config_desc, driver)

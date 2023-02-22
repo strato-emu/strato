@@ -27,6 +27,8 @@ class SkylineApplication : Application() {
     companion object {
         lateinit var instance : SkylineApplication
             private set
+
+        val context : Context get() = instance.applicationContext
     }
 
     override fun onCreate() {

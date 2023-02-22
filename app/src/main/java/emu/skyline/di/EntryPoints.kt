@@ -11,7 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import emu.skyline.input.InputManager
-import emu.skyline.settings.PreferenceSettings
+import emu.skyline.settings.AppSettings
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -24,7 +24,7 @@ fun Context.getInputManager() = EntryPointAccessors.fromApplication(this, InputM
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface SettingsProviderEntryPoint {
-    fun preferenceSettings() : PreferenceSettings
+    fun appSettings() : AppSettings
 }
 
-fun Context.getSettings() = EntryPointAccessors.fromApplication(this, SettingsProviderEntryPoint::class.java).preferenceSettings()
+fun Context.getSettings() = EntryPointAccessors.fromApplication(this, SettingsProviderEntryPoint::class.java).appSettings()

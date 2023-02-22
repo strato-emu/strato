@@ -23,14 +23,13 @@ import emu.skyline.adapter.GpuDriverViewItem
 import emu.skyline.adapter.SelectableGenericAdapter
 import emu.skyline.adapter.SpacingItemDecoration
 import emu.skyline.databinding.GpuDriverActivityBinding
+import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.GpuDriverInstallResult
-import emu.skyline.settings.PreferenceSettings
 import emu.skyline.utils.WindowInsetsHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 /**
  * This activity is used to manage the installed gpu drivers and select one to use.
@@ -41,8 +40,7 @@ class GpuDriverActivity : AppCompatActivity() {
 
     private val adapter = SelectableGenericAdapter(0)
 
-    @Inject
-    lateinit var preferenceSettings : PreferenceSettings
+    lateinit var emulationSettings : EmulationSettings
 
     /**
      * The callback called after a user picked a driver to install.
@@ -73,10 +71,10 @@ class GpuDriverActivity : AppCompatActivity() {
 
         // Insert the system driver entry at the top of the list.
         items.add(GpuDriverViewItem(GpuDriverHelper.getSystemDriverMetadata(this)) {
-            preferenceSettings.gpuDriver = PreferenceSettings.SYSTEM_GPU_DRIVER
+            emulationSettings.gpuDriver = EmulationSettings.SYSTEM_GPU_DRIVER
         })
 
-        if (preferenceSettings.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) {
+        if (emulationSettings.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) {
             adapter.selectedPosition = 0
         }
 
@@ -85,7 +83,7 @@ class GpuDriverActivity : AppCompatActivity() {
                 onDelete = { position, wasChecked ->
                     // If the driver was selected, select the system driver as the active one
                     if (wasChecked)
-                        preferenceSettings.gpuDriver = PreferenceSettings.SYSTEM_GPU_DRIVER
+                        emulationSettings.gpuDriver = EmulationSettings.SYSTEM_GPU_DRIVER
 
                     Snackbar.make(binding.root, "${metadata.label} deleted", Snackbar.LENGTH_LONG).setAction(R.string.undo) {
                         this@GpuDriverActivity.adapter.run {
@@ -94,7 +92,7 @@ class GpuDriverActivity : AppCompatActivity() {
                             if (wasChecked) {
                                 // Only notify previous to avoid notifying items before indexes have updated, the newly inserted item will be updated on bind
                                 selectAndNotifyPrevious(position)
-                                preferenceSettings.gpuDriver = metadata.label
+                                emulationSettings.gpuDriver = metadata.label
                             }
                         }
                     }.addCallback(object : Snackbar.Callback() {
@@ -108,11 +106,11 @@ class GpuDriverActivity : AppCompatActivity() {
                 }
 
                 onClick = {
-                    preferenceSettings.gpuDriver = metadata.label
+                    emulationSettings.gpuDriver = metadata.label
                 }
             })
 
-            if (preferenceSettings.gpuDriver == metadata.label) {
+            if (emulationSettings.gpuDriver == metadata.label) {
                 adapter.selectedPosition = index + 1 // Add 1 to account for the system driver entry
             }
         }
@@ -175,6 +173,7 @@ class GpuDriverActivity : AppCompatActivity() {
             installCallback.launch(intent)
         }
 
+        emulationSettings = EmulationSettings.global
         populateAdapter()
     }
 

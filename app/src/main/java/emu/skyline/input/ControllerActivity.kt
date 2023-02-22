@@ -29,7 +29,7 @@ import emu.skyline.input.dialog.ButtonDialog
 import emu.skyline.input.dialog.RumbleDialog
 import emu.skyline.input.dialog.StickDialog
 import emu.skyline.input.onscreen.OnScreenEditActivity
-import emu.skyline.settings.PreferenceSettings
+import emu.skyline.settings.AppSettings
 import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
 
@@ -62,7 +62,7 @@ class ControllerActivity : AppCompatActivity() {
     val buttonItems = mutableListOf<ControllerButtonViewItem>()
 
     @Inject
-    lateinit var preferenceSettings : PreferenceSettings
+    lateinit var appSettings : AppSettings
 
     @Inject
     lateinit var inputManager : InputManager
@@ -85,19 +85,19 @@ class ControllerActivity : AppCompatActivity() {
                 items.add(ControllerHeaderItem(getString(R.string.osc)))
 
                 val oscSummary = { checked : Boolean -> getString(if (checked) R.string.osc_shown else R.string.osc_not_shown) }
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(preferenceSettings.onScreenControl), preferenceSettings.onScreenControl) { item, position ->
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(appSettings.onScreenControl), appSettings.onScreenControl) { item, position ->
                     item.summary = oscSummary.invoke(item.checked)
-                    preferenceSettings.onScreenControl = item.checked
+                    appSettings.onScreenControl = item.checked
                     adapter.notifyItemChanged(position)
                 })
 
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_feedback), getString(R.string.osc_feedback_description), preferenceSettings.onScreenControlFeedback) { item, position ->
-                    preferenceSettings.onScreenControlFeedback = item.checked
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_feedback), getString(R.string.osc_feedback_description), appSettings.onScreenControlFeedback) { item, position ->
+                    appSettings.onScreenControlFeedback = item.checked
                     adapter.notifyItemChanged(position)
                 })
 
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", preferenceSettings.onScreenControlRecenterSticks) { item, position ->
-                    preferenceSettings.onScreenControlRecenterSticks = item.checked
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", appSettings.onScreenControlRecenterSticks) { item, position ->
+                    appSettings.onScreenControlRecenterSticks = item.checked
                     adapter.notifyItemChanged(position)
                 })
 
