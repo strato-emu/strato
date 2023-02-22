@@ -12,7 +12,7 @@ import emu.skyline.SkylineApplication
 import emu.skyline.utils.sharedPreferences
 
 /**
- * Settings used during emulation.
+ * Settings used during emulation. Use [forTitleId] to retrieve settings for a given `titleId`.
  */
 class EmulationSettings private constructor(context : Context, prefName : String?) {
     // Whether this is the global settings
@@ -62,5 +62,25 @@ class EmulationSettings private constructor(context : Context, prefName : String
          * The global emulation settings instance
          */
         val global by lazy { EmulationSettings(SkylineApplication.context, null) }
+
+        fun prefNameForTitle(titleId : String) = SkylineApplication.context.packageName + "_" + titleId
+
+        /**
+         * Returns emulation settings for the given `titleId`
+         */
+        fun forTitleId(titleId : String) = EmulationSettings(SkylineApplication.context, prefNameForTitle(titleId))
+
+        /**
+         * Returns emulation settings to be used during emulation of the given `titleId`.
+         * Global settings are returned if custom settings are disabled for this title
+         */
+        fun forEmulation(titleId : String) : EmulationSettings {
+            var emulationSettings = forTitleId(titleId)
+
+            if (!emulationSettings.useCustomSettings)
+                emulationSettings = global
+
+            return emulationSettings
+        }
     }
 }
