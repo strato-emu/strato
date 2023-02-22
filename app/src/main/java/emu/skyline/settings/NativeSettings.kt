@@ -8,41 +8,66 @@ package emu.skyline.settings
 import android.content.Context
 import emu.skyline.BuildConfig
 import emu.skyline.utils.GpuDriverHelper
+import kotlinx.serialization.Serializable
 
 /**
  * The settings that will be passed to libskyline when running and executable
  */
-class NativeSettings(context : Context, pref : PreferenceSettings) {
+@Serializable
+@Suppress("unused")
+data class NativeSettings(
     // System
-    var isDocked : Boolean = pref.isDocked
-    var usernameValue : String = pref.usernameValue
-    var profilePictureValue : String = pref.profilePictureValue
-    var systemLanguage : Int = pref.systemLanguage
-    var systemRegion : Int = pref.systemRegion
+    var isDocked : Boolean,
+    var usernameValue : String,
+    var profilePictureValue : String,
+    var systemLanguage : Int,
+    var systemRegion : Int,
 
     // Display
-    var forceTripleBuffering : Boolean = pref.forceTripleBuffering
-    var disableFrameThrottling : Boolean = pref.disableFrameThrottling
-    var disableShaderCache : Boolean = pref.disableShaderCache
+    var forceTripleBuffering : Boolean,
+    var disableFrameThrottling : Boolean,
+    var disableShaderCache : Boolean,
 
     // GPU
-    var gpuDriver : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver
-    var gpuDriverLibraryName : String = if (pref.gpuDriver == PreferenceSettings.SYSTEM_GPU_DRIVER) "" else GpuDriverHelper.getLibraryName(context, pref.gpuDriver)
-    var executorSlotCountScale : Int = pref.executorSlotCountScale
-    var executorFlushThreshold : Int = pref.executorFlushThreshold
-    var useDirectMemoryImport : Boolean = pref.useDirectMemoryImport
-    var forceMaxGpuClocks : Boolean = pref.forceMaxGpuClocks
+    var gpuDriver : String,
+    var gpuDriverLibraryName : String,
+    var executorSlotCountScale : Int,
+    var executorFlushThreshold : Int,
+    var useDirectMemoryImport : Boolean,
+    var forceMaxGpuClocks : Boolean,
 
     // Hacks
-    var enableFastGpuReadbackHack : Boolean = pref.enableFastGpuReadbackHack
-    var enableFastReadbackWrites : Boolean = pref.enableFastReadbackWrites
-    var disableSubgroupShuffle : Boolean = pref.disableSubgroupShuffle
+    var enableFastGpuReadbackHack : Boolean,
+    var enableFastReadbackWrites : Boolean,
+    var disableSubgroupShuffle : Boolean,
 
     // Audio
-    var isAudioOutputDisabled : Boolean = pref.isAudioOutputDisabled
+    var isAudioOutputDisabled : Boolean,
 
     // Debug
-    var validationLayer : Boolean = BuildConfig.BUILD_TYPE != "release" && pref.validationLayer
+    var validationLayer : Boolean
+) {
+    constructor(context : Context, pref : PreferenceSettings) : this(
+        pref.isDocked,
+        pref.usernameValue,
+        pref.profilePictureValue,
+        pref.systemLanguage,
+        pref.systemRegion,
+        pref.forceTripleBuffering,
+        pref.disableFrameThrottling,
+        pref.disableShaderCache,
+        if (pref.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver,
+        if (pref.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) "" else GpuDriverHelper.getLibraryName(context, pref.gpuDriver),
+        pref.executorSlotCountScale,
+        pref.executorFlushThreshold,
+        pref.useDirectMemoryImport,
+        pref.forceMaxGpuClocks,
+        pref.enableFastGpuReadbackHack,
+        pref.enableFastReadbackWrites,
+        pref.disableSubgroupShuffle,
+        pref.isAudioOutputDisabled,
+        BuildConfig.BUILD_TYPE != "release" && pref.validationLayer
+    )
 
     /**
      * Updates settings in libskyline during emulation
