@@ -25,8 +25,12 @@ class SettingsActivity : AppCompatActivity() {
 
     /**
      * The instance of [PreferenceFragmentCompat] that is shown inside [R.id.settings]
+     * Retrieves extras from the intent if any and instantiates the appropriate fragment
      */
     private val preferenceFragment by lazy {
+        if (intent.hasExtra("item"))
+            GameSettingsFragment().apply { arguments = intent.extras }
+        else
             GlobalSettingsFragment()
     }
 

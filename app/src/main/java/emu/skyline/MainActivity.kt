@@ -333,8 +333,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
 
         // Try to return to normal GPU clocks upon resuming back to main activity, to avoid GPU being stuck at max clocks after a crash
-        if (EmulationSettings.global.forceMaxGpuClocks)
-            GpuDriverHelper.forceMaxGpuClocks(false)
+        GpuDriverHelper.forceMaxGpuClocks(false)
 
         var layoutTypeChanged = false
         for (appViewItem in adapter.allItems.filterIsInstance(AppViewItem::class.java)) {

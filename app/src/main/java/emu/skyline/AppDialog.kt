@@ -23,6 +23,7 @@ import com.google.android.material.snackbar.Snackbar
 import emu.skyline.data.AppItem
 import emu.skyline.databinding.AppDialogBinding
 import emu.skyline.loader.LoaderResult
+import emu.skyline.settings.SettingsActivity
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
@@ -73,6 +74,13 @@ class AppDialog : BottomSheetDialogFragment() {
         binding.gamePlay.isEnabled = item.loaderResult == LoaderResult.Success
         binding.gamePlay.setOnClickListener {
             startActivity(Intent(activity, EmulationActivity::class.java).apply { data = item.uri })
+        }
+
+        binding.gameSettings.isEnabled = item.loaderResult == LoaderResult.Success
+        binding.gameSettings.setOnClickListener {
+            startActivity(Intent(activity, SettingsActivity::class.java).apply {
+                putExtras(requireArguments())
+            })
         }
 
         val shortcutManager = requireActivity().getSystemService(ShortcutManager::class.java)

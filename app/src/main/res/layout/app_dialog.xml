@@ -17,7 +17,7 @@
         android:layout_height="wrap_content"
         android:nextFocusRight="@id/game_play"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp">
+        android:paddingBottom="8dp">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/game_icon"
@@ -36,9 +36,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            app:layout_constraintHeight_min="140dp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_min="140dp"
             app:layout_constraintStart_toEndOf="@id/game_icon"
             app:layout_constraintTop_toTopOf="parent">
 
@@ -86,43 +85,59 @@
                 app:layout_constraintTop_toBottomOf="@id/game_version"
                 tools:text="Nintendo" />
 
-            <com.google.android.flexbox.FlexboxLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                app:flexWrap="nowrap"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/game_author"
-                app:layout_constraintVertical_bias="1">
-
-                <Button
-                    android:id="@+id/game_play"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/play"
-                    android:focusedByDefault="true"
-                    android:text="@string/play"
-                    android:textColor="?attr/colorAccent"
-                    app:icon="@drawable/ic_play"
-                    app:iconTint="?attr/colorAccent"
-                    app:layout_flexGrow="1"
-                    app:layout_maxWidth="180dp" />
-
-                <Button
-                    android:id="@+id/game_pin"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
-                    android:layout_width="48dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:contentDescription="@string/pin"
-                    android:textColor="?attr/colorAccent"
-                    app:icon="@drawable/ic_add_home"
-                    app:iconGravity="textStart"
-                    android:padding="0dp"
-                    app:iconPadding="0dp" />
-            </com.google.android.flexbox.FlexboxLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:flexWrap="nowrap"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/game_icon"
+            app:layout_constraintVertical_bias="1">
+
+            <Button
+                android:id="@+id/game_play"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/play"
+                android:focusedByDefault="true"
+                android:text="@string/play"
+                android:textColor="?attr/colorAccent"
+                app:icon="@drawable/ic_play"
+                app:iconTint="?attr/colorAccent"
+                app:layout_flexGrow="1"
+                app:layout_maxWidth="140dp" />
+
+            <Button
+                android:id="@+id/game_settings"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/settings"
+                android:padding="0dp"
+                android:textColor="?attr/colorAccent"
+                app:icon="@drawable/ic_settings"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
+
+            <Button
+                android:id="@+id/game_pin"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/pin"
+                android:padding="0dp"
+                android:textColor="?attr/colorAccent"
+                app:icon="@drawable/ic_add_home"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
+
+        </com.google.android.flexbox.FlexboxLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </LinearLayout>

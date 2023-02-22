@@ -1,0 +1,17 @@
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:key="category_game"
+        android:title="@string/game">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/use_custom_settings_desc_off"
+            android:summaryOn="@string/use_custom_settings_desc_on"
+            app:key="use_custom_settings"
+            app:title="@string/use_custom_settings" />
+        <emu.skyline.preference.ResetSettingsPreference
+            android:summary="@string/reset_custom_settings_desc"
+            app:key="reset_custom_settings"
+            app:title="@string/reset_custom_settings" />
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

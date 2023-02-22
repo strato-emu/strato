@@ -22,6 +22,7 @@ import emu.skyline.adapter.GenericListItem
 import emu.skyline.adapter.GpuDriverViewItem
 import emu.skyline.adapter.SelectableGenericAdapter
 import emu.skyline.adapter.SpacingItemDecoration
+import emu.skyline.data.AppItem
 import emu.skyline.databinding.GpuDriverActivityBinding
 import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.GpuDriverHelper
@@ -37,6 +38,8 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class GpuDriverActivity : AppCompatActivity() {
     private val binding by lazy { GpuDriverActivityBinding.inflate(layoutInflater) }
+
+    private val item by lazy { intent.extras?.getSerializable("item") as AppItem? }
 
     private val adapter = SelectableGenericAdapter(0)
 
@@ -80,7 +83,8 @@ class GpuDriverActivity : AppCompatActivity() {
 
         GpuDriverHelper.getInstalledDrivers(this).onEachIndexed { index, (file, metadata) ->
             items.add(GpuDriverViewItem(metadata).apply {
-                onDelete = { position, wasChecked ->
+                // Enable the delete button when configuring global settings only
+                onDelete = if (emulationSettings.isGlobal) { position, wasChecked ->
                     // If the driver was selected, select the system driver as the active one
                     if (wasChecked)
                         emulationSettings.gpuDriver = EmulationSettings.SYSTEM_GPU_DRIVER
@@ -103,7 +107,7 @@ class GpuDriverActivity : AppCompatActivity() {
                             }
                         }
                     }).show()
-                }
+                } else null
 
                 onClick = {
                     emulationSettings.gpuDriver = metadata.label
@@ -127,8 +131,18 @@ class GpuDriverActivity : AppCompatActivity() {
         WindowInsetsHelper.addMargin(binding.addDriverButton, bottom = true)
 
         setSupportActionBar(binding.titlebar.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = getString(R.string.gpu_driver_config)
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            title = getString(R.string.gpu_driver_config)
+            subtitle = item?.title
+        }
+
+        emulationSettings = if (item == null) {
+            EmulationSettings.global
+        } else {
+            val appItem = item as AppItem
+            EmulationSettings.forTitleId(appItem.titleId ?: appItem.key())
+        }
 
         val layoutManager = LinearLayoutManager(this)
         binding.driverList.layoutManager = layoutManager
@@ -173,7 +187,6 @@ class GpuDriverActivity : AppCompatActivity() {
             installCallback.launch(intent)
         }
 
-        emulationSettings = EmulationSettings.global
         populateAdapter()
     }
 

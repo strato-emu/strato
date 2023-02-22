@@ -43,6 +43,14 @@
     <string name="select_action">Always Show Game Information</string>
     <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
+    <!-- Settings - Game -->
+    <string name="game">Game</string>
+    <string name="use_custom_settings">Enable Custom Settings</string>
+    <string name="use_custom_settings_desc_on">Custom settings are enabled for this game</string>
+    <string name="use_custom_settings_desc_off">Custom settings are disabled for this game</string>
+    <string name="reset_custom_settings">Reset Custom Settings</string>
+    <string name="reset_custom_settings_desc">Reset custom settings to the default values</string>
+    <string name="reset_settings_warning">Are you sure you want to reset all settings to the default values? <b>Current settings will be lost</b></string>
     <!-- Settings - System -->
     <string name="system">System</string>
     <string name="use_docked">Use Docked Mode</string>
