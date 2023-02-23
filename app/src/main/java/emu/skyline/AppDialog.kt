@@ -73,7 +73,9 @@ class AppDialog : BottomSheetDialogFragment() {
 
         binding.gamePlay.isEnabled = item.loaderResult == LoaderResult.Success
         binding.gamePlay.setOnClickListener {
-            startActivity(Intent(activity, EmulationActivity::class.java).apply { data = item.uri })
+            startActivity(Intent(activity, EmulationActivity::class.java).apply {
+                putExtras(requireArguments())
+            })
         }
 
         binding.gameSettings.isEnabled = item.loaderResult == LoaderResult.Success

@@ -26,8 +26,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.applet.swkbd.SoftwareKeyboardConfig
 import emu.skyline.applet.swkbd.SoftwareKeyboardDialog
+import emu.skyline.data.AppItem
 import emu.skyline.databinding.EmuActivityBinding
 import emu.skyline.input.*
+import emu.skyline.loader.RomFile
 import emu.skyline.loader.getRomFormat
 import emu.skyline.settings.AppSettings
 import emu.skyline.settings.EmulationSettings
@@ -53,6 +55,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     private val binding by lazy { EmuActivityBinding.inflate(layoutInflater) }
+
+    /**
+     * The [AppItem] of the app that is being emulated
+     */
+    lateinit var item : AppItem
 
     /**
      * A map of [Vibrator]s that correspond to [InputManager.controllers]
@@ -191,8 +198,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         shouldFinish = true
         returnToMain = intent.getBooleanExtra(ReturnToMainTag, false)
 
-        val rom = intent.data!!
-        val romType = getRomFormat(rom, contentResolver).ordinal
+        val rom = item.uri
+        val romType = item.format.ordinal
 
         @SuppressLint("Recycle")
         val romFd = contentResolver.openFileDescriptor(rom, "r")!!
@@ -206,10 +213,29 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         emulationThread!!.start()
     }
 
+    /**
+     * Populates the [item] member with data from the intent
+     */
+    private fun populateAppItem() {
+        val intentItem = intent.getSerializableExtra("item") as AppItem?
+        if (intentItem != null) {
+            item = intentItem
+            return
+        }
+
+        // The intent did not contain an app item, fall back to the data URI
+        val uri = intent.data!!
+        val romFormat = getRomFormat(uri, contentResolver)
+        val romFile = RomFile(this, romFormat, uri, EmulationSettings.global.systemLanguage)
+
+        item = AppItem(romFile.takeIf { it.valid }!!.appEntry)
+    }
+
     @SuppressLint("SetTextI18n", "ClickableViewAccessibility")
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
-        emulationSettings = EmulationSettings.global
+        populateAppItem()
+        emulationSettings = EmulationSettings.forEmulation(item.titleId ?: item.key())
 
         requestedOrientation = emulationSettings.orientation
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
