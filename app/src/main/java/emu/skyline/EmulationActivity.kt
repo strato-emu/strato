@@ -278,27 +278,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             binding.onScreenControllerToggle.setOnApplyWindowInsetsListener(insetsOrMarginHandler)
         }
 
-        pictureInPictureParamsBuilder = PictureInPictureParams.Builder()
-
-        val pictureInPictureActions : MutableList<RemoteAction> = mutableListOf()
-        val pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-
-        val pauseIcon = Icon.createWithResource(this, R.drawable.ic_pause)
-        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(intentActionPause), pendingFlags)
-        val pauseRemoteAction = RemoteAction(pauseIcon, getString(R.string.pause), getString(R.string.pause_emulator), pausePendingIntent)
-        pictureInPictureActions.add(pauseRemoteAction)
-
-        if (!emulationSettings.isAudioOutputDisabled) {
-            val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
-            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(intentActionMute), pendingFlags)
-            val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
-            pictureInPictureActions.add(muteRemoteAction)
-        }
-
-        pictureInPictureParamsBuilder.setActions(pictureInPictureActions)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            pictureInPictureParamsBuilder.setAutoEnterEnabled(true)
-
+        pictureInPictureParamsBuilder = getPictureInPictureBuilder()
         setPictureInPictureParams(pictureInPictureParamsBuilder.build())
 
         binding.gameView.holder.addCallback(this)
@@ -412,6 +392,33 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                     or View.SYSTEM_UI_FLAG_FULLSCREEN)
         }
+    }
+
+    private fun getPictureInPictureBuilder() : PictureInPictureParams.Builder {
+        val pictureInPictureParamsBuilder = PictureInPictureParams.Builder()
+
+        val pictureInPictureActions : MutableList<RemoteAction> = mutableListOf()
+        val pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+
+        val pauseIcon = Icon.createWithResource(this, R.drawable.ic_pause)
+        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(intentActionPause), pendingFlags)
+        val pauseRemoteAction = RemoteAction(pauseIcon, getString(R.string.pause), getString(R.string.pause_emulator), pausePendingIntent)
+        pictureInPictureActions.add(pauseRemoteAction)
+
+        if (!emulationSettings.isAudioOutputDisabled) {
+            val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
+            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(intentActionMute), pendingFlags)
+            val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
+            pictureInPictureActions.add(muteRemoteAction)
+        }
+
+        pictureInPictureParamsBuilder.setActions(pictureInPictureActions)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            pictureInPictureParamsBuilder.setAutoEnterEnabled(true)
+
+        setPictureInPictureParams(pictureInPictureParamsBuilder.build())
+
+        return pictureInPictureParamsBuilder
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
