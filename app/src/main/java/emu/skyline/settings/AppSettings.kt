@@ -16,15 +16,15 @@ import javax.inject.Singleton
  */
 @Singleton
 class AppSettings @Inject constructor(@ApplicationContext private val context : Context) {
-    // Emulator
+    // Content
     var searchLocation by sharedPreferences(context, "")
+
+    // Appearance
     var appTheme by sharedPreferences(context, 2)
     var layoutType by sharedPreferences(context, 1)
-    var groupByFormat by sharedPreferences(context, true)
     var sortAppsBy by sharedPreferences(context, 0)
+    var groupByFormat by sharedPreferences(context, true)
     var selectAction by sharedPreferences(context, false)
-    var perfStats by sharedPreferences(context, false)
-    var logLevel by sharedPreferences(context, 3)
 
     // Input
     var onScreenControl by sharedPreferences(context, true)
@@ -34,4 +34,5 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
     // Other
     var romFormatFilter by sharedPreferences(context, 0)
     var refreshRequired by sharedPreferences(context, false)
+    var logLevel by sharedPreferences(context, 3)
 }

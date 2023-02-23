@@ -269,7 +269,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             }
         )
 
-        if (appSettings.perfStats) {
+        if (emulationSettings.perfStats) {
             if (emulationSettings.disableFrameThrottling)
                 binding.perfStats.setTextColor(getColor(R.color.colorPerfStatsSecondary))
 

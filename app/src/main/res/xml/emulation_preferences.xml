@@ -36,6 +36,18 @@
     <PreferenceCategory
         android:key="category_presentation"
         android:title="@string/display">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/perf_stats_desc_off"
+            android:summaryOn="@string/perf_stats_desc_on"
+            app:key="perf_stats"
+            app:title="@string/perf_stats" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/max_refresh_rate_disabled"
+            android:summaryOn="@string/max_refresh_rate_enabled"
+            app:key="max_refresh_rate"
+            app:title="@string/max_refresh_rate" />
         <emu.skyline.preference.IntegerListPreference
             android:defaultValue="6"
             android:entries="@array/orientation_entries"
@@ -55,6 +67,23 @@
             android:summaryOn="@string/respect_display_cutout_enabled"
             app:key="respect_display_cutout"
             app:title="@string/respect_display_cutout" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_audio"
+        android:title="@string/audio">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:summaryOff="@string/disable_audio_output_disabled"
+            android:summaryOn="@string/disable_audio_output_enabled"
+            app:key="is_audio_output_disabled"
+            app:title="@string/disable_audio_output" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="category_gpu"
+        android:title="@string/gpu">
+        <emu.skyline.preference.GpuDriverPreference
+            app:key="gpu_driver"
+            app:title="@string/gpu_driver_config" />
         <CheckBoxPreference
             android:defaultValue="true"
             android:summaryOff="@string/triple_buffering_disabled"
@@ -68,19 +97,6 @@
             android:summaryOn="@string/disable_frame_throttling_enabled"
             app:key="disable_frame_throttling"
             app:title="@string/disable_frame_throttling" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:summaryOff="@string/max_refresh_rate_disabled"
-            android:summaryOn="@string/max_refresh_rate_enabled"
-            app:key="max_refresh_rate"
-            app:title="@string/max_refresh_rate" />
-    </PreferenceCategory>
-    <PreferenceCategory
-        android:key="category_gpu"
-        android:title="@string/gpu">
-        <emu.skyline.preference.GpuDriverPreference
-            app:key="gpu_driver"
-            app:title="@string/gpu_driver_config" />
         <SeekBarPreference
             android:defaultValue="4"
             android:max="6"
@@ -138,20 +154,15 @@
             app:title="@string/disable_subgroup_shuffle" />
     </PreferenceCategory>
     <PreferenceCategory
-        android:key="category_audio"
-        android:title="@string/audio"
-        app:isPreferenceVisible="true">
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:summaryOff="@string/disable_audio_output_disabled"
-            android:summaryOn="@string/disable_audio_output_enabled"
-            app:key="is_audio_output_disabled"
-            app:title="@string/disable_audio_output" />
-    </PreferenceCategory>
-    <PreferenceCategory
         android:key="category_debug"
         android:title="@string/debug"
         app:isPreferenceVisible="false">
+        <emu.skyline.preference.LogLevelPreference
+            android:defaultValue="2"
+            android:entries="@array/log_level"
+            app:key="log_level"
+            app:title="@string/log_level"
+            app:useSimpleSummaryProvider="true" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:summaryOff="@string/validation_layer_disabled"

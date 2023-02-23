@@ -28,29 +28,30 @@ class EmulationSettings private constructor(context : Context, prefName : String
     var systemLanguage by sharedPreferences(context, 1, prefName = prefName)
     var systemRegion by sharedPreferences(context, -1, prefName = prefName)
 
+    // Audio
+    var isAudioOutputDisabled by sharedPreferences(context, false, prefName = prefName)
+
     // Display
-    var forceTripleBuffering by sharedPreferences(context, true, prefName = prefName)
-    var disableFrameThrottling by sharedPreferences(context, false, prefName = prefName)
+    var perfStats by sharedPreferences(context, false, prefName = prefName)
     var maxRefreshRate by sharedPreferences(context, false, prefName = prefName)
-    var aspectRatio by sharedPreferences(context, 0, prefName = prefName)
     var orientation by sharedPreferences(context, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE, prefName = prefName)
+    var aspectRatio by sharedPreferences(context, 0, prefName = prefName)
     var respectDisplayCutout by sharedPreferences(context, false, prefName = prefName)
-    var disableShaderCache by sharedPreferences(context, false, prefName = prefName)
 
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER, prefName = prefName)
+    var forceTripleBuffering by sharedPreferences(context, true, prefName = prefName)
+    var disableFrameThrottling by sharedPreferences(context, false, prefName = prefName)
     var executorSlotCountScale by sharedPreferences(context, 6, prefName = prefName)
     var executorFlushThreshold by sharedPreferences(context, 256, prefName = prefName)
     var useDirectMemoryImport by sharedPreferences(context, false, prefName = prefName)
     var forceMaxGpuClocks by sharedPreferences(context, false, prefName = prefName)
+    var disableShaderCache by sharedPreferences(context, false, prefName = prefName)
 
     // Hacks
     var enableFastGpuReadbackHack by sharedPreferences(context, false, prefName = prefName)
     var enableFastReadbackWrites by sharedPreferences(context, false, prefName = prefName)
     var disableSubgroupShuffle by sharedPreferences(context, false, prefName = prefName)
-
-    // Audio
-    var isAudioOutputDisabled by sharedPreferences(context, false, prefName = prefName)
 
     // Debug
     var validationLayer by sharedPreferences(context, false, prefName = prefName)

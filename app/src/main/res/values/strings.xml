@@ -4,6 +4,7 @@
     <string name="search">Search</string>
     <string name="error">An error has occurred</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="emulator">Emulator</string>
     <!-- Toolbar Main -->
     <string name="settings">Settings</string>
     <string name="share_logs">Share Logs</string>
@@ -22,24 +23,29 @@
     <string name="invalid_file">Invalid file</string>
     <string name="missing_title_key">Missing title key</string>
     <string name="incomplete_prod_keys">Incomplete production keys</string>
-    <!-- Settings - Emulator -->
-    <string name="emulator">Emulator</string>
+    <!-- Settings - Content -->
+    <string name="content">Content</string>
     <string name="open_data_directory">View Internal Directory</string>
     <string name="open_data_directory_summary">Opens Skyline\'s internal directory in a file manager</string>
-    <string name="failed_open_directory">Cannot find an external file manager to open Skyline\'s internal directory</string>
-    <string name="theme">Theme</string>
-    <string name="perf_stats">Show Performance Statistics</string>
-    <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
-    <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
-    <string name="log_level">Log Level</string>
-    <!-- Settings - App List -->
-    <string name="app_list">App List</string>
+    <string name="open_data_directory_failed">Cannot find an external file manager to open Skyline\'s internal directory</string>
     <string name="search_location">Search Location</string>
+    <!-- Settings - Keys -->
+    <string name="keys">Keys</string>
+    <string name="prod_keys">Production Keys</string>
+    <string name="title_keys">Title Keys</string>
+    <string name="import_keys_success">Successfully imported keys</string>
+    <string name="import_keys_invalid_input_path">The path to the provided keys is invalid</string>
+    <string name="import_keys_invalid_keys">The keys you tried to import are invalid</string>
+    <string name="import_keys_delete_previous_failed">Failed to delete the currently installed keys</string>
+    <string name="import_keys_move_failed">Failed to move the keys to the internal directory</string>
+    <!-- Settings - Appearance -->
+    <string name="appearance">Appearance</string>
+    <string name="theme">Theme</string>
     <string name="layout_type">Game Display Layout</string>
+    <string name="sort_apps_by">Games Sorting Order</string>
     <string name="group_by_format">Group Games By Format</string>
     <string name="group_by_format_desc_off">Games will be shown as a single list</string>
     <string name="group_by_format_desc_on">Games will be shown grouped by format</string>
-    <string name="sort_apps_by">Games Sorting Order</string>
     <string name="select_action">Always Show Game Information</string>
     <string name="select_action_desc_on">Game information will be shown on clicking a game</string>
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
@@ -61,36 +67,35 @@
     <string name="profile_picture">Profile picture</string>
     <string name="system_language">System language</string>
     <string name="system_region">System region</string>
-    <!-- Settings - Keys -->
-    <string name="keys">Keys</string>
-    <string name="prod_keys">Production Keys</string>
-    <string name="title_keys">Title Keys</string>
-    <string name="import_keys_success">Successfully imported keys</string>
-    <string name="import_keys_invalid_input_path">The path to the provided keys is invalid</string>
-    <string name="import_keys_invalid_keys">The keys you tried to import are invalid</string>
-    <string name="import_keys_delete_previous_failed">Failed to delete the currently installed keys</string>
-    <string name="import_keys_move_failed">Failed to move the keys to the internal directory</string>
     <!-- Settings - Display -->
     <string name="display">Display</string>
+    <string name="perf_stats">Show Performance Statistics</string>
+    <string name="perf_stats_desc_off">Performance Statistics will not be shown</string>
+    <string name="perf_stats_desc_on">Performance Statistics will be shown in the top-left corner</string>
+    <string name="max_refresh_rate">Use Maximum Display Refresh Rate</string>
+    <string name="max_refresh_rate_enabled">Sets the display refresh rate as high as possible (Will break most games)</string>
+    <string name="max_refresh_rate_disabled">Sets the display refresh rate to 60Hz</string>
     <string name="screen_orientation">Screen orientation</string>
+    <string name="aspect_ratio">Aspect Ratio</string>
+    <string name="respect_display_cutout">Respect Display Cutout</string>
+    <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
+    <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
+    <!-- Settings - Audio -->
+    <string name="audio">Audio</string>
+    <string name="disable_audio_output">Disable Audio Output</string>
+    <string name="disable_audio_output_enabled">Audio output is disabled</string>
+    <string name="disable_audio_output_disabled">Audio output is enabled</string>
+    <!-- Settings - GPU -->
+    <string name="gpu">GPU</string>
+    <string name="gpu_driver_config">GPU Driver Configuration</string>
+    <string name="gpu_driver_config_desc">Active driver: %1$s</string>
+    <string name="gpu_driver_config_desc_unsupported">Your device doesn\'t support custom drivers</string>
     <string name="force_triple_buffering">Force Triple Buffering</string>
     <string name="triple_buffering_enabled">Utilize at least three swapchain buffers (Higher FPS but more input lag)</string>
     <string name="triple_buffering_disabled">Utilize at least two swapchain buffers (Lower FPS but less input lag)</string>
     <string name="disable_frame_throttling">Disable Frame Throttling</string>
     <string name="disable_frame_throttling_enabled">Game is allowed to submit frames as fast as possible (Only for benchmarking)\n\n<b>Note:</b> An alternative method is utilized to measure the FPS with this enabled, the figures must not be compared to throttled FPS figures</string>
     <string name="disable_frame_throttling_disabled">Only allow the game to submit frames at the display refresh rate</string>
-    <string name="max_refresh_rate">Use Maximum Display Refresh Rate</string>
-    <string name="max_refresh_rate_enabled">Sets the display refresh rate as high as possible (Will break most games)</string>
-    <string name="max_refresh_rate_disabled">Sets the display refresh rate to 60Hz</string>
-    <string name="aspect_ratio">Aspect Ratio</string>
-    <string name="respect_display_cutout">Respect Display Cutout</string>
-    <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
-    <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
-    <!-- Settings - GPU -->
-    <string name="gpu">GPU</string>
-    <string name="gpu_driver_config">GPU Driver Configuration</string>
-    <string name="gpu_driver_config_desc">Active driver: %1$s</string>
-    <string name="gpu_driver_config_desc_unsupported">Your device doesn\'t support custom drivers</string>
     <string name="executor_slot_count_scale">Executor Slot Count Scale</string>
     <string name="executor_slot_count_scale_desc">Scale controlling the maximum number of simultaneous GPU executions (Higher may sometimes perform better but will use more RAM)</string>
     <string name="executor_flush_threshold">Executor Flush Threshold</string>
@@ -114,13 +119,9 @@
     <string name="disable_subgroup_shuffle">Disable GPU subgroup shuffle</string>
     <string name="disable_subgroup_shuffle_enabled">Shader subgroup shuffle operations are disabled, may cause severe graphical issues</string>
     <string name="disable_subgroup_shuffle_disabled">Shader subgroup shuffle operations are enabled, ensures maximum accuracy</string>
-    <!-- Settings - Audio -->
-    <string name="audio">Audio</string>
-    <string name="disable_audio_output">Disable Audio Output</string>
-    <string name="disable_audio_output_enabled">Audio output is disabled</string>
-    <string name="disable_audio_output_disabled">Audio output is enabled</string>
     <!-- Settings - Debug -->
     <string name="debug">Debug</string>
+    <string name="log_level">Log Level</string>
     <string name="validation_layer">Enable validation layer</string>
     <string name="validation_layer_enabled">The Vulkan validation layer is enabled, major slowdowns are to be expected</string>
     <string name="validation_layer_disabled">The Vulkan validation layer is disabled</string>

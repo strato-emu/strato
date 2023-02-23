@@ -23,26 +23,24 @@ data class NativeSettings(
     var systemLanguage : Int,
     var systemRegion : Int,
 
-    // Display
-    var forceTripleBuffering : Boolean,
-    var disableFrameThrottling : Boolean,
-    var disableShaderCache : Boolean,
+    // Audio
+    var isAudioOutputDisabled : Boolean,
 
     // GPU
     var gpuDriver : String,
     var gpuDriverLibraryName : String,
+    var forceTripleBuffering : Boolean,
+    var disableFrameThrottling : Boolean,
     var executorSlotCountScale : Int,
     var executorFlushThreshold : Int,
     var useDirectMemoryImport : Boolean,
     var forceMaxGpuClocks : Boolean,
+    var disableShaderCache : Boolean,
 
     // Hacks
     var enableFastGpuReadbackHack : Boolean,
     var enableFastReadbackWrites : Boolean,
     var disableSubgroupShuffle : Boolean,
-
-    // Audio
-    var isAudioOutputDisabled : Boolean,
 
     // Debug
     var validationLayer : Boolean
@@ -53,19 +51,19 @@ data class NativeSettings(
         pref.profilePictureValue,
         pref.systemLanguage,
         pref.systemRegion,
-        pref.forceTripleBuffering,
-        pref.disableFrameThrottling,
-        pref.disableShaderCache,
+        pref.isAudioOutputDisabled,
         if (pref.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver,
         if (pref.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) "" else GpuDriverHelper.getLibraryName(context, pref.gpuDriver),
+        pref.forceTripleBuffering,
+        pref.disableFrameThrottling,
         pref.executorSlotCountScale,
         pref.executorFlushThreshold,
         pref.useDirectMemoryImport,
         pref.forceMaxGpuClocks,
+        pref.disableShaderCache,
         pref.enableFastGpuReadbackHack,
         pref.enableFastReadbackWrites,
         pref.disableSubgroupShuffle,
-        pref.isAudioOutputDisabled,
         BuildConfig.BUILD_TYPE != "release" && pref.validationLayer
     )
 
