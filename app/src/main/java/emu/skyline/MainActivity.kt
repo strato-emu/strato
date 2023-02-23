@@ -30,6 +30,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.adapter.*
 import emu.skyline.data.AppItem
+import emu.skyline.data.AppItemTag
 import emu.skyline.data.DataItem
 import emu.skyline.data.HeaderItem
 import emu.skyline.databinding.MainActivityBinding
@@ -287,7 +288,7 @@ class MainActivity : AppCompatActivity() {
             AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
         } else if (appItem.loaderResult == LoaderResult.Success) {
             startActivity(Intent(this, EmulationActivity::class.java).apply {
-                putExtra("item", appItem)
+                putExtra(AppItemTag, appItem)
                 putExtra(EmulationActivity.ReturnToMainTag, true)
             })
         }

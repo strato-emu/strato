@@ -12,6 +12,7 @@ import androidx.preference.*
 import emu.skyline.BuildConfig
 import emu.skyline.R
 import emu.skyline.data.AppItem
+import emu.skyline.data.AppItemTag
 import emu.skyline.preference.GpuDriverPreference
 import emu.skyline.preference.IntegerListPreference
 import emu.skyline.utils.GpuDriverHelper
@@ -25,7 +26,7 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
         private const val DIALOG_FRAGMENT_TAG = "androidx.preference.PreferenceFragment.DIALOG"
     }
 
-    private val item by lazy { requireArguments().getSerializable("item")!! as AppItem }
+    private val item by lazy { requireArguments().getSerializable(AppItemTag)!! as AppItem }
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)

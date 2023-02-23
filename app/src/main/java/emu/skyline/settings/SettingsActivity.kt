@@ -17,6 +17,7 @@ import androidx.core.view.WindowCompat
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.internal.ToolbarUtils
 import emu.skyline.R
+import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.SettingsActivityBinding
 import emu.skyline.utils.WindowInsetsHelper
 
@@ -28,7 +29,7 @@ class SettingsActivity : AppCompatActivity() {
      * Retrieves extras from the intent if any and instantiates the appropriate fragment
      */
     private val preferenceFragment by lazy {
-        if (intent.hasExtra("item"))
+        if (intent.hasExtra(AppItemTag))
             GameSettingsFragment().apply { arguments = intent.extras }
         else
             GlobalSettingsFragment()

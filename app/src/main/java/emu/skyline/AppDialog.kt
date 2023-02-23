@@ -21,6 +21,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.data.AppItem
+import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.AppDialogBinding
 import emu.skyline.loader.LoaderResult
 import emu.skyline.settings.SettingsActivity
@@ -35,7 +36,7 @@ class AppDialog : BottomSheetDialogFragment() {
          */
         fun newInstance(item : AppItem) : AppDialog {
             val args = Bundle()
-            args.putSerializable("item", item)
+            args.putSerializable(AppItemTag, item)
 
             val fragment = AppDialog()
             fragment.arguments = args
@@ -45,7 +46,7 @@ class AppDialog : BottomSheetDialogFragment() {
 
     private lateinit var binding : AppDialogBinding
 
-    private val item by lazy { requireArguments().getSerializable("item")!! as AppItem }
+    private val item by lazy { requireArguments().getSerializable(AppItemTag)!! as AppItem }
 
     /**
      * This inflates the layout of the dialog after initial view creation

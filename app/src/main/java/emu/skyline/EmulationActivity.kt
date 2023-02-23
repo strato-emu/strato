@@ -27,6 +27,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.applet.swkbd.SoftwareKeyboardConfig
 import emu.skyline.applet.swkbd.SoftwareKeyboardDialog
 import emu.skyline.data.AppItem
+import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.EmuActivityBinding
 import emu.skyline.input.*
 import emu.skyline.loader.RomFile
@@ -217,7 +218,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * Populates the [item] member with data from the intent
      */
     private fun populateAppItem() {
-        val intentItem = intent.getSerializableExtra("item") as AppItem?
+        val intentItem = intent.getSerializableExtra(AppItemTag) as AppItem?
         if (intentItem != null) {
             item = intentItem
             return

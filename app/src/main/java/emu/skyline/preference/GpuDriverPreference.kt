@@ -14,6 +14,7 @@ import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
 import emu.skyline.data.AppItem
+import emu.skyline.data.AppItemTag
 import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.R as SkylineR
@@ -56,6 +57,6 @@ class GpuDriverPreference @JvmOverloads constructor(context : Context, attrs : A
      * This launches [GpuDriverActivity] on click to manage driver packages
      */
     override fun onClick() = driverCallback.launch(Intent(context, GpuDriverActivity::class.java).apply {
-        putExtra("item", item)
+        putExtra(AppItemTag, item)
     })
 }

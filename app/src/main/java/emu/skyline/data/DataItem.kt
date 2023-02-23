@@ -6,10 +6,16 @@
 package emu.skyline.data
 
 import android.content.Context
+import emu.skyline.BuildConfig
 import emu.skyline.R
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import java.io.Serializable
+
+/**
+ * The tag used to pass [AppItem]s between activities and fragments
+ */
+const val AppItemTag = BuildConfig.APPLICATION_ID + ".APP_ITEM"
 
 sealed class DataItem : Serializable
 
