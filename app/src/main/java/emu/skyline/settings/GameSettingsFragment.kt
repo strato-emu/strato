@@ -62,10 +62,10 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        // Only show debug settings in debug builds
+        // Only show validation layer setting in debug builds
         @Suppress("SENSELESS_COMPARISON")
         if (BuildConfig.BUILD_TYPE != "release")
-            findPreference<Preference>("category_debug")?.isVisible = true
+            findPreference<Preference>("validation_layer")?.isVisible = true
 
         if (!GpuDriverHelper.supportsForceMaxGpuClocks()) {
             val forceMaxGpuClocksPref = findPreference<CheckBoxPreference>("force_max_gpu_clocks")!!
@@ -75,6 +75,16 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
         }
 
         findPreference<GpuDriverPreference>("gpu_driver")?.item = item
+
+        // Hide settings that don't support per-game configuration
+        findPreference<Preference>("profile_picture_value")?.isVisible = false
+        findPreference<Preference>("log_level")?.isVisible = false
+
+        // TODO: remove this once we have more settings under the debug category
+        // Avoid showing the debug category if no settings under it are visible
+        @Suppress("SENSELESS_COMPARISON")
+        if (BuildConfig.BUILD_TYPE == "release")
+            findPreference<PreferenceCategory>("category_debug")?.isVisible = false
     }
 
     override fun onDisplayPreferenceDialog(preference : Preference) {

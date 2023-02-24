@@ -48,10 +48,10 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        // Only show debug settings in debug builds
+        // Only show validation layer setting in debug builds
         @Suppress("SENSELESS_COMPARISON")
         if (BuildConfig.BUILD_TYPE != "release")
-            findPreference<Preference>("category_debug")?.isVisible = true
+            findPreference<Preference>("validation_layer")?.isVisible = true
 
         if (!GpuDriverHelper.supportsForceMaxGpuClocks()) {
             val forceMaxGpuClocksPref = findPreference<CheckBoxPreference>("force_max_gpu_clocks")!!

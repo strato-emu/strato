@@ -155,8 +155,7 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_debug"
-        android:title="@string/debug"
-        app:isPreferenceVisible="false">
+        android:title="@string/debug">
         <emu.skyline.preference.LogLevelPreference
             android:defaultValue="2"
             android:entries="@array/log_level"
@@ -168,6 +167,7 @@
             android:summaryOff="@string/validation_layer_disabled"
             android:summaryOn="@string/validation_layer_enabled"
             app:key="validation_layer"
+            app:isPreferenceVisible="false"
             app:title="@string/validation_layer" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
