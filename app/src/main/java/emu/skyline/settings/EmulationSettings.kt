@@ -10,6 +10,8 @@ import android.content.pm.ActivityInfo
 import emu.skyline.R
 import emu.skyline.SkylineApplication
 import emu.skyline.utils.sharedPreferences
+import kotlin.reflect.KMutableProperty
+import kotlin.reflect.full.memberProperties
 
 /**
  * Settings used during emulation. Use [forTitleId] to retrieve settings for a given `titleId`.
@@ -56,6 +58,23 @@ class EmulationSettings private constructor(context : Context, prefName : String
     // Debug
     var validationLayer by sharedPreferences(context, false, prefName = prefName)
 
+    /**
+     * Copies all settings from the global settings to this instance.
+     * This is a no-op if the instance this is called on is the global one
+     */
+    fun copyFromGlobal() {
+        if (isGlobal)
+            return
+
+        for (prop in EmulationSettings::class.memberProperties) {
+            if (prop.name == "useCustomSettings")
+                continue
+
+            if (prop is KMutableProperty<*>)
+                prop.setter.call(this, prop.get(global))
+        }
+    }
+
     companion object {
         const val SYSTEM_GPU_DRIVER = "system"
 
@@ -70,6 +89,11 @@ class EmulationSettings private constructor(context : Context, prefName : String
          * Returns emulation settings for the given `titleId`
          */
         fun forTitleId(titleId : String) = EmulationSettings(SkylineApplication.context, prefNameForTitle(titleId))
+
+        /**
+         * Returns emulation settings for the given preferences name
+         */
+        fun forPrefName(prefName : String) = EmulationSettings(SkylineApplication.context, prefName)
 
         /**
          * Returns emulation settings to be used during emulation of the given `titleId`.

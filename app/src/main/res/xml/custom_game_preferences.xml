@@ -13,5 +13,9 @@
             android:summary="@string/reset_custom_settings_desc"
             app:key="reset_custom_settings"
             app:title="@string/reset_custom_settings" />
+        <emu.skyline.preference.CopyGlobalSettingsPreference
+            android:summary="@string/copy_global_settings_desc"
+            app:key="copy_global_settings"
+            app:title="@string/copy_global_settings" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

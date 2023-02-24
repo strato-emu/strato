@@ -57,6 +57,9 @@
     <string name="reset_custom_settings">Reset Custom Settings</string>
     <string name="reset_custom_settings_desc">Reset custom settings to the default values</string>
     <string name="reset_settings_warning">Are you sure you want to reset all settings to the default values? <b>Current settings will be lost</b></string>
+    <string name="copy_global_settings">Copy Global Settings</string>
+    <string name="copy_global_settings_desc">Copy global settings to this game</string>
+    <string name="copy_global_settings_warning">Are you sure you want to copy global settings to this game? <b>Current settings will be lost</b></string>
     <!-- Settings - System -->
     <string name="system">System</string>
     <string name="use_docked">Use Docked Mode</string>
