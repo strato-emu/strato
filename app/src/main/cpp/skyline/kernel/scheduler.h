@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/spin_lock.h"
 #include <common.h>
 #include <condition_variable>
 
@@ -46,7 +47,7 @@ namespace skyline {
             struct CoreContext {
                 u8 id;
                 i8 preemptionPriority; //!< The priority at which this core becomes preemptive as opposed to cooperative
-                std::mutex mutex; //!< Synchronizes all operations on the queue
+                SpinLock mutex; //!< Synchronizes all operations on the queue
                 std::list<std::shared_ptr<type::KThread>> queue; //!< A queue of threads which are running or to be run on this core
 
                 CoreContext(u8 id, i8 preemptionPriority);
@@ -62,7 +63,7 @@ namespace skyline {
              * @note 'KThread::coreMigrationMutex' **must** be locked by the calling thread prior to calling this
              * @note This is used to handle non-cooperative core affinity mask changes where the resident core is not in its new affinity mask
              */
-            void MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext *targetCore, std::unique_lock<std::mutex> &lock);
+            void MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext *targetCore, std::unique_lock<SpinLock> &lock);
 
             /**
              * @brief Trigger a thread to yield via a signal or on SVC exit if it is the current thread

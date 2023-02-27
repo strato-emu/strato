@@ -138,13 +138,13 @@ namespace skyline::kernel {
                 core.queue.push_front(thread);
             }
             if (thread != state.thread)
-                thread->scheduleCondition.notify_one(); // We only want to trigger the conditional variable if the current thread isn't inserting itself
+                thread->scheduleCondition.notify(); // We only want to trigger the conditional variable if the current thread isn't inserting itself
         } else {
             core.queue.insert(nextThread, thread);
         }
     }
 
-    void Scheduler::MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext *targetCore, std::unique_lock<std::mutex> &lock) {
+    void Scheduler::MigrateToCore(const std::shared_ptr<type::KThread> &thread, CoreContext *&currentCore, CoreContext *targetCore, std::unique_lock<SpinLock> &lock) {
         // We need to check if the thread was in its resident core's queue
         // If it was, we need to remove it from the queue
         auto it{std::find(currentCore->queue.begin(), currentCore->queue.end(), thread)};
@@ -152,7 +152,7 @@ namespace skyline::kernel {
         if (wasInserted) {
             it = currentCore->queue.erase(it);
             if (it == currentCore->queue.begin() && it != currentCore->queue.end())
-                (*it)->scheduleCondition.notify_one();
+                (*it)->scheduleCondition.notify();
         }
         lock.unlock();
 
@@ -243,7 +243,7 @@ namespace skyline::kernel {
 
             auto &front{core.queue.front()};
             if (front != thread)
-                front->scheduleCondition.notify_one(); // If we aren't at the front of the queue, only then should we wake the thread at the front up
+                front->scheduleCondition.notify(); // If we aren't at the front of the queue, only then should we wake the thread at the front up
         } else if (!thread->forceYield) {
             throw exception("T{} called Rotate while not being in C{}'s queue", thread->id, thread->coreId);
         }
@@ -271,7 +271,7 @@ namespace skyline::kernel {
                             thread->averageTimeslice = (thread->averageTimeslice / 4) + (3 * (util::GetTimeTicks() - thread->timesliceStart / 4));
 
                         if (it != core.queue.end())
-                            (*it)->scheduleCondition.notify_one(); // We need to wake the thread at the front of the queue, if we were at the front previously
+                            (*it)->scheduleCondition.notify(); // We need to wake the thread at the front of the queue, if we were at the front previously
                     }
                 } else {
                     Logger::Warn("T{} was not in C{}'s queue", thread->id, thread->coreId);
@@ -326,7 +326,7 @@ namespace skyline::kernel {
         if (core->queue.front() == thread)
             thread->SendSignal(YieldSignal);
         else
-            thread->scheduleCondition.notify_one();
+            thread->scheduleCondition.notify();
     }
 
     void Scheduler::ParkThread() {
@@ -364,7 +364,7 @@ namespace skyline::kernel {
             if (parkedThread->priority < thread->priority || (parkedThread->priority == thread->priority && (!nextThread || parkedThread->timesliceStart < nextThread->timesliceStart))) {
                 parkedThread->coreId = thread->coreId;
                 parkedLock.unlock();
-                parkedThread->scheduleCondition.notify_one();
+                parkedThread->scheduleCondition.notify();
             }
         }
     }
@@ -381,7 +381,7 @@ namespace skyline::kernel {
 
             it = core->queue.erase(it);
             if (it == core->queue.begin() && it != core->queue.end())
-                (*it)->scheduleCondition.notify_one();
+                (*it)->scheduleCondition.notify();
 
             if (it == core->queue.begin()) {
                 // We need to send a yield signal to the thread if it's currently running
@@ -402,6 +402,6 @@ namespace skyline::kernel {
             InsertThread(thread);
         else
             // If we're not inserting the thread back into the queue ourselves then we need to notify the thread inserting it about the updated pause state
-            thread->scheduleCondition.notify_one();
+            thread->scheduleCondition.notify();
     }
 }

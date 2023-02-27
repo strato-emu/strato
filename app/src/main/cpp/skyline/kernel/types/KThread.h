@@ -47,7 +47,7 @@ namespace skyline {
             u64 entryArgument; //!< An argument to provide with to the thread entry function
             void *stackTop; //!< The top of the guest's stack, this is set to the initial guest stack pointer
 
-            std::condition_variable scheduleCondition; //!< Signalled to wake the thread when it's scheduled or its resident core changes
+            AdaptiveSingleWaiterConditionVariable scheduleCondition; //!< Signalled to wake the thread when it's scheduled or its resident core changes
             std::atomic<i8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
             std::atomic<i8> priority; //!< The priority of the thread for the scheduler including priority-inheritance
 
