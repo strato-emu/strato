@@ -46,9 +46,6 @@ namespace skyline::gpu {
         size_t frameIndex{}; //!< The index of the next semaphore/fence to be used for acquiring swapchain images
         size_t swapchainImageCount{}; //!< The number of images in the current swapchain
 
-        bool forceTripleBuffering{}; //!< If the presentation engine should always triple buffer even if the swapchain supports double buffering
-        bool disableFrameThrottling{}; //!< Allow the guest to submit frames without any blocking calls
-
         i64 frameTimestamp{}; //!< The timestamp of the last frame being shown in nanoseconds
         i64 averageFrametimeNs{}; //!< The average time between frames in nanoseconds
         i64 averageFrametimeDeviationNs{}; //!< The average deviation of frametimes in nanoseconds
@@ -107,11 +104,6 @@ namespace skyline::gpu {
          * @note 'PresentationEngine::mutex' **must** be locked prior to calling this
          */
         void UpdateSwapchain(texture::Format format, texture::Dimensions extent);
-
-        /**
-         * @brief Handles DisableFrameThrottling setting changed event
-        */
-        void OnDisableFrameThrottlingChanged(const bool value);
 
       public:
         PresentationEngine(const DeviceState &state, GPU &gpu);

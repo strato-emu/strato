@@ -29,13 +29,10 @@ namespace skyline::gpu {
           presentationTrack{static_cast<u64>(trace::TrackIds::Presentation), perfetto::ProcessTrack::Current()},
           vsyncEvent{std::make_shared<kernel::type::KEvent>(state, true)},
           choreographerThread{&PresentationEngine::ChoreographerThread, this},
-          presentationThread{&PresentationEngine::PresentationThread, this},
-          forceTripleBuffering{*state.settings->forceTripleBuffering},
-          disableFrameThrottling{*state.settings->disableFrameThrottling} {
+          presentationThread{&PresentationEngine::PresentationThread, this} {
         auto desc{presentationTrack.Serialize()};
         desc.set_name("Presentation");
         perfetto::TrackEvent::SetTrackDescriptor(presentationTrack, desc);
-        state.settings->disableFrameThrottling.AddCallback([this](auto && value) { OnDisableFrameThrottlingChanged(value); });
     }
 
     PresentationEngine::~PresentationEngine() {
@@ -205,7 +202,7 @@ namespace skyline::gpu {
             }); // We don't care about suboptimal images as they are caused by not respecting the transform hint, we handle transformations externally
         }
 
-        timestamp = (timestamp && !disableFrameThrottling) ? timestamp : getMonotonicNsNow(); // We tie FPS to the submission time rather than presentation timestamp, if we don't have the presentation timestamp available or if frame throttling is disabled as we want the maximum measured FPS to not be restricted to the refresh rate
+        timestamp = (timestamp && !*state.settings->disableFrameThrottling) ? timestamp : getMonotonicNsNow(); // We tie FPS to the submission time rather than presentation timestamp, if we don't have the presentation timestamp available or if frame throttling is disabled as we want the maximum measured FPS to not be restricted to the refresh rate
         if (frameTimestamp) {
             i64 sampleWeight{Fps ? Fps : 1}; //!< The weight of each sample in calculating the average, we want to roughly average the past second
 
@@ -283,7 +280,7 @@ namespace skyline::gpu {
     }
 
     void PresentationEngine::UpdateSwapchain(texture::Format format, texture::Dimensions extent) {
-        auto minImageCount{std::max(vkSurfaceCapabilities.minImageCount, forceTripleBuffering ? 3U : 2U)};
+        auto minImageCount{std::max(vkSurfaceCapabilities.minImageCount, *state.settings->forceTripleBuffering ? 3U : 2U)};
         if (minImageCount > MaxSwapchainImageCount)
             throw exception("Requesting swapchain with higher image count ({}) than maximum slot count ({})", minImageCount, MaxSwapchainImageCount);
 
@@ -307,7 +304,7 @@ namespace skyline::gpu {
         if ((capabilities.supportedUsageFlags & presentUsage) != presentUsage)
             throw exception("Swapchain doesn't support image usage '{}': {}", vk::to_string(presentUsage), vk::to_string(capabilities.supportedUsageFlags));
 
-        auto requestedMode{disableFrameThrottling ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo};
+        auto requestedMode{*state.settings->disableFrameThrottling ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eFifo};
         auto modes{gpu.vkPhysicalDevice.getSurfacePresentModesKHR(**vkSurface)};
         if (std::find(modes.begin(), modes.end(), requestedMode) == modes.end())
             throw exception("Swapchain doesn't support present mode: {}", vk::to_string(requestedMode));
@@ -342,15 +339,6 @@ namespace skyline::gpu {
         swapchainFormat = format;
         swapchainExtent = extent;
         swapchainImageCount = vkImages.size();
-    }
-
-    void PresentationEngine::OnDisableFrameThrottlingChanged(const bool value) {
-        std::scoped_lock guard{mutex};
-
-        disableFrameThrottling = value;
-
-        if (vkSurface && swapchainExtent && swapchainFormat)
-            UpdateSwapchain(swapchainFormat, swapchainExtent);
     }
 
     void PresentationEngine::UpdateSurface(jobject newSurface) {
