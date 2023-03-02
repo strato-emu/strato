@@ -28,28 +28,6 @@ namespace skyline::soc::gm20b::engine {
          * @url https://github.com/devkitPro/deko3d/blob/master/source/maxwell/engine_inline.def
          */
         struct RegisterState {
-            enum class BlockWidth : u8 {
-                OneGob = 0
-            };
-
-            enum class BlockHeight : u8 {
-                OneGob = 0,
-                TwoGobs = 1,
-                FourGobs = 2,
-                EightGobs = 3,
-                SixteenGobs = 4,
-                ThirtyTwoGobs = 5
-            };
-
-            enum class BlockDepth : u8 {
-                OneGob = 0,
-                TwoGobs = 1,
-                FourGobs = 2,
-                EightGobs = 3,
-                SixteenGobs = 4,
-                ThirtyTwoGobs = 5
-            };
-
             enum class DmaDstMemoryLayout : u8 {
                 BlockLinear = 0,
                 Pitch = 1
@@ -92,10 +70,17 @@ namespace skyline::soc::gm20b::engine {
             Address offsetOut;
             u32 pitchOut;
             struct {
-                BlockWidth width : 4;
-                BlockHeight height : 4;
-                BlockDepth depth : 4;
+                u32 width : 4;
+                u32 height : 4;
+                u32 depth : 4;
                 u32 _pad1_ : 20;
+
+                size_t Height() const {
+                    return 1 << height;
+                }
+                size_t Depth() const {
+                    return 1 << depth;
+                }
             } dstBlockSize;
             u32 dstWidth;
             u32 dstHeight;

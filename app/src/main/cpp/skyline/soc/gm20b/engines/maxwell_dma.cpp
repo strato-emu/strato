@@ -15,7 +15,7 @@ namespace skyline::soc::gm20b::engine {
         : channelCtx{channelCtx},
           syncpoints{state.soc->host1x.syncpoints},
           interconnect{*state.gpu, channelCtx},
-          copyCache(0) {}
+          copyCache() {}
 
     __attribute__((always_inline)) void MaxwellDma::CallMethod(u32 method, u32 argument) {
         Logger::Verbose("Called method in Maxwell DMA: 0x{:X} args: 0x{:X}", method, argument);
@@ -48,31 +48,10 @@ namespace skyline::soc::gm20b::engine {
             if (registers.launchDma->srcMemoryLayout == registers.launchDma->dstMemoryLayout) [[unlikely]] {
                 // Pitch to Pitch copy
                 if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch) [[likely]] {
-                    auto srcMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, *registers.pitchIn * *registers.lineCount)};
-                    auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, *registers.pitchOut * *registers.lineCount)};
-
-                    if (srcMappings.size() != 1 || dstMappings.size() != 1) [[unlikely]] {
-                        HandleCopy(srcMappings, dstMappings, *registers.lineLengthIn, *registers.lineLengthIn, [&](u8 *src, u8 *dst) {
-                            // Both Linear, copy as is.
-                            if ((*registers.pitchIn == *registers.pitchOut) && (*registers.pitchIn == *registers.lineLengthIn))
-                                std::memcpy(dst, src, *registers.lineLengthIn * *registers.lineCount);
-                            else
-                                for (u32 linesToCopy{*registers.lineCount}, srcCopyOffset{}, dstCopyOffset{}; linesToCopy; --linesToCopy, srcCopyOffset += *registers.pitchIn, dstCopyOffset += *registers.pitchOut)
-                                    std::memcpy(dst + dstCopyOffset, src + srcCopyOffset, *registers.lineLengthIn);
-                        });
-                    } else [[likely]] {
-                        // Both Linear, copy as is.
-                        if ((*registers.pitchIn == *registers.pitchOut) && (*registers.pitchIn == *registers.lineLengthIn))
-                            interconnect.Copy(dstMappings.front(), srcMappings.front());
-                        else
-                            for (u32 linesToCopy{*registers.lineCount}, srcCopyOffset{}, dstCopyOffset{}; linesToCopy; --linesToCopy, srcCopyOffset += *registers.pitchIn, dstCopyOffset += *registers.pitchOut)
-                                interconnect.Copy(dstMappings.front().subspan(dstCopyOffset, u64{*registers.lineLengthIn}), srcMappings.front().subspan(srcCopyOffset, u64{*registers.lineLengthIn}));
-                    }
+                    CopyPitchToPitch();
                 } else {
                     Logger::Warn("BlockLinear to BlockLinear DMA copies are unimplemented!");
                 }
-
-                return;
             } else if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear) {
                 CopyBlockLinearToPitch();
             } else [[likely]] {
@@ -109,7 +88,7 @@ namespace skyline::soc::gm20b::engine {
         }
     }
 
-    void MaxwellDma::HandleCopy(TranslatedAddressRange srcMappings, TranslatedAddressRange dstMappings, size_t srcSize, size_t dstSize, auto copyCallback) {
+    void MaxwellDma::HandleSplitCopy(TranslatedAddressRange srcMappings, TranslatedAddressRange dstMappings, size_t srcSize, size_t dstSize, auto copyCallback) {
         bool isSrcSplit{};
         u8 *src{srcMappings.front().data()}, *dst{dstMappings.front().data()};
         if (srcMappings.size() != 1) {
@@ -122,18 +101,12 @@ namespace skyline::soc::gm20b::engine {
             isSrcSplit = true;
         }
         if (dstMappings.size() != 1) {
-            // If both the source and destination are split
-            if (isSrcSplit) {
-                if (copyCache.size() < (srcSize + dstSize))
-                    copyCache.resize(srcSize + dstSize);
+            size_t offset{isSrcSplit ? srcSize : 0};
 
-                dst = copyCache.data() + srcSize;
-            } else {
-                if (copyCache.size() < dstSize)
-                    copyCache.resize(dstSize);
+            if (copyCache.size() < (dstSize + offset))
+                copyCache.resize(dstSize);
 
-                dst = copyCache.data();
-            }
+            dst = copyCache.data() + offset;
 
             // If the destination is not entirely filled by the copy we copy it's current state in the cache to prevent clearing of other data.
             if (registers.launchDma->dstMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear)
@@ -144,10 +117,29 @@ namespace skyline::soc::gm20b::engine {
 
         if (dstMappings.size() != 1)
             channelCtx.asCtx->gmmu.Write(u64{*registers.offsetOut}, dst, dstSize);
+    }
 
-        // If the cache is over 5 MBs large then we clamp it to not waste memory
-        if (copyCache.size() > 5242880) [[unlikely]]
-            copyCache.resize(5242880);
+    void MaxwellDma::CopyPitchToPitch() {
+        auto srcMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetIn, *registers.pitchIn * *registers.lineCount)};
+        auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, *registers.pitchOut * *registers.lineCount)};
+
+        if (srcMappings.size() != 1 || dstMappings.size() != 1) [[unlikely]] {
+            HandleSplitCopy(srcMappings, dstMappings, *registers.lineLengthIn, *registers.lineLengthIn, [&](u8 *src, u8 *dst) {
+                // Both Linear, copy as is.
+                if ((*registers.pitchIn == *registers.pitchOut) && (*registers.pitchIn == *registers.lineLengthIn))
+                    std::memcpy(dst, src, *registers.lineLengthIn * *registers.lineCount);
+                else
+                    for (size_t linesToCopy{*registers.lineCount}, srcCopyOffset{}, dstCopyOffset{}; linesToCopy; --linesToCopy, srcCopyOffset += *registers.pitchIn, dstCopyOffset += *registers.pitchOut)
+                        std::memcpy(dst + dstCopyOffset, src + srcCopyOffset, *registers.lineLengthIn);
+            });
+        } else [[likely]] {
+            // Both Linear, copy as is.
+            if ((*registers.pitchIn == *registers.pitchOut) && (*registers.pitchIn == *registers.lineLengthIn))
+                interconnect.Copy(dstMappings.front(), srcMappings.front());
+            else
+                for (size_t linesToCopy{*registers.lineCount}, srcCopyOffset{}, dstCopyOffset{}; linesToCopy; --linesToCopy, srcCopyOffset += *registers.pitchIn, dstCopyOffset += *registers.pitchOut)
+                    interconnect.Copy(dstMappings.front().subspan(dstCopyOffset, u64{*registers.lineLengthIn}), srcMappings.front().subspan(srcCopyOffset, u64{*registers.lineLengthIn}));
+        }
     }
 
     void MaxwellDma::CopyBlockLinearToPitch() {
@@ -192,7 +184,7 @@ namespace skyline::soc::gm20b::engine {
         Logger::Debug("{}x{}x{}@0x{:X} -> {}x{}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, srcDimensions.depth, srcLayerAddress, dstDimensions.width, dstDimensions.height, dstDimensions.depth, u64{*registers.offsetOut});
 
         if (srcMappings.size() != 1 || dstMappings.size() != 1) [[unlikely]]
-            HandleCopy(srcMappings, dstMappings, srcLayerStride, dstSize, copyFunc);
+            HandleSplitCopy(srcMappings, dstMappings, srcLayerStride, dstSize, copyFunc);
         else [[likely]]
             copyFunc(srcMappings.front().data(), dstMappings.front().data());
     }
@@ -239,7 +231,7 @@ namespace skyline::soc::gm20b::engine {
         }};
 
         if (srcMappings.size() != 1 || dstMappings.size() != 1) [[unlikely]]
-            HandleCopy(srcMappings, dstMappings, srcSize, dstLayerStride, copyFunc);
+            HandleSplitCopy(srcMappings, dstMappings, srcSize, dstLayerStride, copyFunc);
         else [[likely]]
             copyFunc(srcMappings.front().data(), dstMappings.front().data());
     }

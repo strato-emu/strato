@@ -29,7 +29,9 @@ namespace skyline::soc::gm20b::engine {
 
         void DmaCopy();
 
-        void HandleCopy(TranslatedAddressRange srcMappings, TranslatedAddressRange dstMappings, size_t srcSize, size_t dstSize, auto copyCallback);
+        void HandleSplitCopy(TranslatedAddressRange srcMappings, TranslatedAddressRange dstMappings, size_t srcSize, size_t dstSize, auto copyCallback);
+
+        void CopyPitchToPitch();
 
         void CopyBlockLinearToPitch();
 

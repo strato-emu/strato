@@ -43,14 +43,14 @@ namespace skyline::soc::gm20b::engine {
                 if ((srcDimensions.width != dstDimensions.width) || (srcDimensions.height != dstDimensions.height))
                     gpu::texture::CopyLinearToBlockLinearSubrect(srcDimensions, dstDimensions,
                                                                  1, 1, 1,
-                                                                 1 << static_cast<u8>(state.dstBlockSize.height), 1 << static_cast<u8>(state.dstBlockSize.depth),
+                                                                 state.dstBlockSize.Height(), state.dstBlockSize.Depth(),
                                                                  span{buffer}.cast<u8>().data(), dst,
                                                                  state.originBytesX, state.originSamplesY
                     );
                 else
                     gpu::texture::CopyLinearToBlockLinear(dstDimensions,
                                                           1, 1, 1,
-                                                          1 << static_cast<u8>(state.dstBlockSize.height), 1 << static_cast<u8>(state.dstBlockSize.depth),
+                                                          state.dstBlockSize.Height(), state.dstBlockSize.Depth(),
                                                           span{buffer}.cast<u8>().data(), dst
                     );
             }};
