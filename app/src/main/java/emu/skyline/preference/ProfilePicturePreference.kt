@@ -27,7 +27,8 @@ import java.io.FileOutputStream
 import java.io.InputStream
 
 class ProfilePicturePreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
-    private val profilePictureDir = SkylineApplication.instance.getPublicFilesDir().canonicalPath + "/switch/nand/system/save/8000000000000010/su/avators"
+    private val skylineFilesDir = SkylineApplication.instance.getPublicFilesDir().canonicalPath
+    private val profilePictureDir = "$skylineFilesDir/switch/nand/system/save/8000000000000010/su/avators"
     private val profilePicture = "$profilePictureDir/profile_picture.jpeg"
     private val pickMedia = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         try {
@@ -59,7 +60,10 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
 
     init {
         summaryProvider = SummaryProvider<ProfilePicturePreference> { preference ->
-            Uri.decode(preference.getPersistedString("No picture selected"))
+            var relativePath = Uri.decode(preference.getPersistedString("No picture selected"))
+            if (relativePath.startsWith(skylineFilesDir))
+                relativePath = relativePath.substring(skylineFilesDir.length)
+            relativePath
         }
         updatePreview()
     }
