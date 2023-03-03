@@ -94,10 +94,10 @@ namespace skyline::gpu::interconnect {
             TIC_FORMAT_CASE_INT_FLOAT(R32, R32);
             TIC_FORMAT_CASE_ST(D32, D32, Float);
             TIC_FORMAT_CASE_NORM_INT_FLOAT(R16G16, R16G16);
-            TIC_FORMAT_CASE(R8G24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
-            TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Uint, Uint);
-            TIC_FORMAT_CASE(S8D24, D24UnormS8Uint, Uint, Unorm, Unorm, Unorm);
-            TIC_FORMAT_CASE(D24S8, S8UintD24Unorm, Unorm, Uint, Uint, Uint);
+            TIC_FORMAT_CASE(R8G24, S8UintD24Unorm, Uint, Unorm, Unorm, Unorm);
+            TIC_FORMAT_CASE(S8D24, S8UintD24Unorm, Uint, Unorm, Uint, Uint);
+            TIC_FORMAT_CASE(S8D24, S8UintD24Unorm, Uint, Unorm, Unorm, Unorm);
+            TIC_FORMAT_CASE(D24S8, D24UnormS8Uint, Unorm, Uint, Uint, Uint);
 
             TIC_FORMAT_CASE_ST(B10G11R11, B10G11R11, Float);
             TIC_FORMAT_CASE_NORM_INT(A8B8G8R8, R8G8B8A8);
