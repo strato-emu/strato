@@ -130,8 +130,7 @@ namespace skyline::gpu {
                 } else if (srcBuffer->directTrackedShadowActive) {
                     newBuffer->EnableTrackedShadowDirect();
                     copyBuffer(*newBuffer->guest, *srcBuffer->guest, newBuffer->directTrackedShadow.data(), srcBuffer->directTrackedShadow.data());
-                    for (const auto &interval : srcBuffer->directTrackedWrites)
-                        newBuffer->InsertWriteIntervalDirect(interval);
+                    newBuffer->directTrackedWrites.Merge(srcBuffer->directTrackedWrites);
                 }
             }
 

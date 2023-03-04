@@ -49,14 +49,7 @@ namespace skyline::gpu {
         size_t id;
         bool isDirect{}; //!< Indicates if a buffer is directly mapped from the guest
 
-        /**
-         * @brief Interval struct used to track which part of the buffer should be accessed through the shadow
-         */
-        struct WriteTrackingInterval {
-            size_t offset;
-            size_t end;
-        };
-        std::vector<WriteTrackingInterval> directTrackedWrites; //!< (Direct) A vector of write tracking intervals for the buffer, this is used to determine when to read from `directTrackedShadow`
+        IntervalList<size_t> directTrackedWrites; //!< (Direct) A list of tracking intervals for the buffer, this is used to determine when to read from `directTrackedShadow`
         std::vector<u8> directTrackedShadow; //!< (Direct) Temporary mirror used to track any CPU-side writes to the buffer while it's being read by the GPU
         bool directTrackedShadowActive{}; //!< (Direct) If `directTrackedShadow` is currently being used to track writes
 
@@ -116,27 +109,12 @@ namespace skyline::gpu {
         void ResetMegabufferState();
 
       private:
-        struct QueryIntervalResult {
-            bool useShadow; //!< If the shadow should be used for buffer accesses within the interval
-            u64 size; //!< Size of the interval starting from the query offset
-        };
-
         BufferDelegate *delegate;
 
         friend BufferView;
         friend BufferManager;
 
         void SetupStagedTraps();
-
-        /**
-         * @brief Forces future accesses to the given interval to use the shadow copy
-         */
-        void InsertWriteIntervalDirect(WriteTrackingInterval interval);
-
-        /**
-         * @return A struct describing the interval containing `offset`
-         */
-        QueryIntervalResult QueryWriteIntervalDirect(u64 offset);
 
         /**
          * @brief Enables the shadow buffer used for sequencing buffer contents independently of the GPU on the CPU

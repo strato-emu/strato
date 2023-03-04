@@ -116,49 +116,6 @@ namespace skyline::gpu {
         });
     }
 
-    void Buffer::InsertWriteIntervalDirect(WriteTrackingInterval entry) {
-        auto firstIt{std::lower_bound(directTrackedWrites.begin(), directTrackedWrites.end(), entry, [](const auto &lhs, const auto &rhs) {
-            return lhs.end < rhs.offset;
-        })}; // Lowest offset entry that (maybe) overlaps with the new entry
-
-        if (firstIt == directTrackedWrites.end() || firstIt->offset >= entry.end) {
-            directTrackedWrites.insert(firstIt, entry);
-            return;
-        }
-        // Now firstIt will always overlap
-        
-        auto lastIt{firstIt}; // Highest offset entry that overlaps with the new entry
-        while (std::next(lastIt) != directTrackedWrites.end() && std::next(lastIt)->offset < entry.end)
-            lastIt++;
-
-        // Since firstIt and lastIt both are guaranteed to overlap, max them to get the new entry's end
-        size_t end{std::max(std::max(firstIt->end, entry.end), lastIt->end)};
-
-        // Erase all overlapping entries but the first
-        auto eraseStartIt{std::next(firstIt)};
-        auto eraseEndIt{std::next(lastIt)};
-        if (eraseStartIt != eraseEndIt) {
-            lastIt = directTrackedWrites.erase(eraseStartIt, eraseEndIt);
-            firstIt = std::prev(lastIt);
-        }
-
-        firstIt->offset = std::min(entry.offset, firstIt->offset);
-        firstIt->end = end;
-    }
-
-    Buffer::QueryIntervalResult Buffer::QueryWriteIntervalDirect(u64 offset) {
-        auto it{std::lower_bound(directTrackedWrites.begin(), directTrackedWrites.end(), offset, [](const auto &lhs, const auto &rhs) {
-            return lhs.end < rhs;
-        })}; // Lowest offset entry that (maybe) overlaps with the new entry
-
-        if (it == directTrackedWrites.end()) // No overlaps for the entire rest of buffer
-            return {false, mirror.size() - offset};
-        else if (it->offset > offset) // No overlap, return the distance to the next possible overlap
-            return {false, it->offset - offset};
-        else // Overlap, return the distance to the end of the overlap
-            return {true, it->end - offset};
-    }
-
     void Buffer::EnableTrackedShadowDirect() {
         if (!directTrackedShadowActive) {
             directTrackedShadow.resize(guest->size());
@@ -168,7 +125,7 @@ namespace skyline::gpu {
 
     span<u8> Buffer::BeginWriteCpuSequencedDirect(size_t offset, size_t size) {
         EnableTrackedShadowDirect();
-        InsertWriteIntervalDirect({offset, offset + size});
+        directTrackedWrites.Insert({offset, offset + size});
         return {directTrackedShadow.data() + offset, size};
     }
 
@@ -180,7 +137,7 @@ namespace skyline::gpu {
                 directTrackedShadow.clear();
                 directTrackedShadow.shrink_to_fit();
             }
-            directTrackedWrites.clear();
+            directTrackedWrites.Clear();
         }
         
         return readsActive;
@@ -352,8 +309,8 @@ namespace skyline::gpu {
         if (directTrackedShadowActive && RefreshGpuReadsActiveDirect()) {
             size_t curOffset{offset};
             while (curOffset != data.size() + offset) {
-                auto result{QueryWriteIntervalDirect(curOffset)};
-                auto srcData{result.useShadow ? directTrackedShadow.data() : mirror.data()};
+                auto result{directTrackedWrites.Query(curOffset)};
+                auto srcData{result.enclosed ? directTrackedShadow.data() : mirror.data()};
                 std::memcpy(data.data() + curOffset - offset, srcData + curOffset, result.size);
                 curOffset += result.size;
             }
