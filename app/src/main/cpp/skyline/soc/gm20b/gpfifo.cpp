@@ -156,10 +156,6 @@ namespace skyline::soc::gm20b {
     }
 
     void ChannelGpfifo::Process(GpEntry gpEntry) {
-        // Submit if required by the GpEntry, this is needed as some games dynamically generate pushbuffer contents
-        if (gpEntry.sync == GpEntry::Sync::Wait)
-            channelCtx.executor.Submit({}, *state.settings->useDirectMemoryImport);
-
         if (!gpEntry.size) {
             // This is a GPFIFO control entry, all control entries have a zero length and contain no pushbuffers
             switch (gpEntry.opcode) {
@@ -172,6 +168,10 @@ namespace skyline::soc::gm20b {
         }
 
         auto pushBufferMappedRanges{channelCtx.asCtx->gmmu.TranslateRange(gpEntry.Address(), gpEntry.size * sizeof(u32))};
+        for (auto range : pushBufferMappedRanges) {
+            if (channelCtx.executor.usageTracker.dirtyIntervals.Intersect(range))
+                channelCtx.executor.Submit({}, true);
+
         auto pushBuffer{[&]() -> span<u32> {
             if (pushBufferMappedRanges.size() == 1) {
                 return pushBufferMappedRanges.front().cast<u32>();
