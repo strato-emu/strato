@@ -57,7 +57,22 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         size_t UpdateQuadConversionBuffer(u32 count, u32 firstVertex);
 
+        /**
+         * @brief A scissor derived from the current clear register state
+         */
         vk::Rect2D GetClearScissor();
+
+        /**
+         * @brief A scissor derived from the current draw register state and bound RTs
+         */
+        vk::Rect2D GetDrawScissor();
+
+        /**
+         * @brief Performs operations common across indirect and regular draws
+         */
+        void PrepareDraw(StateUpdateBuilder &builder,
+                         engine::DrawTopology topology, bool indexed, bool estimateIndexBufferSize, u32 firstIndex, u32 count,
+                         vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask);
 
       public:
         DirectPipelineState &directState;

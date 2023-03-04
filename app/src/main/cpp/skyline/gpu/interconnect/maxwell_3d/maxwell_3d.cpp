@@ -112,6 +112,80 @@ namespace skyline::gpu::interconnect::maxwell3d {
         return scissor;
     }
 
+    vk::Rect2D Maxwell3D::GetDrawScissor() {
+        const auto &surfaceClip{clearEngineRegisters.surfaceClip};
+        vk::Rect2D scissor{{surfaceClip.horizontal.x, surfaceClip.vertical.y},
+                           {surfaceClip.horizontal.width, surfaceClip.vertical.height}};
+
+        auto colorAttachments{activeState.GetColorAttachments()};
+        auto depthStencilAttachment{activeState.GetDepthAttachment()};
+        auto depthStencilAttachmentSpan{depthStencilAttachment ? span<TextureView *>(depthStencilAttachment) : span<TextureView *>()};
+        for (auto attachment : ranges::views::concat(colorAttachments, depthStencilAttachmentSpan)) {
+            if (attachment) {
+                scissor.extent.width = std::min(scissor.extent.width, static_cast<u32>(static_cast<i32>(attachment->texture->dimensions.width) - scissor.offset.x));
+                scissor.extent.height = std::min(scissor.extent.height, static_cast<u32>(static_cast<i32>(attachment->texture->dimensions.height) - scissor.offset.y));
+            }
+        }
+
+        return scissor;
+    }
+
+     void Maxwell3D::PrepareDraw(StateUpdateBuilder &builder,
+                                 engine::DrawTopology topology, bool indexed, bool estimateIndexBufferSize, u32 firstIndex, u32 count,
+                                 vk::PipelineStageFlags &srcStageMask, vk::PipelineStageFlags &dstStageMask) {
+         Pipeline *oldPipeline{activeState.GetPipeline()};
+         samplers.Update(ctx, samplerBinding.value == engine::SamplerBinding::Value::ViaHeaderBinding);
+         activeState.Update(ctx, textures, constantBuffers.boundConstantBuffers,
+                            builder,
+                            indexed, topology, estimateIndexBufferSize, firstIndex, count,
+                            srcStageMask, dstStageMask);
+         Pipeline *pipeline{activeState.GetPipeline()};
+         activeDescriptorSetSampledImages.resize(pipeline->GetTotalSampledImageCount());
+
+
+         auto *descUpdateInfo{[&]() -> DescriptorUpdateInfo * {
+             if (((oldPipeline == pipeline) || (oldPipeline && oldPipeline->CheckBindingMatch(pipeline))) && constantBuffers.quickBindEnabled) {
+                 // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
+                 if (constantBuffers.quickBind)
+                     // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
+                     return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, samplers, textures,
+                                                               *constantBuffers.quickBind, activeDescriptorSetSampledImages,
+                                                               srcStageMask, dstStageMask);
+                 else
+                     return nullptr;
+             } else {
+                 // If bindings have changed or quick bind is disabled, perform a full descriptor update
+                 return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers, samplers, textures,
+                                                  activeDescriptorSetSampledImages,
+                                                  srcStageMask, dstStageMask);
+             }
+         }()};
+
+         if (oldPipeline != pipeline)
+             // If the pipeline has changed, we need to update the pipeline state
+             builder.SetPipeline(pipeline->compiledPipeline.pipeline, vk::PipelineBindPoint::eGraphics);
+
+         if (descUpdateInfo) {
+             if (ctx.gpu.traits.supportsPushDescriptors) {
+                 builder.SetDescriptorSetWithPush(descUpdateInfo);
+             } else {
+                 if (!attachedDescriptorSets)
+                     attachedDescriptorSets = std::make_shared<boost::container::static_vector<DescriptorAllocator::ActiveDescriptorSet, DescriptorBatchSize>>();
+
+                 auto newSet{&attachedDescriptorSets->emplace_back(ctx.gpu.descriptor.AllocateSet(descUpdateInfo->descriptorSetLayout))};
+                 auto *oldSet{activeDescriptorSet};
+                 activeDescriptorSet = newSet;
+
+                 builder.SetDescriptorSetWithUpdate(descUpdateInfo, activeDescriptorSet, oldSet);
+
+                 if (attachedDescriptorSets->size() == DescriptorBatchSize) {
+                     ctx.executor.AttachDependency(attachedDescriptorSets);
+                     attachedDescriptorSets.reset();
+                 }
+             }
+         }
+    }
+
     void Maxwell3D::LoadConstantBuffer(span<u32> data, u32 offset) {
         constantBuffers.Load(ctx, data, offset);
     }
@@ -222,9 +296,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
         StateUpdateBuilder builder{*ctx.executor.allocator};
         vk::PipelineStageFlags srcStageMask{}, dstStageMask{};
 
-        Pipeline *oldPipeline{activeState.GetPipeline()};
-        samplers.Update(ctx, samplerBinding.value == engine::SamplerBinding::Value::ViaHeaderBinding);
-        activeState.Update(ctx, textures, constantBuffers.boundConstantBuffers, builder, indexed, topology, first, count, srcStageMask, dstStageMask);
+        PrepareDraw(builder, topology, indexed, false, first, count, srcStageMask, dstStageMask);
+
         if (directState.inputAssembly.NeedsQuadConversion()) {
             count = conversion::quads::GetIndexCount(count);
             first = 0;
@@ -234,48 +307,6 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 vk::DeviceSize offset{UpdateQuadConversionBuffer(count, first)};
                 builder.SetIndexBuffer(BufferBinding{quadConversionBuffer->vkBuffer, offset}, vk::IndexType::eUint32);
                 indexed = true;
-            }
-        }
-
-        Pipeline *pipeline{activeState.GetPipeline()};
-        activeDescriptorSetSampledImages.resize(pipeline->GetTotalSampledImageCount());
-
-
-        auto *descUpdateInfo{[&]() -> DescriptorUpdateInfo * {
-            if (((oldPipeline == pipeline) || (oldPipeline && oldPipeline->CheckBindingMatch(pipeline))) && constantBuffers.quickBindEnabled) {
-                // If bindings between the old and new pipelines are the same we can reuse the descriptor sets given that quick bind is enabled (meaning that no buffer updates or calls to non-graphics engines have occurred that could invalidate them)
-                if (constantBuffers.quickBind)
-                    // If only a single constant buffer has been rebound between draws we can perform a partial descriptor update
-                    return pipeline->SyncDescriptorsQuickBind(ctx, constantBuffers.boundConstantBuffers, samplers, textures, *constantBuffers.quickBind, activeDescriptorSetSampledImages, srcStageMask, dstStageMask);
-                else
-                    return nullptr;
-            } else {
-                // If bindings have changed or quick bind is disabled, perform a full descriptor update
-                return pipeline->SyncDescriptors(ctx, constantBuffers.boundConstantBuffers, samplers, textures, activeDescriptorSetSampledImages, srcStageMask, dstStageMask);
-            }
-        }()};
-
-        if (oldPipeline != pipeline)
-            // If the pipeline has changed, we need to update the pipeline state
-            builder.SetPipeline(pipeline->compiledPipeline.pipeline, vk::PipelineBindPoint::eGraphics);
-
-        if (descUpdateInfo) {
-            if (ctx.gpu.traits.supportsPushDescriptors) {
-                builder.SetDescriptorSetWithPush(descUpdateInfo);
-            } else {
-                if (!attachedDescriptorSets)
-                    attachedDescriptorSets = std::make_shared<boost::container::static_vector<DescriptorAllocator::ActiveDescriptorSet, DescriptorBatchSize>>();
-
-                auto newSet{&attachedDescriptorSets->emplace_back(ctx.gpu.descriptor.AllocateSet(descUpdateInfo->descriptorSetLayout))};
-                auto *oldSet{activeDescriptorSet};
-                activeDescriptorSet = newSet;
-
-                builder.SetDescriptorSetWithUpdate(descUpdateInfo, activeDescriptorSet, oldSet);
-
-                if (attachedDescriptorSets->size() == DescriptorBatchSize) {
-                    ctx.executor.AttachDependency(attachedDescriptorSets);
-                    attachedDescriptorSets.reset();
-                }
             }
         }
 
@@ -298,24 +329,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
                                                                                          count, first, instanceCount, vertexOffset, firstInstance, indexed,
                                                                                          ctx.gpu.traits.supportsTransformFeedback ? transformFeedbackEnable : false})};
 
-        const auto &surfaceClip{clearEngineRegisters.surfaceClip};
-        vk::Rect2D scissor{
-            {surfaceClip.horizontal.x, surfaceClip.vertical.y},
-            {surfaceClip.horizontal.width, surfaceClip.vertical.height}
-        };
+        vk::Rect2D scissor{GetDrawScissor()};
 
-        auto colorAttachments{activeState.GetColorAttachments()};
-        auto depthStencilAttachment{activeState.GetDepthAttachment()};
-        auto depthStencilAttachmentSpan{depthStencilAttachment ? span<TextureView *>(depthStencilAttachment) : span<TextureView *>()};
-        for (auto attachment : ranges::views::concat(colorAttachments, depthStencilAttachmentSpan)) {
-            if (attachment) {
-                scissor.extent.width = std::min(scissor.extent.width, static_cast<u32>(static_cast<i32>(attachment->texture->dimensions.width) - scissor.offset.x));
-                scissor.extent.height = std::min(scissor.extent.height, static_cast<u32>(static_cast<i32>(attachment->texture->dimensions.height) - scissor.offset.y));
-            }
-        }
 
         constantBuffers.ResetQuickBind();
-
         ctx.executor.AddSubpass([drawParams](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu, vk::RenderPass, u32) {
             drawParams->stateUpdater.RecordAll(gpu, commandBuffer);
 
