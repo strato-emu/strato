@@ -194,13 +194,15 @@ namespace skyline::gpu {
         return isDirect ? ValidateMegaBufferViewImplDirect(size) : ValidateMegaBufferViewImplStaged(size);
     }
 
-    void Buffer::CopyFromImplDirect(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback) {
+    void Buffer::CopyFromImplDirect(vk::DeviceSize dstOffset,
+                                    Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size,
+                                    UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) {
         everHadInlineUpdate = true;
         bool needsGpuTracking{src->RefreshGpuWritesActiveDirect() || RefreshGpuWritesActiveDirect()};
         bool needsCpuTracking{RefreshGpuReadsActiveDirect() && !needsGpuTracking};
         if (needsGpuTracking || needsCpuTracking) {
             if (needsGpuTracking) // Force buffer to be dirty for this cycle if either of the sources are dirty, this is needed as otherwise it could have just been dirty from the previous cycle
-                MarkGpuDirty();
+                MarkGpuDirty(usageTracker);
             gpuCopyCallback();
 
             if (needsCpuTracking)
@@ -210,7 +212,9 @@ namespace skyline::gpu {
         }
     }
 
-    void Buffer::CopyFromImplStaged(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback) {
+    void Buffer::CopyFromImplStaged(vk::DeviceSize dstOffset,
+                                    Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size,
+                                    UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) {
         std::scoped_lock lock{stateMutex, src->stateMutex}; // Fine even if src and dst are same since recursive mutex
 
         if (dirtyState == DirtyState::CpuDirty && SequencedCpuBackingWritesBlocked())
@@ -230,18 +234,19 @@ namespace skyline::gpu {
             else
                 gpuCopyCallback();
         } else {
-            MarkGpuDirty();
+            MarkGpuDirty(usageTracker);
             gpuCopyCallback();
         }
     }
 
-    bool Buffer::WriteImplDirect(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback) {
+    bool Buffer::WriteImplDirect(span<u8> data, vk::DeviceSize offset,
+                                 UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) {
         // If the buffer is GPU dirty do the write on the GPU and we're done
         if (RefreshGpuWritesActiveDirect()) {
             if (gpuCopyCallback) {
                 // Propagate dirtiness to the current cycle, since if this is only dirty in a previous cycle that could change at any time and we would need to have the write saved somewhere for CPU reads
                 // By propagating the dirtiness to the current cycle we can avoid this and force a wait on any reads
-                MarkGpuDirty();
+                MarkGpuDirty(usageTracker);
                 gpuCopyCallback();
                 return false;
             } else {
@@ -349,6 +354,15 @@ namespace skyline::gpu {
         AdvanceSequence(); // The GPU will modify buffer contents so advance to the next sequence
     }
 
+    void Buffer::MarkGpuDirtyImpl() {
+        currentExecutionGpuDirty = true;
+
+        if (isDirect)
+            MarkGpuDirtyImplDirect();
+        else
+            MarkGpuDirtyImplStaged();
+    }
+
     Buffer::Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, GuestBuffer guest, size_t id, bool direct)
         : gpu{gpu},
           guest{guest},
@@ -382,16 +396,12 @@ namespace skyline::gpu {
         WaitOnFence();
     }
 
-    void Buffer::MarkGpuDirty() {
+    void Buffer::MarkGpuDirty(UsageTracker &usageTracker) {
         if (!guest)
             return;
 
-        currentExecutionGpuDirty = true;
-
-        if (isDirect)
-            MarkGpuDirtyImplDirect();
-        else
-            MarkGpuDirtyImplStaged();
+        usageTracker.dirtyIntervals.Insert(*guest);
+        MarkGpuDirtyImpl();
     }
 
     void Buffer::WaitOnFence() {
@@ -493,24 +503,30 @@ namespace skyline::gpu {
             ReadImplStaged(isFirstUsage, flushHostCallback, data, offset);
     }
 
-    bool Buffer::Write(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback) {
+    bool Buffer::Write(span<u8> data, vk::DeviceSize offset, UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
+        usageTracker.sequencedIntervals.Insert(*guest);
+
         if (isDirect)
-            return WriteImplDirect(data, offset, gpuCopyCallback);
+            return WriteImplDirect(data, offset, usageTracker, gpuCopyCallback);
         else
             return WriteImplStaged(data, offset, gpuCopyCallback);
     }
 
-    void Buffer::CopyFrom(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback) {
+    void Buffer::CopyFrom(vk::DeviceSize dstOffset,
+                          Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size,
+                          UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) {
         AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
         everHadInlineUpdate = true;
 
+        usageTracker.sequencedIntervals.Insert(*guest);
+
         if (isDirect)
-            CopyFromImplDirect(dstOffset, src, srcOffset, size, gpuCopyCallback);
+            CopyFromImplDirect(dstOffset, src, srcOffset, size, usageTracker, gpuCopyCallback);
         else
-            CopyFromImplStaged(dstOffset, src, srcOffset, size, gpuCopyCallback);
+            CopyFromImplStaged(dstOffset, src, srcOffset, size, usageTracker, gpuCopyCallback);
     }
 
     BufferView Buffer::GetView(vk::DeviceSize offset, vk::DeviceSize size) {
@@ -676,8 +692,8 @@ namespace skyline::gpu {
         GetBuffer()->Read(isFirstUsage, flushHostCallback, data, readOffset + GetOffset());
     }
 
-    bool BufferView::Write(span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback) const {
-        return GetBuffer()->Write(data, writeOffset + GetOffset(), gpuCopyCallback);
+    bool BufferView::Write(span<u8> data, vk::DeviceSize writeOffset, UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) const {
+        return GetBuffer()->Write(data, writeOffset + GetOffset(), usageTracker, gpuCopyCallback);
     }
 
     BufferBinding BufferView::TryMegaBuffer(const std::shared_ptr<FenceCycle> &pCycle, MegaBufferAllocator &allocator, ContextTag executionTag, size_t sizeOverride) const {
@@ -689,9 +705,9 @@ namespace skyline::gpu {
         return backing.subspan(GetOffset(), size);
     }
 
-    void BufferView::CopyFrom(BufferView src, const std::function<void()> &gpuCopyCallback) {
+    void BufferView::CopyFrom(BufferView src, UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback) {
         if (src.size != size)
             throw exception("Copy size mismatch!");
-        return GetBuffer()->CopyFrom(GetOffset(), src.GetBuffer(), src.GetOffset(), size, gpuCopyCallback);
+        return GetBuffer()->CopyFrom(GetOffset(), src.GetBuffer(), src.GetOffset(), size, usageTracker, gpuCopyCallback);
     }
 }

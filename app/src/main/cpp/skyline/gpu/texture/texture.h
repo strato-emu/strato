@@ -10,6 +10,7 @@
 #include <nce.h>
 #include <gpu/tag_allocator.h>
 #include <gpu/memory_manager.h>
+#include <gpu/usage_tracker.h>
 
 namespace skyline::gpu {
     namespace texture {
@@ -559,6 +560,11 @@ namespace skyline::gpu {
          * @note The texture **must** be locked prior to calling this
          */
         void TransitionLayout(vk::ImageLayout layout);
+
+        /**
+         * @brief Marks the texture as being GPU dirty
+         */
+        void MarkGpuDirty(UsageTracker &usageTracker);
 
         /**
          * @brief Synchronizes the host texture with the guest after it has been modified

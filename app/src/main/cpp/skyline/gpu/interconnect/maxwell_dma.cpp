@@ -24,7 +24,7 @@ namespace skyline::gpu::interconnect {
         })};
         ContextLock dstBufLock{executor.tag, dstBuf};
 
-        dstBuf.CopyFrom(srcBuf, [&]() {
+        dstBuf.CopyFrom(srcBuf, executor.usageTracker, [&]() {
             executor.AttachLockedBufferView(srcBuf, std::move(srcBufLock));
             executor.AttachLockedBufferView(dstBuf, std::move(dstBufLock));
             // This will prevent any CPU accesses to backing for the duration of the usage

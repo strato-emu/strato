@@ -62,7 +62,7 @@ namespace skyline::gpu::interconnect {
                 dstStageMask |= dstStage;
             }
 
-            view.GetBuffer()->MarkGpuDirty();
+            view.GetBuffer()->MarkGpuDirty(ctx.executor.usageTracker);
         } else {
             if (auto megaBufferBinding{view.TryMegaBuffer(ctx.executor.cycle, ctx.gpu.megaBufferAllocator, ctx.executor.executionTag)})
                 return megaBufferBinding;

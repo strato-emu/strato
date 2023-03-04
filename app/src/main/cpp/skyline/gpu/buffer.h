@@ -8,6 +8,7 @@
 #include <common/spin_lock.h>
 #include <nce.h>
 #include <gpu/tag_allocator.h>
+#include "usage_tracker.h"
 #include "megabuffer.h"
 #include "memory_manager.h"
 
@@ -146,11 +147,16 @@ namespace skyline::gpu {
          */
         bool ValidateMegaBufferView(vk::DeviceSize size);
 
-        void CopyFromImplDirect(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback);
+        void CopyFromImplDirect(vk::DeviceSize dstOffset,
+                                Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size,
+                                UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback);
 
-        void CopyFromImplStaged(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback);
+        void CopyFromImplStaged(vk::DeviceSize dstOffset,
+                                Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size,
+                                UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback);
 
-        bool WriteImplDirect(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
+        bool WriteImplDirect(span<u8> data, vk::DeviceSize offset,
+                             UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback = {});
 
         bool WriteImplStaged(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
 
@@ -161,6 +167,8 @@ namespace skyline::gpu {
         void MarkGpuDirtyImplDirect();
 
         void MarkGpuDirtyImplStaged();
+
+        void MarkGpuDirtyImpl();
 
       public:
         void UpdateCycle(const std::shared_ptr<FenceCycle> &newCycle) {
@@ -227,7 +235,7 @@ namespace skyline::gpu {
          * @note This **must** be called after syncing the buffer to the GPU not before
          * @note The buffer **must** be locked prior to calling this
          */
-        void MarkGpuDirty();
+        void MarkGpuDirty(UsageTracker &usageTracker);
 
         /**
          * @brief Prevents sequenced writes to this buffer's backing from occuring on the CPU, forcing sequencing on the GPU instead for the duration of the context. Unsequenced writes such as those from the guest can still occur however.
@@ -365,13 +373,15 @@ namespace skyline::gpu {
          * @param gpuCopyCallback Optional callback to perform a GPU-side copy for this Write if necessary, if such a copy is needed and this is not supplied `true` will be returned to indicate that the write needs to be repeated with the callback present
          * @return Whether the write needs to be repeated with `gpuCopyCallback` provided, always false if `gpuCopyCallback` is provided
          */
-        bool Write(span<u8> data, vk::DeviceSize offset, const std::function<void()> &gpuCopyCallback = {});
+        bool Write(span<u8> data, vk::DeviceSize offset, UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback = {});
 
         /**
          * @brief Copies a region of the src buffer into a region of this buffer
          * @note The src/dst buffers **must** be locked prior to calling this
          */
-        void CopyFrom(vk::DeviceSize dstOffset, Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size, const std::function<void()> &gpuCopyCallback);
+        void CopyFrom(vk::DeviceSize dstOffset,
+                      Buffer *src, vk::DeviceSize srcOffset, vk::DeviceSize size,
+                      UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback);
 
         /**
          * @return A view into this buffer with the supplied attributes
@@ -528,7 +538,7 @@ namespace skyline::gpu {
          * @note The view **must** be locked prior to calling this
          * @note See Buffer::Write
          */
-        bool Write(span<u8> data, vk::DeviceSize writeOffset, const std::function<void()> &gpuCopyCallback = {}) const;
+        bool Write(span<u8> data, vk::DeviceSize writeOffset, UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback = {}) const;
 
         /*
          * @brief If megabuffering is determined to be beneficial for the underlying buffer, allocates and copies this view into the megabuffer (in case of cache miss), returning a binding of the allocated megabuffer region
@@ -550,7 +560,7 @@ namespace skyline::gpu {
          * @brief Copies the contents of one view into this one
          * @note The src/dst views **must** be locked prior to calling this
          */
-        void CopyFrom(BufferView src, const std::function<void()> &gpuCopyCallback);
+        void CopyFrom(BufferView src, UsageTracker &usageTracker, const std::function<void()> &gpuCopyCallback);
 
         constexpr operator bool() {
             return delegate != nullptr;

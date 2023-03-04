@@ -562,6 +562,7 @@ namespace skyline::gpu::interconnect {
         attachedBuffers.clear();
         allocator->Reset();
         renderPassIndex = 0;
+        usageTracker.sequencedIntervals.Clear();
 
         // Periodically clear preserve attachments just in case there are new waiters which would otherwise end up waiting forever
         if ((submissionNumber % (2U << *state.settings->executorSlotCountScale)) == 0) {
@@ -586,7 +587,6 @@ namespace skyline::gpu::interconnect {
 
             SubmitInternal();
             submissionNumber++;
-
         } else {
             if (callback && *state.settings->useDirectMemoryImport)
                 waiterThread.Queue(nullptr, std::move(callback));
@@ -598,6 +598,8 @@ namespace skyline::gpu::interconnect {
         ResetInternal();
 
         if (wait) {
+            usageTracker.dirtyIntervals.Clear();
+
             std::condition_variable cv;
             std::mutex mutex;
             bool gpuDone{};

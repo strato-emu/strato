@@ -53,13 +53,13 @@ namespace skyline::gpu::interconnect {
             mirrorBlock = blockMapping;
         }
 
-        if (entry->trapCount > MirrorEntry::SkipTrapThreshold && entry->channelSequenceNumber != ctx.channelCtx.channelSequenceNumber) {
-            entry->channelSequenceNumber = ctx.channelCtx.channelSequenceNumber;
+        if (entry->trapCount > MirrorEntry::SkipTrapThreshold && entry->executionTag != ctx.executor.executionTag) {
+            entry->executionTag = ctx.executor.executionTag;
             entry->dirty = true;
         }
 
         // If the mirror entry has been written to, clear its shader binary cache and retrap to catch any future writes
-        if (entry->dirty) {
+        if (entry->dirty || ctx.executor.usageTracker.sequencedIntervals.Intersect(blockMapping.subspan(blockOffset))) {
             entry->cache.clear();
             entry->dirty = false;
 
@@ -129,7 +129,7 @@ namespace skyline::gpu::interconnect {
         if (programBase != lastProgramBase || programOffset != lastProgramOffset)
             return true;
 
-        if (entry && entry->trapCount > MirrorEntry::SkipTrapThreshold && entry->channelSequenceNumber != ctx.channelCtx.channelSequenceNumber)
+        if (entry && entry->trapCount > MirrorEntry::SkipTrapThreshold && entry->executionTag != ctx.executor.executionTag)
             return true;
         else if (entry && entry->dirty)
             return true;

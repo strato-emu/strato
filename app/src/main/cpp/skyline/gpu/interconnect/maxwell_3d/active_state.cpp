@@ -206,7 +206,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                         dstStageMask |=  vk::PipelineStageFlagBits::eTransformFeedbackEXT;
                     }
 
-                    view->GetBuffer()->MarkGpuDirty();
+                    view->GetBuffer()->MarkGpuDirty(ctx.executor.usageTracker);
                     builder.SetTransformFeedbackBuffer(index, *view);
                     return;
                 } else {

@@ -46,7 +46,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         ContextLock lock{ctx.executor.tag, view};
 
         // First attempt the write without setting up the gpu copy callback as a fast path
-        if (view.Write(srcCpuBuf, offset)) [[unlikely]] {
+        if (view.Write(srcCpuBuf, offset, ctx.executor.usageTracker)) [[unlikely]] {
             // Store callback data in a stack allocated struct to avoid heap allocation for the gpu copy callback lambda
             struct GpuCopyCallbackData {
                 InterconnectContext &ctx;
@@ -56,7 +56,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 BufferView &view;
             } callbackData{ctx, srcCpuBuf, offset, lock, view};
 
-            view.Write(srcCpuBuf, offset, [&callbackData]() {
+            view.Write(srcCpuBuf, offset, ctx.executor.usageTracker, [&callbackData]() {
                 callbackData.ctx.executor.AttachLockedBufferView(callbackData.view, std::move(callbackData.lock));
                 // This will prevent any CPU accesses to backing for the duration of the usage
                 callbackData.view.GetBuffer()->BlockAllCpuBackingWrites();

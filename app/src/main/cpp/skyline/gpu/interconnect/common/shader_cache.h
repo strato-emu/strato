@@ -22,7 +22,7 @@ namespace skyline::gpu::interconnect {
 
             static constexpr u32 SkipTrapThreshold{20}; //!< Threshold for the number of times a mirror trap needs to be hit before we fallback to always hashing
             u32 trapCount{}; //!< The number of times the trap has been hit, used to avoid trapping in cases where the constant retraps would harm performance
-            size_t channelSequenceNumber{}; //!< For the case where `trapCount > SkipTrapThreshold`, the memory sequence number number used to clear the cache after every access
+            ContextTag executionTag{}; //!< For the case where `trapCount > SkipTrapThreshold`, the memory sequence number number used to clear the cache after every access
             bool dirty{}; //!< If the trap has been hit and the cache needs to be cleared
 
             MirrorEntry(span<u8> alignedMirror) : mirror{alignedMirror} {}
