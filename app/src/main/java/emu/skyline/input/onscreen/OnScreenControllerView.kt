@@ -9,14 +9,10 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
-import android.content.Context.VIBRATOR_MANAGER_SERVICE
-import android.content.Context.VIBRATOR_SERVICE
 import android.graphics.Canvas
 import android.graphics.PointF
-import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.os.VibratorManager
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -66,12 +62,9 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             field = value
             (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons).forEach { it.hapticFeedback = hapticFeedback }
         }
-    private val vibrator: Vibrator =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            (context.getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION") (context.getSystemService(VIBRATOR_SERVICE) as Vibrator)
-        }
+
+    // Populated externally by the activity, as retrieving the vibrator service inside the view crashes the layout editor
+    lateinit var vibrator : Vibrator
     private val effectClick = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
 
     override fun onDraw(canvas : Canvas) {

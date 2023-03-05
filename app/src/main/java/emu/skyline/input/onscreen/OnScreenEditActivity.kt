@@ -7,6 +7,8 @@ package emu.skyline.input.onscreen
 
 import android.os.Build
 import android.os.Bundle
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -97,8 +99,6 @@ class OnScreenEditActivity : AppCompatActivity() {
             })
             show()
         }
-
-
     }
 
     private val actions : List<Pair<Int, () -> Unit>> = listOf(
@@ -130,6 +130,12 @@ class OnScreenEditActivity : AppCompatActivity() {
                 it.hide(WindowInsets.Type.systemBars())
             }
         }
+
+        binding.onScreenControllerView.vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            (getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+        else
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
 
         binding.onScreenControllerView.recenterSticks = appSettings.onScreenControlRecenterSticks
 

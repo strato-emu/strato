@@ -76,6 +76,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     lateinit var item : AppItem
 
     /**
+     * The built-in [Vibrator] of the device
+     */
+    lateinit var builtinVibrator : Vibrator
+
+    /**
      * A map of [Vibrator]s that correspond to [InputManager.controllers]
      */
     private var vibrators = HashMap<Int, Vibrator>()
@@ -263,6 +268,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         inputHandler = InputHandler(inputManager, emulationSettings)
         setContentView(binding.root)
 
+        builtinVibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android might not allow child views to overlap the system bars
             // Override this behavior and force content to extend into the cutout area
@@ -317,6 +330,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         // Hide on screen controls when first controller is not set
         binding.onScreenControllerView.apply {
+            vibrator = builtinVibrator
             controllerType = inputHandler.getFirstControllerType()
             isGone = controllerType == ControllerType.None || !appSettings.onScreenControl
             setOnButtonStateChangedListener(::onButtonStateChanged)
@@ -558,15 +572,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         } else {
             inputManager.controllers[index]!!.rumbleDeviceDescriptor?.let {
                 if (it == Controller.BuiltinRumbleDeviceDescriptor) {
-                    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                        vibratorManager.defaultVibrator
-                    } else {
-                        @Suppress("DEPRECATION")
-                        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-                    }
-                    vibrators[index] = vibrator
-                    vibrator
+                    vibrators[index] = builtinVibrator
+                    builtinVibrator
                 } else {
                     for (id in InputDevice.getDeviceIds()) {
                         val device = InputDevice.getDevice(id)
