@@ -2,11 +2,16 @@
 // Copyright © 2022 yuzu Emulator Project (https://yuzu-emu.org/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <range/v3/algorithm/any_of.hpp>
 #include <soc/gm20b/engines/maxwell/types.h>
 #include <soc/gm20b/engines/engine.h>
 #include "macro_state.h"
 
 namespace skyline::soc::gm20b {
+    static bool AnyArgsDirty(span<GpfifoArgument> args) {
+        return ranges::any_of(args, [](const GpfifoArgument &arg) { return arg.dirty; });
+    }
+
     static bool TopologyRequiresConversion(engine::maxwell3d::type::DrawTopology topology) {
         switch (topology) {
             case engine::maxwell3d::type::DrawTopology::Quads:
@@ -19,24 +24,35 @@ namespace skyline::soc::gm20b {
     }
 
     namespace macro_hle {
-        bool DrawInstanced(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+        bool DrawInstanced(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
+            if (AnyArgsDirty(args))
+                flushCallback();
+
             u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
 
             targetEngine->DrawInstanced(true, *args[0], *args[1], instanceCount, *args[3], *args[4]);
             return true;
         }
 
-        bool DrawIndexedInstanced(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+        bool DrawIndexedInstanced(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
+            if (AnyArgsDirty(args))
+                flushCallback();
+
             u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
 
             targetEngine->DrawIndexedInstanced(true, *args[0], *args[1], instanceCount, *args[3], *args[4], *args[5]);
             return true;
         }
 
-        bool DrawInstancedIndexedIndirectWithConstantBuffer(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+        bool DrawInstancedIndexedIndirectWithConstantBuffer(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
             u32 topology{*args[0]};
-            if (TopologyRequiresConversion(static_cast<engine::maxwell3d::type::DrawTopology>(topology)) || !args[1].argumentPtr) {
-                // If the passed parameters aren't dirty or the indirect topology isn't supported fallback to a non indirect draw (may wait)
+            bool topologyConversion{TopologyRequiresConversion(static_cast<engine::maxwell3d::type::DrawTopology>(topology))};
+
+            // If the indirect topology isn't supported flush and fallback to a non indirect draw
+            if (topologyConversion && args[1].dirty)
+                flushCallback();
+
+            if (topologyConversion || !args[1].dirty) {
                 u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
                 targetEngine->DrawIndexedInstanced(false, topology, *args[1], instanceCount, *args[4], *args[3], *args[5]);
             } else {
@@ -76,7 +92,7 @@ namespace skyline::soc::gm20b {
         invalidatePending = true;
     }
 
-    void MacroState::Execute(u32 position, span<MacroArgument> args, engine::MacroEngineBase *targetEngine) {
+    void MacroState::Execute(u32 position, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
         size_t offset{macroPositions[position]};
 
         if (invalidatePending) {
@@ -91,11 +107,14 @@ namespace skyline::soc::gm20b {
             hleEntry.valid = true;
         }
 
-        if (macroHleFunctions[position].function && macroHleFunctions[position].function(offset, args, targetEngine))
+        if (macroHleFunctions[position].function && macroHleFunctions[position].function(offset, args, targetEngine, flushCallback))
             return;
 
+        if (AnyArgsDirty(args))
+            flushCallback();
+
         argumentStorage.resize(args.size());
-        std::transform(args.begin(), args.end(), argumentStorage.begin(), [](MacroArgument arg) { return *arg; });
+        std::transform(args.begin(), args.end(), argumentStorage.begin(), [](GpfifoArgument arg) { return *arg; });
         macroInterpreter.Execute(offset, argumentStorage, targetEngine);
     }
 }

@@ -80,7 +80,7 @@ namespace skyline::soc::gm20b::engine {
 
         struct {
             u32 index{std::numeric_limits<u32>::max()};
-            std::vector<MacroArgument> arguments;
+            std::vector<GpfifoArgument> arguments;
 
             bool Valid() {
                 return index != std::numeric_limits<u32>::max();
@@ -121,7 +121,8 @@ namespace skyline::soc::gm20b::engine {
         /**
          * @brief Handles a call to a method in the MME space
          * @param macroMethodOffset The target offset from EngineMethodsEnd
+         * @return If flushes should be skipped for subsequent GPFIFO argument fetches
          */
-        void HandleMacroCall(u32 macroMethodOffset, u32 argument, u32 *argumentPtr, bool lastCall);
+        bool HandleMacroCall(u32 macroMethodOffset, GpfifoArgument argument, bool lastCall, const std::function<void(void)> &flushCallback);
     };
 }

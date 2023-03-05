@@ -18,12 +18,12 @@ namespace skyline::soc::gm20b::engine {
 
     MacroEngineBase::MacroEngineBase(MacroState &macroState) : macroState(macroState) {}
 
-    void MacroEngineBase::HandleMacroCall(u32 macroMethodOffset, u32 argument, u32 *argumentPtr, bool lastCall) {
+    bool MacroEngineBase::HandleMacroCall(u32 macroMethodOffset, GpfifoArgument argument, bool lastCall, const std::function<void(void)> &flushCallback) {
         // Starting a new macro at index 'macroMethodOffset / 2'
         if (!(macroMethodOffset & 1)) {
             // Flush the current macro as we are switching to another one
             if (macroInvocation.Valid()) {
-                macroState.Execute(macroInvocation.index, macroInvocation.arguments, this);
+                macroState.Execute(macroInvocation.index, macroInvocation.arguments, this, flushCallback);
                 macroInvocation.Reset();
             }
 
@@ -31,12 +31,15 @@ namespace skyline::soc::gm20b::engine {
             macroInvocation.index = (macroMethodOffset / 2) % macroState.macroPositions.size();
         }
 
-        macroInvocation.arguments.emplace_back(argument, argumentPtr);
+        macroInvocation.arguments.emplace_back(argument);
 
         // Flush macro after all of the data in the method call has been sent
         if (lastCall && macroInvocation.Valid()) {
-            macroState.Execute(macroInvocation.index, macroInvocation.arguments, this);
+            macroState.Execute(macroInvocation.index, macroInvocation.arguments, this, flushCallback);
             macroInvocation.Reset();
+            return false;
         }
+
+        return true;
     };
 }

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <common/circular_queue.h>
+#include <soc/gm20b/macro/macro_state.h>
 #include "engines/gpfifo.h"
 
 namespace skyline::soc::gm20b {
@@ -107,6 +108,7 @@ namespace skyline::soc::gm20b {
         engine::GPFIFO gpfifoEngine; //!< The engine for processing GPFIFO method calls
         CircularQueue<GpEntry> gpEntries;
         std::vector<u32> pushBufferData; //!< Persistent vector storing pushbuffer data to avoid constant reallocations
+        bool skipDirtyFlushes{}; //!< If GPU flushing should be skipped when fetching pushbuffer contents
 
         /**
          * @brief Holds the required state in order to resume a method started from one call to `Process` in another
@@ -132,7 +134,7 @@ namespace skyline::soc::gm20b {
         /**
          * @brief Sends a method call to the appropriate subchannel and handles macro and GPFIFO methods
          */
-        void SendFull(u32 method, u32 argument, u32 *argumentPtr, SubchannelId subchannel, bool lastCall);
+        void SendFull(u32 method, GpfifoArgument argument, SubchannelId subchannel, bool lastCall);
 
         /**
          * @brief Sends a method call to the appropriate subchannel, macro and GPFIFO methods are not handled

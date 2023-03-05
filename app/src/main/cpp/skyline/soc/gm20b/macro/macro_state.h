@@ -7,11 +7,17 @@
 #include "macro_interpreter.h"
 
 namespace skyline::soc::gm20b {
-    struct MacroArgument {
+    /**
+     * @brief A GPFIFO argument that can be either a value or a pointer to a value
+     */
+    struct GpfifoArgument {
         u32 argument;
-        u32 *argumentPtr;
+        u32 *argumentPtr{};
+        bool dirty{};
 
-        MacroArgument(u32 argument, u32 *argumentPtr) : argument{argument}, argumentPtr{argumentPtr} {}
+        GpfifoArgument(u32 argument, u32 *argumentPtr, bool dirty) : argument{argument}, argumentPtr{argumentPtr}, dirty{dirty} {}
+
+        explicit GpfifoArgument(u32 argument) : argument{argument} {}
 
         u32 operator*() const {
             return argumentPtr ? *argumentPtr : argument;
@@ -19,7 +25,7 @@ namespace skyline::soc::gm20b {
     };
 
     namespace macro_hle {
-        using Function = bool (*)(size_t offset, span<MacroArgument> args, engine::MacroEngineBase *targetEngine);
+        using Function = bool (*)(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback);
     }
 
     /**
@@ -41,8 +47,14 @@ namespace skyline::soc::gm20b {
 
         MacroState() : macroInterpreter{macroCode} {}
 
+        /**
+         * @brief Invalidates the HLE function cache
+         */
         void Invalidate();
 
-        void Execute(u32 position, span<MacroArgument> args, engine::MacroEngineBase *targetEngine);
+        /**
+         * @brief Executes a macro at a given position, this can either be a HLE function or the interpreter
+         */
+        void Execute(u32 position, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback);
     };
 }
