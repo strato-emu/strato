@@ -3,6 +3,7 @@
     <string name="search">搜索</string>
     <string name="error">发生了错误</string>
     <string name="copied_to_clipboard">复制到剪贴板</string>
+    <string name="emulator">模拟器</string>
     <!-- Toolbar Main -->
     <string name="settings">设置</string>
     <string name="share_logs">共享日志</string>
@@ -21,42 +22,12 @@
     <string name="invalid_file">无效的文件</string>
     <string name="missing_title_key">缺少title prod密钥</string>
     <string name="incomplete_prod_keys">密钥不完整</string>
-    <!-- Settings - Emulator -->
-    <string name="emulator">模拟器</string>
-    <string name="search_location">搜索位置</string>
+    <!-- Settings - Content -->
+    <string name="content">内容</string>
     <string name="open_data_directory">查看内部目录</string>
     <string name="open_data_directory_summary">在文件管理器中打开 Skyline 的内部目录</string>
-    <string name="failed_open_directory">找不到外部文件管理器来打开 Skyline 的内部目录</string>
-    <string name="theme">主题</string>
-    <string name="layout_type">游戏显示布局</string>
-    <string name="group_by_format">按格式分组游戏</string>
-    <string name="group_by_format_desc_off">游戏将显示为单个列表</string>
-    <string name="group_by_format_desc_on">游戏将按格式分组显示</string>
-    <string name="sort_apps_by">游戏排序顺序</string>
-    <string name="select_action">始终显示游戏信息</string>
-    <string name="select_action_desc_on">游戏信息将在点击游戏时显示</string>
-    <string name="select_action_desc_off">游戏信息只会在长按游戏时显示</string>
-    <string name="perf_stats">显示帧数信息</string>
-    <string name="shader_cache">禁用着色器缓存</string>
-    <string name="perf_stats_desc_off">不会显示性能统计信息</string>
-    <string name="perf_stats_desc_on">帧数数据将显示在左上角</string>
-    <string name="shader_cache_disabled">缓存的着色器不会被加载，会导致卡顿</string>
-    <string name="shader_cache_enabled">缓存的着色器将被加载，可以大大减少卡顿</string>
-    <string name="log_level">日志级别</string>
-    <string name="gpu_driver_config">GPU 驱动程序配置</string>
-    <string name="gpu_driver_config_desc">GPU驱动程序: %1$s</string>
-    <string name="gpu_driver_config_desc_unsupported">您的设备不支持自定义驱动程序</string>
-    <string name="app_language">应用语言</string>
-    <string name="app_language_default">使用系统默认值</string>
-    <!-- Settings - System -->
-    <string name="system">系统设置</string>
-    <string name="use_docked">启用主机模式</string>
-    <string name="handheld_enabled">正在使用掌机模式</string>
-    <string name="docked_enabled">正在使用主机模式</string>
-    <string name="username">用户名</string>
-    <string name="profile_picture">头像</string>
-    <string name="system_language">系统语言</string>
-    <string name="system_region">系统区域</string>
+    <string name="open_data_directory_failed">找不到外部文件管理器来打开 Skyline 的内部目录</string>
+    <string name="search_location">搜索位置</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys文件</string>
     <string name="prod_keys">Production Keys</string>
@@ -66,22 +37,68 @@
     <string name="import_keys_invalid_keys">您尝试导入的密钥无效</string>
     <string name="import_keys_delete_previous_failed">无法删除当前安装的密钥</string>
     <string name="import_keys_move_failed">无法将密钥移动到当前目录</string>
+    <!-- Settings - Appearance -->
+    <string name="appearance">外观</string>
+    <string name="theme">主题</string>
+    <string name="app_language">应用语言</string>
+    <string name="app_language_default">使用系统默认值</string>
+    <string name="layout_type">游戏显示布局</string>
+    <string name="sort_apps_by">游戏排序顺序</string>
+    <string name="group_by_format">按格式分组游戏</string>
+    <string name="group_by_format_desc_off">游戏将显示为单个列表</string>
+    <string name="group_by_format_desc_on">游戏将按格式分组显示</string>
+    <string name="select_action">始终显示游戏信息</string>
+    <string name="select_action_desc_on">游戏信息将在点击游戏时显示</string>
+    <string name="select_action_desc_off">游戏信息只会在长按游戏时显示</string>
+    <!-- Settings - Game -->
+    <string name="game">游戏</string>
+    <string name="use_custom_settings">启用自定义设置</string>
+    <string name="use_custom_settings_desc_on">此游戏的自定义设置已启用</string>
+    <string name="use_custom_settings_desc_off">此游戏的自定义设置已禁用</string>
+    <string name="reset_custom_settings">重置自定义设置</string>
+    <string name="reset_custom_settings_desc">将自定义设置重置为默认值</string>
+    <string name="reset_settings_warning">您确定要将所有设置重置为默认值？<b>当前设置将会丢失</b></string>
+    <string name="copy_global_settings">复制全局设置</string>
+    <string name="copy_global_settings_desc">复制全局设置到此游戏</string>
+    <string name="copy_global_settings_warning">您确定要将全局设置复制到此游戏？<b>当前设置将会丢失</b></string>
+    <!-- Settings - System -->
+    <string name="system">系统设置</string>
+    <string name="use_docked">启用主机模式</string>
+    <string name="handheld_enabled">正在使用掌机模式</string>
+    <string name="docked_enabled">正在使用主机模式</string>
+    <string name="username">用户名</string>
+    <string name="profile_picture">头像</string>
+    <string name="system_language">系统语言</string>
+    <string name="system_region">系统区域</string>
     <!-- Settings - Display -->
     <string name="display">显示</string>
+    <string name="perf_stats">显示帧数信息</string>
+    <string name="perf_stats_desc_off">不会显示性能统计信息</string>
+    <string name="perf_stats_desc_on">帧数数据将显示在左上角</string>
+    <string name="max_refresh_rate">使用最大显示刷新率</string>
+    <string name="max_refresh_rate_enabled">将显示刷新率设置得尽可能高（会破坏大多数游戏）</string>
+    <string name="max_refresh_rate_disabled">将显示刷新率设置为 60Hz</string>
     <string name="screen_orientation">屏幕方向</string>
+    <string name="aspect_ratio">宽高比</string>
+    <string name="respect_display_cutout">剪裁绘制元素</string>
+    <string name="respect_display_cutout_enabled">不要在切口区域绘制 UI 元素</string>
+    <string name="respect_display_cutout_disabled">允许在剪裁区域中绘制 UI 元素</string>
+    <!-- Settings - Audio -->
+    <string name="audio">音频</string>
+    <string name="disable_audio_output">禁用音频输出</string>
+    <string name="disable_audio_output_enabled">音频输出被禁用</string>
+    <string name="disable_audio_output_disabled">启用音频输出</string>
+    <!-- Settings - GPU -->
+    <string name="gpu">GPU</string>
+    <string name="gpu_driver_config">GPU 驱动程序配置</string>
+    <string name="gpu_driver_config_desc">GPU驱动程序: %1$s</string>
+    <string name="gpu_driver_config_desc_unsupported">您的设备不支持自定义驱动程序</string>
     <string name="force_triple_buffering">强制三重缓冲</string>
     <string name="triple_buffering_enabled">启用至少三个交换链缓冲器（更高帧率但是更高的输入延迟）</string>
     <string name="triple_buffering_disabled">启用至少两个交换链缓存器（较低的帧率但是较少的输入延迟）</string>
     <string name="disable_frame_throttling">禁用帧率限制</string>
     <string name="disable_frame_throttling_enabled">允许游戏以尽可能快的速度提交帧（仅用于基准测试）\n\n<b>注意：</b>启用此功能后，将使用另一种方法来测量 FPS，这些数字不得与受限制的 FPS 数字进行比较</string>
     <string name="disable_frame_throttling_disabled">只允许游戏以显示刷新率提交帧</string>
-    <string name="max_refresh_rate">使用最大显示刷新率</string>
-    <string name="max_refresh_rate_enabled">将显示刷新率设置得尽可能高（会破坏大多数游戏）</string>
-    <string name="max_refresh_rate_disabled">将显示刷新率设置为 60Hz</string>
-    <string name="aspect_ratio">宽高比</string>
-    <string name="respect_display_cutout">剪裁绘制元素</string>
-    <string name="respect_display_cutout_enabled">不要在切口区域绘制 UI 元素</string>
-    <string name="respect_display_cutout_disabled">允许在剪裁区域中绘制 UI 元素</string>
     <string name="executor_slot_count_scale">执行器插槽计数比例</string>
     <string name="executor_slot_count_scale_desc">缩放控制同时 GPU 执行的最大数量（更高有时可能表现更好但会使用更多 RAM）</string>
     <string name="executor_flush_threshold">执行器刷新阈值</string>
@@ -91,6 +108,9 @@
     <string name="force_max_gpu_clocks">强制最大 GPU 时钟</string>
     <string name="force_max_gpu_clocks_desc">强制 GPU 以最大可能时钟速度运行（可能导致过热和耗电）</string>
     <string name="force_max_gpu_clocks_desc_unsupported">您的设备不支持强制最大 GPU 时钟</string>
+    <string name="shader_cache">禁用着色器缓存</string>
+    <string name="shader_cache_disabled">缓存的着色器不会被加载，会导致卡顿</string>
+    <string name="shader_cache_enabled">缓存的着色器将被加载，可以大大减少卡顿</string>
     <!-- Settings - Hacks -->
     <string name="hacks">黑客</string>
     <string name="enable_fast_gpu_readback">启用快速 GPU 回读</string>
@@ -102,14 +122,9 @@
     <string name="disable_subgroup_shuffle">禁用 GPU 子组随机播放</string>
     <string name="disable_subgroup_shuffle_enabled">着色器子组随机播放操作被禁用，可能会导致严重的图形问题</string>
     <string name="disable_subgroup_shuffle_disabled">启用着色器子组随机播放操作，确保最大准确性</string>
-
-    <!-- Settings - Audio -->
-    <string name="audio">音频</string>
-    <string name="disable_audio_output">禁用音频输出</string>
-    <string name="disable_audio_output_enabled">音频输出被禁用</string>
-    <string name="disable_audio_output_disabled">启用音频输出</string>
     <!-- Settings - Debug -->
     <string name="debug">调试</string>
+    <string name="log_level">日志级别</string>
     <string name="validation_layer">启用调试层</string>
     <string name="validation_layer_enabled">Vulkan调试层已启用，预计会出现重大减速</string>
     <string name="validation_layer_disabled">Vulkan调试层被禁用</string>
