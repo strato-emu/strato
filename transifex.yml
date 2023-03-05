@@ -9,5 +9,6 @@ git:
     language_mapping:
       es_419: b+es+419
       id: in
+      pt_BR: pt-rBR
       zh-Hans: b+zh+Hans
       zh-Hant: b+zh+Hant
