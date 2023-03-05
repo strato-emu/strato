@@ -22,6 +22,7 @@ import android.os.*
 import android.util.Log
 import android.util.Rational
 import android.view.*
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.getSystemService
@@ -308,6 +309,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         force60HzRefreshRate(!emulationSettings.maxRefreshRate)
         getSystemService<DisplayManager>()?.registerDisplayListener(this, null)
+
+        if (!emulationSettings.isGlobal && emulationSettings.useCustomSettings)
+            Toast.makeText(this, getString(R.string.per_game_settings_active_message), Toast.LENGTH_SHORT).show()
 
         binding.gameView.setOnTouchListener(this)
 

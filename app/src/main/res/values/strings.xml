@@ -257,4 +257,5 @@
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expand</string>
     <string name="undo">Undo</string>
+    <string name="per_game_settings_active_message">Per-game settings are active</string>
 </resources>
