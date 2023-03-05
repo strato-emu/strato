@@ -7,7 +7,6 @@ package emu.skyline.input.onscreen
 
 import android.graphics.Canvas
 import android.graphics.PointF
-import android.graphics.Typeface
 import android.os.SystemClock
 import androidx.core.graphics.minus
 import emu.skyline.R

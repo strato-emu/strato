@@ -35,12 +35,11 @@ abstract class OnScreenButton(
         const val CONFIGURED_ASPECT_RATIO = 2074f / 874f
     }
 
-    val config = if (onScreenControllerView.isInEditMode) ControllerConfigurationDummy(defaultRelativeX, defaultRelativeY)
-    else ControllerConfigurationImpl(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY)
+    val config = OnScreenConfiguration(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY)
 
     protected val drawable = ContextCompat.getDrawable(onScreenControllerView.context, drawableId)!!
 
-    internal val buttonSymbolPaint = Paint().apply {
+    private val buttonSymbolPaint = Paint().apply {
         color = config.textColor
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         isAntiAlias = true
