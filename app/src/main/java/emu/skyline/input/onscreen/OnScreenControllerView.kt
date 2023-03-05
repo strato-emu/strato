@@ -268,7 +268,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             it.config.enabled = true
         }
         controls.globalScale = 1.15f
-        controls.alpha = 255
+        controls.alpha = 155
         invalidate()
     }
 

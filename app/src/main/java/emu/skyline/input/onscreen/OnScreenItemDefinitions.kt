@@ -67,10 +67,6 @@ class JoystickButton(
     var shortDoubleTapped = false
         private set
 
-    init {
-        innerButton.buttonSymbolPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-    }
-
     override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) = Unit
 
     override fun render(canvas : Canvas) {
