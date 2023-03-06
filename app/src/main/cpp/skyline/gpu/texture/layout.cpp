@@ -177,17 +177,14 @@ namespace skyline::gpu::texture {
 
             if (hasPaddingBlock)
                 deswizzleBlock(pitchRob, [&](u8 *linearSector, size_t xT) __attribute__((always_inline)) {
-                    #pragma clang loop unroll_count(4)
-                    for (size_t pixelOffset{}; pixelOffset < SectorWidth; pixelOffset += formatBpb) {
-                        if (xT < blockPaddingOffset) {
-                            if constexpr (BlockLinearToPitch)
-                                std::memcpy(linearSector + pixelOffset, sector, formatBpb);
-                            else
-                                std::memcpy(sector, linearSector + pixelOffset, formatBpb);
-                        }
-                        xT += formatBpb;
-                    }
+                    if (xT < blockPaddingOffset) {
+                        size_t copyAmount{std::min<size_t>(blockPaddingOffset - xT, SectorWidth)};
 
+                        if constexpr (BlockLinearToPitch)
+                            std::memcpy(linearSector, sector, copyAmount);
+                        else
+                            std::memcpy(sector, linearSector, copyAmount);
+                    }
                     sector += SectorWidth;
                 });
         }};
