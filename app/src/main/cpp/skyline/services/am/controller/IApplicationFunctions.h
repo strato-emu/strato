@@ -56,6 +56,8 @@ namespace skyline::service::am {
          */
         Result GetDisplayVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result GetSaveDataSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         /**
          * @brief Returns if the application is running or not, always returns true
          * @url https://switchbrew.org/wiki/Applet_Manager_services#NotifyRunning
@@ -144,6 +146,7 @@ namespace skyline::service::am {
             SFUNC(0x15, IApplicationFunctions, GetDesiredLanguage),
             SFUNC(0x16, IApplicationFunctions, SetTerminateResult),
             SFUNC(0x17, IApplicationFunctions, GetDisplayVersion),
+            SFUNC(0x1A, IApplicationFunctions, GetSaveDataSize),
             SFUNC(0x28, IApplicationFunctions, NotifyRunning),
             SFUNC(0x32, IApplicationFunctions, GetPseudoDeviceId),
             SFUNC(0x42, IApplicationFunctions, InitializeGamePlayRecording),
