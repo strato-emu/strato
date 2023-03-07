@@ -39,6 +39,8 @@
         <item name="alertDialogTheme">@style/ThemeOverlay.App.MaterialAlertDialog</item>
         <!-- Workaround for AndroidX PreferenceScreen since it uses colorAccent as categories text color -->
         <item name="colorAccent">?attr/colorPrimary</item>
+        <!-- Override the default switch preference style to use the MD3 switch -->
+        <item name="switchPreferenceCompatStyle">@style/App.Preference.SwitchPreferenceCompat.Material3</item>
     </style>
 
     <style name="AppTheme" parent="BaseAppTheme">

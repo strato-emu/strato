@@ -3,7 +3,7 @@
     <PreferenceCategory
         android:key="category_system"
         android:title="@string/system">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:summaryOff="@string/handheld_enabled"
             android:summaryOn="@string/docked_enabled"
@@ -36,13 +36,13 @@
     <PreferenceCategory
         android:key="category_presentation"
         android:title="@string/display">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/perf_stats_desc_off"
             android:summaryOn="@string/perf_stats_desc_on"
             app:key="perf_stats"
             app:title="@string/perf_stats" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/max_refresh_rate_disabled"
             android:summaryOn="@string/max_refresh_rate_enabled"
@@ -61,7 +61,7 @@
             app:key="aspect_ratio"
             app:title="@string/aspect_ratio"
             app:useSimpleSummaryProvider="true" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/respect_display_cutout_disabled"
             android:summaryOn="@string/respect_display_cutout_enabled"
@@ -71,7 +71,7 @@
     <PreferenceCategory
         android:key="category_audio"
         android:title="@string/audio">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/disable_audio_output_disabled"
             android:summaryOn="@string/disable_audio_output_enabled"
@@ -84,13 +84,13 @@
         <emu.skyline.preference.GpuDriverPreference
             app:key="gpu_driver"
             app:title="@string/gpu_driver_config" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:summaryOff="@string/triple_buffering_disabled"
             android:summaryOn="@string/triple_buffering_enabled"
             app:key="force_triple_buffering"
             app:title="@string/force_triple_buffering" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:dependency="force_triple_buffering"
             android:summaryOff="@string/disable_frame_throttling_disabled"
@@ -113,22 +113,22 @@
             app:key="executor_flush_threshold"
             app:showSeekBarValue="true"
             app:title="@string/executor_flush_threshold" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summary="@string/use_direct_memory_import_desc"
             app:key="use_direct_memory_import"
             app:title="@string/use_direct_memory_import" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summary="@string/force_max_gpu_clocks_desc"
             app:key="force_max_gpu_clocks"
             app:title="@string/force_max_gpu_clocks" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summary="@string/free_guest_texture_memory_desc"
             app:key="free_guest_texture_memory"
             app:title="@string/free_guest_texture_memory" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/shader_cache_enabled"
             android:summaryOn="@string/shader_cache_disabled"
@@ -138,20 +138,20 @@
     <PreferenceCategory
         android:key="category_hacks"
         android:title="@string/hacks">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/enable_fast_gpu_readback_disabled"
             android:summaryOn="@string/enable_fast_gpu_readback_enabled"
             app:key="enable_fast_gpu_readback_hack"
             app:title="@string/enable_fast_gpu_readback" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:dependency="enable_fast_gpu_readback_hack"
             android:summaryOff="@string/enable_fast_readback_writes_disabled"
             android:summaryOn="@string/enable_fast_readback_writes_enabled"
             app:key="enable_fast_readback_writes"
             app:title="@string/enable_fast_readback_writes" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/disable_subgroup_shuffle_disabled"
             android:summaryOn="@string/disable_subgroup_shuffle_enabled"
@@ -167,7 +167,7 @@
             app:key="log_level"
             app:title="@string/log_level"
             app:useSimpleSummaryProvider="true" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/validation_layer_disabled"
             android:summaryOn="@string/validation_layer_enabled"

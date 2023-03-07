@@ -11,4 +11,9 @@
     <style name="ChipChoice" parent="Widget.Material3.Chip.Filter.Elevated">
         <item name="android:textAllCaps">true</item>
     </style>
+
+    <!-- Override the default switch preference style to use the MD3 switch -->
+    <style name="App.Preference.SwitchPreferenceCompat.Material3" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:widgetLayout">@layout/preference_widget_material_switch</item>
+    </style>
 </resources>

@@ -7,10 +7,10 @@ package emu.skyline.settings
 
 import android.os.Bundle
 import android.view.View
-import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.TwoStatePreference
 import emu.skyline.BuildConfig
 import emu.skyline.R
 import emu.skyline.preference.IntegerListPreference
@@ -41,8 +41,8 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
         addPreferencesFromResource(R.xml.credits_preferences)
 
         // Uncheck `disable_frame_throttling` if `force_triple_buffering` gets disabled
-        val disableFrameThrottlingPref = findPreference<CheckBoxPreference>("disable_frame_throttling")!!
-        findPreference<CheckBoxPreference>("force_triple_buffering")?.setOnPreferenceChangeListener { _, newValue ->
+        val disableFrameThrottlingPref = findPreference<TwoStatePreference>("disable_frame_throttling")!!
+        findPreference<TwoStatePreference>("force_triple_buffering")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue == false)
                 disableFrameThrottlingPref.isChecked = false
             true
@@ -54,7 +54,7 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             findPreference<Preference>("validation_layer")?.isVisible = true
 
         if (!GpuDriverHelper.supportsForceMaxGpuClocks()) {
-            val forceMaxGpuClocksPref = findPreference<CheckBoxPreference>("force_max_gpu_clocks")!!
+            val forceMaxGpuClocksPref = findPreference<TwoStatePreference>("force_max_gpu_clocks")!!
             forceMaxGpuClocksPref.isSelectable = false
             forceMaxGpuClocksPref.isChecked = false
             forceMaxGpuClocksPref.summary = context!!.getString(R.string.force_max_gpu_clocks_desc_unsupported)

@@ -56,8 +56,8 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
         ).forEach { it?.dependency = "use_custom_settings" }
 
         // Uncheck `disable_frame_throttling` if `force_triple_buffering` gets disabled
-        val disableFrameThrottlingPref = findPreference<CheckBoxPreference>("disable_frame_throttling")!!
-        findPreference<CheckBoxPreference>("force_triple_buffering")?.setOnPreferenceChangeListener { _, newValue ->
+        val disableFrameThrottlingPref = findPreference<TwoStatePreference>("disable_frame_throttling")!!
+        findPreference<TwoStatePreference>("force_triple_buffering")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue == false)
                 disableFrameThrottlingPref.isChecked = false
             true
@@ -69,7 +69,7 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
             findPreference<Preference>("validation_layer")?.isVisible = true
 
         if (!GpuDriverHelper.supportsForceMaxGpuClocks()) {
-            val forceMaxGpuClocksPref = findPreference<CheckBoxPreference>("force_max_gpu_clocks")!!
+            val forceMaxGpuClocksPref = findPreference<TwoStatePreference>("force_max_gpu_clocks")!!
             forceMaxGpuClocksPref.isSelectable = false
             forceMaxGpuClocksPref.isChecked = false
             forceMaxGpuClocksPref.summary = context!!.getString(R.string.force_max_gpu_clocks_desc_unsupported)

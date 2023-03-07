@@ -29,6 +29,7 @@ class ControllerCheckBoxViewItem(var title : String, var summary : String, var c
         binding.checkbox.isChecked = checked
         binding.root.setOnClickListener {
             checked = !checked
+            binding.checkbox.isChecked = checked
             onCheckedChange.invoke(this, position)
         }
     }

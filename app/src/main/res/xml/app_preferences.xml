@@ -45,14 +45,13 @@
             app:refreshRequired="true"
             app:title="@string/sort_apps_by"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.RefreshCheckBoxPreference
+        <emu.skyline.preference.RefreshSwitchPreferenceCompat
             android:defaultValue="true"
             android:summaryOff="@string/group_by_format_desc_off"
             android:summaryOn="@string/group_by_format_desc_on"
             app:key="group_by_format"
-            app:refreshRequired="true"
             app:title="@string/group_by_format" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/select_action_desc_off"
             android:summaryOn="@string/select_action_desc_on"

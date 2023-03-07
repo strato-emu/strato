@@ -38,12 +38,13 @@
             tools:text="Summary" />
     </LinearLayout>
 
-    <com.google.android.material.checkbox.MaterialCheckBox
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@null"
         android:clickable="false"
-        android:gravity="end|center_vertical"
+        android:focusable="false"
         android:paddingStart="16dp"
         android:paddingEnd="0dp" />
 </LinearLayout>

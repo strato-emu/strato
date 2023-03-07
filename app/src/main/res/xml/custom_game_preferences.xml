@@ -3,7 +3,7 @@
     <PreferenceCategory
         android:key="category_game"
         android:title="@string/game">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/use_custom_settings_desc_off"
             android:summaryOn="@string/use_custom_settings_desc_on"

@@ -13,6 +13,7 @@ import android.view.KeyEvent
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.content.res.use
 import androidx.core.view.WindowCompat
 import androidx.core.view.marginTop
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -91,17 +92,14 @@ class ControllerActivity : AppCompatActivity() {
                 items.add(ControllerCheckBoxViewItem(getString(R.string.osc_enable), oscSummary.invoke(appSettings.onScreenControl), appSettings.onScreenControl) { item, position ->
                     item.summary = oscSummary.invoke(item.checked)
                     appSettings.onScreenControl = item.checked
-                    adapter.notifyItemChanged(position)
                 })
 
                 items.add(ControllerCheckBoxViewItem(getString(R.string.osc_feedback), getString(R.string.osc_feedback_description), appSettings.onScreenControlFeedback) { item, position ->
                     appSettings.onScreenControlFeedback = item.checked
-                    adapter.notifyItemChanged(position)
                 })
 
                 items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", appSettings.onScreenControlRecenterSticks) { item, position ->
                     appSettings.onScreenControlRecenterSticks = item.checked
-                    adapter.notifyItemChanged(position)
                 })
 
                 items.add(ControllerViewItem(content = getString(R.string.osc_edit), onClick = {
