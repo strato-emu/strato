@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!-- Material Divider for PreferenceScreen -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <solid android:color="?attr/colorOutlineVariant" />
+            <size
+                android:width="1dp"
+                android:height="1dp" />
+        </shape>
+    </item>
+</layer-list>

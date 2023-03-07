@@ -16,4 +16,9 @@
     <style name="App.Preference.SwitchPreferenceCompat.Material3" parent="Preference.SwitchPreferenceCompat.Material">
         <item name="android:widgetLayout">@layout/preference_widget_material_switch</item>
     </style>
+
+    <!-- Override the default divider used in PreferenceScreen -->
+    <style name="App.PreferenceFragment.Material" parent="PreferenceFragment.Material">
+        <item name="android:divider">@drawable/preference_list_divider_m3</item>
+    </style>
 </resources>
