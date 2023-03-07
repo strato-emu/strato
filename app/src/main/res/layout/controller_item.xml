@@ -19,19 +19,18 @@
 
     <TextView
         android:id="@+id/text_title"
+        style="@style/TextAppearance.Material3.TitleMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItem"
         tools:text="@string/config_controller" />
 
     <TextView
         android:id="@+id/text_author"
+        style="?attr/textAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxLines="10"
-        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-        android:textColor="?android:attr/textColorSecondary"
         tools:text="@string/handheld_procon" />
 </LinearLayout>

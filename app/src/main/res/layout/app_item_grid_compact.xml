@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/item_click_layout"
+    style="@style/Widget.Material3.CardView.Elevated"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="7.5dp"
-    app:cardCornerRadius="@dimen/cornerRadiusMedium"
-    app:cardElevation="2dp">
+    app:shapeAppearance="?attr/shapeAppearanceCornerLarge">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -28,6 +28,7 @@
 
         <TextView
             android:id="@+id/text_title"
+            style="?attr/textAppearanceTitleSmall"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="marquee"
@@ -35,10 +36,7 @@
             android:paddingHorizontal="8dp"
             android:singleLine="true"
             android:textAlignment="viewStart"
-            android:textAppearance="?android:attr/textAppearanceListItem"
             android:textColor="@android:color/white"
-            android:textSize="15sp"
-            android:textStyle="bold"
             app:layout_constrainedWidth="true"
             app:layout_constraintBottom_toTopOf="@id/text_version"
             app:layout_constraintEnd_toEndOf="@id/icon"
@@ -47,6 +45,7 @@
 
         <TextView
             android:id="@+id/text_version"
+            style="?attr/textAppearanceBodySmall"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:alpha="0.95"
@@ -55,7 +54,6 @@
             android:paddingHorizontal="8dp"
             android:singleLine="true"
             android:textAlignment="viewStart"
-            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
             android:textColor="@android:color/white"
             app:layout_constraintBottom_toTopOf="@id/text_author"
             app:layout_constraintEnd_toEndOf="@id/icon"
@@ -64,6 +62,7 @@
 
         <TextView
             android:id="@+id/text_author"
+            style="?attr/textAppearanceBodySmall"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
@@ -73,9 +72,7 @@
             android:paddingHorizontal="8dp"
             android:singleLine="true"
             android:textAlignment="viewStart"
-            android:textAppearance="?android:attr/textAppearanceListItemSecondary"
             android:textColor="@android:color/white"
-            android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="@id/icon"
             app:layout_constraintEnd_toEndOf="@id/icon"
             app:layout_constraintStart_toStartOf="@id/icon"

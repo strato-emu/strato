@@ -4,9 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    app:backgroundTint="?attr/colorPrimary"
-    app:ensureMinTouchTargetSize="false"
     android:layout_margin="4dp"
+    app:ensureMinTouchTargetSize="false"
     app:fabSize="mini"
-    app:tint="@android:color/white"
+    app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.ExtraLarge"
     tools:ignore="ContentDescription" />

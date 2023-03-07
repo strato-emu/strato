@@ -16,14 +16,13 @@
 
     <TextView
         android:id="@+id/button_title"
+        style="?attr/textAppearanceBodyLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:animateLayoutChanges="true"
         android:text="@string/use_button_axis"
-        android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-        android:textSize="16sp" />
+        android:textAlignment="center" />
 
     <RelativeLayout
         android:id="@+id/button_container"
@@ -72,13 +71,12 @@
         android:visibility="gone"
         tools:visibility="visible" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/button_reset"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:layout_marginEnd="10dp"
-        android:text="@string/reset"
-        android:textColor="?attr/colorAccent" />
+        android:text="@string/reset" />
 </LinearLayout>

@@ -13,25 +13,25 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/icon"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:contentDescription="@string/icon"
         android:focusable="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:shapeAppearance="?attr/shapeAppearanceSmallComponent"
+        app:shapeAppearance="?attr/shapeAppearanceMediumComponent"
         tools:src="@drawable/default_icon" />
 
     <TextView
         android:id="@+id/text_title"
+        style="?attr/textAppearanceTitleMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItem"
         app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toTopOf="@id/text_version"
         app:layout_constraintEnd_toEndOf="parent"
@@ -42,13 +42,12 @@
 
     <TextView
         android:id="@+id/text_version"
+        style="?attr/textAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-        android:textColor="@android:color/tertiary_text_light"
         app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toTopOf="@id/text_author"
         app:layout_constraintEnd_toEndOf="parent"
@@ -59,13 +58,12 @@
 
     <TextView
         android:id="@+id/text_author"
+        style="?attr/textAppearanceBodyMedium"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-        android:textColor="@android:color/tertiary_text_light"
         app:layout_constrainedWidth="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

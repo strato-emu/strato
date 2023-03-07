@@ -1,56 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="SectionTitle" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:textSize">16sp</item>
-    </style>
-
-    <style name="ShapeAppearance.App.SmallComponent" parent="ShapeAppearance.MaterialComponents.SmallComponent">
+<resources>
+    <!-- Workaround for AndroidX PreferenceScreen since it doesn't use MaterialAlertDialogs -->
+    <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="dialogCornerRadius">28dp</item>
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">@dimen/cornerRadius</item>
+        <item name="android:colorBackground">?attr/colorSurface</item>
     </style>
 
-    <style name="ShapeAppearance.App.MediumComponent" parent="ShapeAppearance.MaterialComponents.MediumComponent">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">@dimen/cornerRadiusMedium</item>
-    </style>
-
-    <!-- android:elevation makes BottomSheetDialog background color brighter than it should be -->
-    <style name="ThemeOverlay.App.BottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
-        <item name="bottomSheetStyle">@style/Widget.App.BottomSheet</item>
-    </style>
-    <style name="Widget.App.BottomSheet" parent="Widget.MaterialComponents.BottomSheet.Modal">
-        <item name="android:elevation">@null</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.BottomSheetDialog</item>
-    </style>
-
-    <style name="ShapeAppearance.App.BottomSheetDialog" parent="">
-        <item name="cornerSizeTopLeft">@dimen/cornerRadiusMedium</item>
-        <item name="cornerSizeTopRight">@dimen/cornerRadiusMedium</item>
-    </style>
-
-    <!-- Workaround for AndroidX Preference as it doesn't use MaterialAlertDialogBuilder -->
-    <style name="ThemeOverlay.App.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
-        <item name="android:dialogCornerRadius">@dimen/cornerRadiusMedium</item>
-    </style>
-
-    <style name="ChipChoice.Material">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorOnPrimary">@color/colorPrimary</item>
-    </style>
-
-    <style name="ChipChoice" parent="Widget.MaterialComponents.Chip.Choice">
+    <!-- Override of the MD3 Chip style to make text all caps -->
+    <style name="ChipChoice" parent="Widget.Material3.Chip.Filter.Elevated">
         <item name="android:textAllCaps">true</item>
-        <item name="chipStartPadding">8dp</item>
-        <item name="chipEndPadding">8dp</item>
-        <item name="materialThemeOverlay">@style/ChipChoice.Material</item>
-        <item name="shapeAppearance">@style/ShapeAppearance.MaterialComponents.LargeComponent</item>
-    </style>
-
-    <style name="Widget.App.OutlinedCard" parent="Widget.MaterialComponents.CardView">
-        <item name="cardBackgroundColor">@android:color/transparent</item>
-        <item name="cardElevation">0dp</item>
-        <item name="strokeColor" tools:ignore="PrivateResource">@color/mtrl_btn_stroke_color_selector</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="android:clickable">true</item>
     </style>
 </resources>

@@ -7,6 +7,7 @@ package emu.skyline.input
 
 import android.content.Intent
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.ViewTreeObserver
@@ -236,7 +237,7 @@ class ControllerActivity : AppCompatActivity() {
             }
         }
 
-        dividerItemDecoration.drawable.let { it?.setTint(getColor(R.color.dividerColor)); it }
+        dividerItemDecoration.drawable.let { it?.setTint(obtainStyledAttributes(intArrayOf(R.attr.colorOutlineVariant)).use { attr -> attr.getColor(0, Color.BLACK) }); it }
         binding.controllerList.addItemDecoration(dividerItemDecoration)
 
         update()

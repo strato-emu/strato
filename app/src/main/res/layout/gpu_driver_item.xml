@@ -2,7 +2,7 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.App.OutlinedCard"
+    style="@style/Widget.Material3.CardView.Elevated"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -22,12 +22,11 @@
 
         <TextView
             android:id="@+id/name"
+            style="?attr/textAppearanceTitleMedium"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="8dp"
-            android:includeFontPadding="false"
             android:textAlignment="viewStart"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
             app:layout_constraintEnd_toStartOf="@+id/delete_button"
             app:layout_constraintStart_toEndOf="@id/radio_button"
             app:layout_constraintTop_toTopOf="parent"
@@ -35,16 +34,12 @@
 
         <TextView
             android:id="@+id/author_package_version"
+            style="?attr/textAppearanceTitleSmall"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:fontFamily="sans-serif-medium"
             android:includeFontPadding="false"
             android:textAlignment="viewStart"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="14sp"
-            android:textStyle="italic"
             app:layout_constraintEnd_toEndOf="@+id/name"
             app:layout_constraintStart_toStartOf="@id/name"
             app:layout_constraintTop_toBottomOf="@id/name"
@@ -52,16 +47,13 @@
 
         <TextView
             android:id="@+id/vendor_driver_version"
+            style="?attr/textAppearanceTitleSmall"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:fontFamily="sans-serif-medium"
             android:includeFontPadding="false"
             android:textAlignment="viewStart"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="14sp"
-            android:textStyle="italic"
             app:layout_constraintEnd_toEndOf="@+id/name"
             app:layout_constraintStart_toStartOf="@id/name"
             app:layout_constraintTop_toBottomOf="@id/author_package_version"
@@ -69,6 +61,7 @@
 
         <TextView
             android:id="@+id/description"
+            style="?attr/textAppearanceBodyMedium"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"

@@ -17,37 +17,35 @@
 
         <TextView
             android:id="@+id/library_title"
+            style="?attr/textAppearanceDisplaySmall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
-            android:textSize="32sp"
             tools:text="Skyline" />
 
         <TextView
             android:id="@+id/library_url"
+            style="?attr/textAppearanceTitleMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autoLink="web"
             android:paddingTop="6dp"
             android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
-            android:textSize="15sp"
             tools:ignore="TouchTargetSizeCheck"
             tools:text="https://github.com/skyline-emu/skyline" />
 
         <TextView
             android:id="@+id/library_copyright"
+            style="?attr/textAppearanceTitleMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="4dp"
+            android:paddingTop="6dp"
             android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline4"
-            android:textSize="15sp"
             tools:text="Copyright © 2019-2021\nSkyline Team and Contributors" />
 
         <TextView
             android:id="@+id/license_content"
+            style="?attr/textAppearanceBodyMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autoLink="web"
@@ -56,7 +54,6 @@
             android:paddingTop="15dp"
             android:paddingBottom="15dp"
             android:textAlignment="viewStart"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
             tools:text="@string/mpl2_license" />
 
     </LinearLayout>

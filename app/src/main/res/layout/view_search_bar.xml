@@ -4,13 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    tools:parentTag="com.google.android.material.card.MaterialCardView">
+    tools:parentTag="com.google.android.material.card.MaterialCardView"
+    tools:style="@style/Widget.Material3.CardView.Elevated">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/motion_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:motionProgress="1"
+        tools:style="@style/Widget.Material3.SearchBar"
         tools:motionDebug="SHOW_ALL">
 
         <ImageView

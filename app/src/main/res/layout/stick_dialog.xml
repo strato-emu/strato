@@ -16,26 +16,23 @@
 
     <TextView
         android:id="@+id/stick_title"
+        style="?attr/textAppearanceHeadlineSmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
         android:layout_marginBottom="10dp"
         android:animateLayoutChanges="true"
-        android:text="@string/stick_button"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="16sp" />
+        android:text="@string/stick_button" />
 
     <TextView
         android:id="@+id/stick_subtitle"
+        style="?attr/textAppearanceBodyLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:animateLayoutChanges="true"
         android:text="@string/use_button_axis"
-        android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-        android:textSize="16sp" />
+        android:textAlignment="center" />
 
     <RelativeLayout
         android:id="@+id/stick_circle_container"
@@ -112,19 +109,17 @@
 
         <Button
             android:id="@+id/stick_reset"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
-            android:text="@string/reset"
-            android:textColor="?attr/colorAccent" />
+            android:text="@string/reset" />
 
         <Button
             android:id="@+id/stick_next"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            style="@style/Widget.Material3.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/next"
-            android:textColor="?attr/colorAccent" />
+            android:text="@string/next" />
     </LinearLayout>
 </LinearLayout>

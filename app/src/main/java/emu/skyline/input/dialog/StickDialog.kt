@@ -12,7 +12,6 @@ import android.os.Looper
 import android.util.TypedValue
 import android.view.*
 import android.view.animation.LinearInterpolator
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.commit
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment

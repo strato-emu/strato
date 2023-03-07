@@ -11,11 +11,11 @@
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/item_card"
+        style="@style/Widget.Material3.CardView.Elevated"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        app:cardCornerRadius="@dimen/cornerRadiusMedium"
-        app:cardElevation="2dp">
+        app:shapeAppearance="?attr/shapeAppearanceCornerLarge">
 
         <ImageView
             android:id="@+id/icon"
@@ -28,6 +28,7 @@
 
     <TextView
         android:id="@+id/text_title"
+        style="?attr/textAppearanceTitleSmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
@@ -35,13 +36,11 @@
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItem"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textSize="14sp"
         tools:text="Title" />
 
     <TextView
         android:id="@+id/text_version"
+        style="?attr/textAppearanceBodySmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
@@ -49,13 +48,11 @@
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="12sp"
         tools:text="Version" />
 
     <TextView
         android:id="@+id/text_author"
+        style="?attr/textAppearanceBodySmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
@@ -64,8 +61,5 @@
         android:ellipsize="marquee"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:textAppearance="?android:attr/textAppearanceListItemSecondary"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="12sp"
         tools:text="Author" />
 </LinearLayout>
