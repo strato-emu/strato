@@ -19,14 +19,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.PreferenceManager
-import androidx.preference.R
+import emu.skyline.R
 import emu.skyline.SkylineApplication
 import emu.skyline.getPublicFilesDir
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
-class ProfilePicturePreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
+class ProfilePicturePreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
+    init {
+        layoutResource = R.layout.preference_profile_picture
+    }
+
     private val skylineFilesDir = SkylineApplication.instance.getPublicFilesDir().canonicalPath
     private val profilePictureDir = "$skylineFilesDir/switch/nand/system/save/8000000000000010/su/avators"
     private val profilePicture = "$profilePictureDir/profile_picture.jpeg"

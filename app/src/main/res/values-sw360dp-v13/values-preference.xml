@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Override of the resources used by androidx preferences -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Remove preserved icon space -->
+    <bool name="config_materialPreferenceIconSpaceReserved" tools:ignore="MissingDefaultResource,PrivateResource">false</bool>
+</resources>
