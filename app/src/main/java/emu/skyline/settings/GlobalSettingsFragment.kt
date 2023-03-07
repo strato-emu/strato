@@ -13,7 +13,6 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.TwoStatePreference
 import emu.skyline.BuildConfig
 import emu.skyline.R
-import emu.skyline.preference.IntegerListPreference
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
 
@@ -21,10 +20,6 @@ import emu.skyline.utils.WindowInsetsHelper
  * This fragment is used to display the global preferences
  */
 class GlobalSettingsFragment : PreferenceFragmentCompat() {
-    companion object {
-        private const val DIALOG_FRAGMENT_TAG = "androidx.preference.PreferenceFragment.DIALOG"
-    }
-
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val recyclerView = view.findViewById<View>(R.id.recycler_view)
@@ -64,21 +59,6 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             findPreference<PreferenceCategory>("category_credits")?.addPreference(Preference(context!!).apply {
                 title = it
             })
-        }
-    }
-
-    override fun onDisplayPreferenceDialog(preference : Preference) {
-        if (preference is IntegerListPreference) {
-            // Check if dialog is already showing
-            if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null)
-                return
-
-            val dialogFragment = IntegerListPreference.IntegerListPreferenceDialogFragmentCompat.newInstance(preference.getKey())
-            @Suppress("DEPRECATION")
-            dialogFragment.setTargetFragment(this, 0) // androidx.preference.PreferenceDialogFragmentCompat depends on the target fragment being set correctly even though it's deprecated
-            dialogFragment.show(parentFragmentManager, DIALOG_FRAGMENT_TAG)
-        } else {
-            super.onDisplayPreferenceDialog(preference)
         }
     }
 }

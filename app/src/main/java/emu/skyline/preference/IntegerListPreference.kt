@@ -199,7 +199,7 @@ open class IntegerListPreference @JvmOverloads constructor(
         }
     }
 
-    class IntegerListPreferenceDialogFragmentCompat : PreferenceDialogFragmentCompat() {
+    open class IntegerListPreferenceDialogFragmentCompat : PreferenceDialogFragmentCompat() {
         var clickedDialogEntryIndex = 0
         private var entries : Array<CharSequence>? = null
         private var entryValues : IntArray? = null
@@ -259,9 +259,9 @@ open class IntegerListPreference @JvmOverloads constructor(
         }
 
         companion object {
-            private const val SAVE_STATE_INDEX = "ListPreferenceDialogFragment.index"
-            private const val SAVE_STATE_ENTRIES = "ListPreferenceDialogFragment.entries"
-            private const val SAVE_STATE_ENTRY_VALUES = "ListPreferenceDialogFragment.entryValues"
+            private const val SAVE_STATE_INDEX = "IntegerListPreferenceDialogFragment.index"
+            private const val SAVE_STATE_ENTRIES = "IntegerListPreferenceDialogFragment.entries"
+            private const val SAVE_STATE_ENTRY_VALUES = "IntegerListPreferenceDialogFragment.entryValues"
 
             fun newInstance(key : String?) : IntegerListPreferenceDialogFragmentCompat {
                 val fragment = IntegerListPreferenceDialogFragmentCompat()

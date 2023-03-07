@@ -14,7 +14,6 @@ import emu.skyline.R
 import emu.skyline.data.AppItem
 import emu.skyline.data.AppItemTag
 import emu.skyline.preference.GpuDriverPreference
-import emu.skyline.preference.IntegerListPreference
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
 import emu.skyline.utils.serializable
@@ -23,10 +22,6 @@ import emu.skyline.utils.serializable
  * This fragment is used to display custom game preferences
  */
 class GameSettingsFragment : PreferenceFragmentCompat() {
-    companion object {
-        private const val DIALOG_FRAGMENT_TAG = "androidx.preference.PreferenceFragment.DIALOG"
-    }
-
     private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
@@ -86,20 +81,5 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
         @Suppress("SENSELESS_COMPARISON")
         if (BuildConfig.BUILD_TYPE == "release")
             findPreference<PreferenceCategory>("category_debug")?.isVisible = false
-    }
-
-    override fun onDisplayPreferenceDialog(preference : Preference) {
-        if (preference is IntegerListPreference) {
-            // Check if dialog is already showing
-            if (parentFragmentManager.findFragmentByTag(DIALOG_FRAGMENT_TAG) != null)
-                return
-
-            val dialogFragment = IntegerListPreference.IntegerListPreferenceDialogFragmentCompat.newInstance(preference.getKey())
-            @Suppress("DEPRECATION")
-            dialogFragment.setTargetFragment(this, 0) // androidx.preference.PreferenceDialogFragmentCompat depends on the target fragment being set correctly even though it's deprecated
-            dialogFragment.show(parentFragmentManager, DIALOG_FRAGMENT_TAG)
-        } else {
-            super.onDisplayPreferenceDialog(preference)
-        }
     }
 }

@@ -14,14 +14,23 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.WindowCompat
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.internal.ToolbarUtils
 import emu.skyline.R
 import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.SettingsActivityBinding
+import emu.skyline.preference.IntegerListPreference
+import emu.skyline.preference.dialog.EditTextPreferenceMaterialDialogFragmentCompat
+import emu.skyline.preference.dialog.IntegerListPreferenceMaterialDialogFragmentCompat
+import emu.skyline.preference.dialog.ListPreferenceMaterialDialogFragmentCompat
 import emu.skyline.utils.WindowInsetsHelper
 
-class SettingsActivity : AppCompatActivity() {
+private const val PREFERENCE_DIALOG_FRAGMENT_TAG = "androidx.preference.PreferenceFragment.DIALOG"
+
+class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
 
     /**
@@ -117,5 +126,42 @@ class SettingsActivity : AppCompatActivity() {
     override fun finish() {
         setResult(RESULT_OK)
         super.finish()
+    }
+
+    override fun onPreferenceDisplayDialog(caller : PreferenceFragmentCompat, pref : Preference) : Boolean {
+        when (pref) {
+            is IntegerListPreference -> {
+                // Check if dialog is already showing
+                if (supportFragmentManager.findFragmentByTag(PREFERENCE_DIALOG_FRAGMENT_TAG) != null)
+                    return true
+
+                val dialogFragment = IntegerListPreferenceMaterialDialogFragmentCompat.newInstance(pref.getKey())
+                @Suppress("DEPRECATION")
+                dialogFragment.setTargetFragment(caller, 0) // androidx.preference.PreferenceDialogFragmentCompat depends on the target fragment being set correctly even though it's deprecated
+                dialogFragment.show(supportFragmentManager, PREFERENCE_DIALOG_FRAGMENT_TAG)
+                return true
+            }
+            is EditTextPreference -> {
+                if (supportFragmentManager.findFragmentByTag(PREFERENCE_DIALOG_FRAGMENT_TAG) != null)
+                    return true
+
+                val dialogFragment = EditTextPreferenceMaterialDialogFragmentCompat.newInstance(pref.getKey())
+                @Suppress("DEPRECATION")
+                dialogFragment.setTargetFragment(caller, 0)
+                dialogFragment.show(supportFragmentManager, PREFERENCE_DIALOG_FRAGMENT_TAG)
+                return true
+            }
+            is ListPreference -> {
+                if (supportFragmentManager.findFragmentByTag(PREFERENCE_DIALOG_FRAGMENT_TAG) != null)
+                    return true
+
+                val dialogFragment = ListPreferenceMaterialDialogFragmentCompat.newInstance(pref.getKey())
+                @Suppress("DEPRECATION")
+                dialogFragment.setTargetFragment(caller, 0)
+                dialogFragment.show(supportFragmentManager, PREFERENCE_DIALOG_FRAGMENT_TAG)
+                return true
+            }
+            else -> return false
+        }
     }
 }
