@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="logoBackground">#121212</color>
-    <color name="onBackgroundLight">#1E000000</color>
 
     <color name="colorPerfStatsPrimary">#9FFFFF00</color>
     <color name="colorPerfStatsSecondary">#9F00FFFF</color>

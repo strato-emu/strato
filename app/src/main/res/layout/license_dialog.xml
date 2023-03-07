@@ -10,10 +10,11 @@
         android:orientation="vertical"
         android:paddingHorizontal="2.5dp">
 
-        <emu.skyline.views.DragIndicatorView
+        <emu.skyline.views.DragHandleView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingVertical="8dp" />
+            android:minHeight="40dp"
+            android:paddingBottom="12dp" />
 
         <TextView
             android:id="@+id/library_title"

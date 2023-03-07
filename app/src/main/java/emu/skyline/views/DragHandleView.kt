@@ -11,14 +11,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.transition.TransitionManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import emu.skyline.R
+import com.google.android.material.bottomsheet.BottomSheetDragHandleView
 
-class DragIndicatorView : androidx.appcompat.widget.AppCompatImageView {
+/**
+ * A [BottomSheetDragHandleView] that hides itself when the bottom sheet is expanded full-screen
+ */
+class DragHandleView : BottomSheetDragHandleView {
     private val visibilityCallback = DragIndicatorCallback()
     private var callbackAttached = false
 
     init {
-        setImageResource(R.drawable.drag_indicator)
         isFocusable = false
         isClickable = false
     }

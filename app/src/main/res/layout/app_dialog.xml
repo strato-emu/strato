@@ -6,11 +6,12 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <emu.skyline.views.DragIndicatorView
+    <emu.skyline.views.DragHandleView
         android:id="@+id/drag_indicator"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp" />
+        android:minHeight="40dp"
+        android:paddingBottom="12dp" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
