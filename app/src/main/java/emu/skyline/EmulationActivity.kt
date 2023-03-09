@@ -52,6 +52,9 @@ import java.util.concurrent.FutureTask
 import javax.inject.Inject
 import kotlin.math.abs
 
+private const val ActionPause = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_PAUSE"
+private const val ActionMute = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_MUTE"
+
 @AndroidEntryPoint
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener, DisplayManager.DisplayListener {
     companion object {
@@ -95,9 +98,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     private var isEmulatorPaused = false
 
     private lateinit var pictureInPictureParamsBuilder : PictureInPictureParams.Builder
-    private val intentActionPause = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_PAUSE"
-    private val intentActionMute = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_MUTE"
-    private lateinit var pictureInPictureReceiver : BroadcastReceiver
 
     @Inject
     lateinit var appSettings : AppSettings
@@ -401,16 +401,14 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
         val pauseIcon = Icon.createWithResource(this, R.drawable.ic_pause)
-        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(intentActionPause), pendingFlags)
-        val pauseRemoteAction = RemoteAction(pauseIcon, getString(R.string.pause), getString(R.string.pause_emulator), pausePendingIntent)
+        val pausePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_pause, Intent(ActionPause), pendingFlags)
+        val pauseRemoteAction = RemoteAction(pauseIcon, getString(R.string.pause), getString(R.string.pause), pausePendingIntent)
         pictureInPictureActions.add(pauseRemoteAction)
 
-        if (!emulationSettings.isAudioOutputDisabled) {
-            val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
-            val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(intentActionMute), pendingFlags)
-            val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.disable_audio_output), mutePendingIntent)
-            pictureInPictureActions.add(muteRemoteAction)
-        }
+        val muteIcon = Icon.createWithResource(this, R.drawable.ic_volume_mute)
+        val mutePendingIntent = PendingIntent.getBroadcast(this, R.drawable.ic_volume_mute, Intent(ActionMute), pendingFlags)
+        val muteRemoteAction = RemoteAction(muteIcon, getString(R.string.mute), getString(R.string.mute), mutePendingIntent)
+        pictureInPictureActions.add(muteRemoteAction)
 
         pictureInPictureParamsBuilder.setActions(pictureInPictureActions)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
@@ -421,22 +419,22 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         return pictureInPictureParamsBuilder
     }
 
+    private var pictureInPictureReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context : Context?, intent : Intent) {
+            if (intent.action == ActionPause)
+                pauseEmulator()
+            else if (intent.action == ActionMute)
+                changeAudioStatus(false)
+        }
+    }
+
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
-            pictureInPictureReceiver = object : BroadcastReceiver() {
-                override fun onReceive(context : Context?, intent : Intent) {
-                    if (intent.action == intentActionPause)
-                        pauseEmulator()
-                    else if (intent.action == intentActionMute)
-                        changeAudioStatus(false)
-                }
-            }
 
             IntentFilter().apply {
-                addAction(intentActionPause)
-                if (!emulationSettings.isAudioOutputDisabled)
-                    addAction(intentActionMute)
+                addAction(ActionPause)
+                addAction(ActionMute)
             }.also {
                 registerReceiver(pictureInPictureReceiver, it)
             }
@@ -446,11 +444,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             binding.onScreenPauseToggle.isGone = true
         } else {
             try {
-                if (this::pictureInPictureReceiver.isInitialized)
-                    unregisterReceiver(pictureInPictureReceiver)
-            } catch (ignored : Exception) {
-                // Perfectly acceptable and should be ignored
-            }
+                unregisterReceiver(pictureInPictureReceiver)
+            } catch (ignored : Exception) { }
 
             resumeEmulator()
             

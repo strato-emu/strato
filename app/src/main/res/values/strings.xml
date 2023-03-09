@@ -25,7 +25,6 @@
     <string name="incomplete_prod_keys">Incomplete production keys</string>
     <!-- Picture-In-Picture -->
     <string name="pause">Pause</string>
-    <string name="pause_emulator">Pause emulator process</string>
     <string name="mute">Mute</string>
     <!-- Settings - Content -->
     <string name="content">Content</string>
