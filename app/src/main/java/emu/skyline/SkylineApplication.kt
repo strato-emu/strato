@@ -7,6 +7,8 @@ package emu.skyline
 
 import android.app.Application
 import android.content.Context
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.color.DynamicColorsOptions
 import dagger.hilt.android.HiltAndroidApp
 import emu.skyline.di.getSettings
 import java.io.File
@@ -39,5 +41,8 @@ class SkylineApplication : Application() {
         val publicAppFilesPath = applicationContext.getPublicFilesDir().canonicalPath
         File("$publicAppFilesPath/logs/").mkdirs()
         initializeLog("$publicAppFilesPath/", getSettings().logLevel)
+
+        val dynamicColorsOptions = DynamicColorsOptions.Builder().setPrecondition { _, _ -> getSettings().useMaterialYou }.build()
+        DynamicColors.applyToActivitiesIfAvailable(this, dynamicColorsOptions)
     }
 }

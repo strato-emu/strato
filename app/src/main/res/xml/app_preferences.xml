@@ -28,6 +28,12 @@
             app:key="app_theme"
             app:title="@string/theme"
             app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            app:key="use_material_you"
+            app:summaryOff="@string/use_material_you_desc_off"
+            app:summaryOn="@string/use_material_you_desc_on"
+            app:title="@string/use_material_you" />
         <emu.skyline.preference.LanguagePreference
             app:key="app_language"
             app:persistent="false"

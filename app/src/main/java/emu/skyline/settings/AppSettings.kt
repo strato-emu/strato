@@ -21,6 +21,7 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
 
     // Appearance
     var appTheme by sharedPreferences(context, 2)
+    var useMaterialYou by sharedPreferences(context, false)
     var layoutType by sharedPreferences(context, 1)
     var sortAppsBy by sharedPreferences(context, 0)
     var groupByFormat by sharedPreferences(context, true)

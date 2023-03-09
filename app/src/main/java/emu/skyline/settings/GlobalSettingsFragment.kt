@@ -5,6 +5,7 @@
 
 package emu.skyline.settings
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.preference.Preference
@@ -12,6 +13,7 @@ import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.TwoStatePreference
 import emu.skyline.BuildConfig
+import emu.skyline.MainActivity
 import emu.skyline.R
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
@@ -34,6 +36,13 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
         addPreferencesFromResource(R.xml.emulation_preferences)
         addPreferencesFromResource(R.xml.input_preferences)
         addPreferencesFromResource(R.xml.credits_preferences)
+
+        // Re-launch the app if Material You is toggled
+        findPreference<Preference>("use_material_you")?.setOnPreferenceChangeListener { _, _ ->
+            requireActivity().finishAffinity()
+            startActivity(Intent(requireContext(), MainActivity::class.java))
+            true
+        }
 
         // Uncheck `disable_frame_throttling` if `force_triple_buffering` gets disabled
         val disableFrameThrottlingPref = findPreference<TwoStatePreference>("disable_frame_throttling")!!

@@ -44,6 +44,9 @@
     <!-- Settings - Appearance -->
     <string name="appearance">Appearance</string>
     <string name="theme">Theme</string>
+    <string name="use_material_you">Use Material You</string>
+    <string name="use_material_you_desc_off">Skyline colors will be used</string>
+    <string name="use_material_you_desc_on">Material You will be used</string>
     <string name="app_language">App Language</string>
     <string name="app_language_default">Use System Default</string>
     <string name="layout_type">Game Display Layout</string>
