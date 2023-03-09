@@ -234,8 +234,6 @@ class ControllerActivity : AppCompatActivity() {
                 }
             }
         }
-
-        dividerItemDecoration.drawable.let { it?.setTint(obtainStyledAttributes(intArrayOf(R.attr.colorOutlineVariant)).use { attr -> attr.getColor(0, Color.BLACK) }); it }
         binding.controllerList.addItemDecoration(dividerItemDecoration)
 
         update()

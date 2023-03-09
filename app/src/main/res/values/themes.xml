@@ -43,6 +43,8 @@
         <item name="preferenceFragmentCompatStyle">@style/App.PreferenceFragment.Material</item>
         <!-- Override the default switch preference style to use the MD3 switch -->
         <item name="switchPreferenceCompatStyle">@style/App.Preference.SwitchPreferenceCompat.Material3</item>
+        <!-- Override the default divider used by DividerItemDecoration -->
+        <item name="android:listDivider">@drawable/preference_list_divider_m3</item>
     </style>
 
     <style name="AppTheme" parent="BaseAppTheme">
