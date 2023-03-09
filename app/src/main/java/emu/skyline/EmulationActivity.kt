@@ -37,6 +37,7 @@ import emu.skyline.settings.EmulationSettings
 import emu.skyline.settings.NativeSettings
 import emu.skyline.utils.ByteBufferSerializable
 import emu.skyline.utils.GpuDriverHelper
+import emu.skyline.utils.serializable
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.FutureTask
@@ -218,7 +219,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
      * Populates the [item] member with data from the intent
      */
     private fun populateAppItem() {
-        val intentItem = intent.getSerializableExtra(AppItemTag) as AppItem?
+        val intentItem = intent.serializable(AppItemTag) as AppItem?
         if (intentItem != null) {
             item = intentItem
             return

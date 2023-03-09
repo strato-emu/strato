@@ -29,6 +29,7 @@ import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.GpuDriverInstallResult
 import emu.skyline.utils.WindowInsetsHelper
+import emu.skyline.utils.serializable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,7 +41,7 @@ import kotlinx.coroutines.launch
 class GpuDriverActivity : AppCompatActivity() {
     private val binding by lazy { GpuDriverActivityBinding.inflate(layoutInflater) }
 
-    private val item by lazy { intent.extras?.getSerializable(AppItemTag) as AppItem? }
+    private val item by lazy { intent.extras?.serializable(AppItemTag) as AppItem? }
 
     private val adapter = SelectableGenericAdapter(0)
 

@@ -25,6 +25,7 @@ import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.AppDialogBinding
 import emu.skyline.loader.LoaderResult
 import emu.skyline.settings.SettingsActivity
+import emu.skyline.utils.serializable
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
@@ -46,7 +47,7 @@ class AppDialog : BottomSheetDialogFragment() {
 
     private lateinit var binding : AppDialogBinding
 
-    private val item by lazy { requireArguments().getSerializable(AppItemTag)!! as AppItem }
+    private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
 
     /**
      * This inflates the layout of the dialog after initial view creation
