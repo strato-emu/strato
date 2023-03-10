@@ -9,15 +9,20 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.KeyEvent
+import android.view.Menu
 import android.view.ViewTreeObserver
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.WindowCompat
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.Preference
+import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.forEach
+import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.internal.ToolbarUtils
 import emu.skyline.R
 import emu.skyline.data.AppItemTag
@@ -32,6 +37,7 @@ private const val PREFERENCE_DIALOG_FRAGMENT_TAG = "androidx.preference.Preferen
 
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
+    val creditsCategories = arrayOf("category_credits", "category_licenses")
 
     /**
      * The instance of [PreferenceFragmentCompat] that is shown inside [R.id.settings]
@@ -97,6 +103,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
 
         @SuppressLint("RestrictedApi")
         val toolbarTitleTextView = ToolbarUtils.getTitleTextView(binding.titlebar.toolbar)
+
         @SuppressLint("RestrictedApi")
         val toolbarSubtitleTextView = ToolbarUtils.getSubtitleTextView(binding.titlebar.toolbar)
         toolbarTitleTextView?.let { enableMarquee(it) }
@@ -109,6 +116,58 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             .beginTransaction()
             .replace(R.id.settings, preferenceFragment)
             .commit()
+    }
+
+    override fun onCreateOptionsMenu(menu : Menu?) : Boolean {
+        menuInflater.inflate(R.menu.settings_menu, menu)
+        val menuItem = menu!!.findItem(R.id.app_bar_search)
+        val searchView = menuItem.actionView as SearchView
+        searchView.queryHint = getString(R.string.search)
+
+        searchView.setOnQueryTextFocusChangeListener { _, focus ->
+            (binding.titlebar.toolbar.layoutParams as AppBarLayout.LayoutParams).scrollFlags =
+                if (focus)
+                    AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
+                else
+                    AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL
+        }
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query : String) : Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText : String) : Boolean {
+                val queries = newText.split(",")
+                if (newText.isNotEmpty()) {
+                    preferenceFragment.preferenceScreen.forEach { preferenceCategory ->
+                        if (creditsCategories.contains(preferenceCategory.key)) {
+                            preferenceCategory.isVisible = false
+                            return@forEach
+                        }
+                        val queryMatchesCategory = queries.any { preferenceCategory.title?.contains(it, true) ?: false }
+                        // Tracks whether all preferences under this category are hidden
+                        var areAllPrefsHidden = true
+                        (preferenceCategory as PreferenceCategory).forEach { preference ->
+                            preference.isVisible = queryMatchesCategory || queries.any { preference.title?.contains(it, true) ?: false }
+                            if (preference.isVisible && areAllPrefsHidden)
+                                areAllPrefsHidden = false
+                        }
+                        // Hide PreferenceCategory if none of its preferences match the search and neither the category title
+                        preferenceCategory.isVisible = !areAllPrefsHidden || queryMatchesCategory
+                    }
+                } else { // If user input is empty, show all preferences
+                    preferenceFragment.preferenceScreen.forEach { preferenceCategory ->
+                        preferenceCategory.isVisible = true
+                        (preferenceCategory as PreferenceCategory).forEach { preference ->
+                            preference.isVisible = true
+                        }
+                    }
+                }
+                return true
+            }
+        })
+        return super.onCreateOptionsMenu(menu)
     }
 
     /**
@@ -141,6 +200,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 dialogFragment.show(supportFragmentManager, PREFERENCE_DIALOG_FRAGMENT_TAG)
                 return true
             }
+
             is EditTextPreference -> {
                 if (supportFragmentManager.findFragmentByTag(PREFERENCE_DIALOG_FRAGMENT_TAG) != null)
                     return true
@@ -151,6 +211,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 dialogFragment.show(supportFragmentManager, PREFERENCE_DIALOG_FRAGMENT_TAG)
                 return true
             }
+
             is ListPreference -> {
                 if (supportFragmentManager.findFragmentByTag(PREFERENCE_DIALOG_FRAGMENT_TAG) != null)
                     return true
@@ -161,6 +222,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 dialogFragment.show(supportFragmentManager, PREFERENCE_DIALOG_FRAGMENT_TAG)
                 return true
             }
+
             else -> return false
         }
     }
