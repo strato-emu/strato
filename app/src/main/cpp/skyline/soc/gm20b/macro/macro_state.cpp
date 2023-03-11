@@ -30,21 +30,11 @@ namespace skyline::soc::gm20b {
 
             u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
 
-            targetEngine->DrawInstanced(true, *args[0], *args[1], instanceCount, *args[3], *args[4]);
+            targetEngine->DrawInstanced(*args[0], *args[1], instanceCount, *args[3], *args[4]);
             return true;
         }
 
-        bool DrawIndexedInstanced(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
-            if (AnyArgsDirty(args))
-                flushCallback();
-
-            u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
-
-            targetEngine->DrawIndexedInstanced(true, *args[0], *args[1], instanceCount, *args[3], *args[4], *args[5]);
-            return true;
-        }
-
-        bool DrawInstancedIndexedIndirectWithConstantBuffer(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
+        bool DrawInstancedIndexedIndirect(size_t offset, span<GpfifoArgument> args, engine::MacroEngineBase *targetEngine, const std::function<void(void)> &flushCallback) {
             u32 topology{*args[0]};
             bool topologyConversion{TopologyRequiresConversion(static_cast<engine::maxwell3d::type::DrawTopology>(topology))};
 
@@ -54,7 +44,7 @@ namespace skyline::soc::gm20b {
 
             if (topologyConversion || !args[1].dirty) {
                 u32 instanceCount{targetEngine->ReadMethodFromMacro(0xD1B) & *args[2]};
-                targetEngine->DrawIndexedInstanced(false, topology, *args[1], instanceCount, *args[4], *args[3], *args[5]);
+                targetEngine->DrawIndexedInstanced(topology, *args[1], instanceCount, *args[4], *args[3], *args[5]);
             } else {
                 targetEngine->DrawIndexedIndirect(topology, span(args[1].argumentPtr, 5).cast<u8>(), 1, 0);
             }
@@ -70,8 +60,8 @@ namespace skyline::soc::gm20b {
 
         constexpr std::array<HleFunctionInfo, 0x4> functions{{
             {DrawInstanced, 0x12, 0x2FDD711},
-            {DrawIndexedInstanced, 0x17, 0xDBC3B762},
-            {DrawInstancedIndexedIndirectWithConstantBuffer, 0x1F, 0xDA07F4E5}
+            {DrawInstancedIndexedIndirect, 0x17, 0xDBC3B762},
+            {DrawInstancedIndexedIndirect, 0x1F, 0xDA07F4E5} // This macro is the same as above but it writes draw params to a cbuf, which are unnecessary due to hades HLE
         }};
 
         static Function LookupFunction(span<u32> code) {

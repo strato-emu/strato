@@ -475,32 +475,27 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         return registers.raw[method];
     }
 
-    void Maxwell3D::DrawInstanced(bool setRegs, u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) {
+    void Maxwell3D::DrawInstanced(u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) {
+        FlushEngineState();
+
         auto topology{static_cast<type::DrawTopology>(drawTopology)};
-        if (setRegs) {
-            registers.begin->op = topology;
-            registers.drawVertexArray->count = vertexArrayCount;
-            registers.vertexArrayStart = vertexArrayStart;
-            registers.globalBaseInstanceIndex = globalBaseInstanceIndex;
-        }
+        registers.globalBaseInstanceIndex = globalBaseInstanceIndex;
+        registers.vertexArrayStart = vertexArrayStart;
 
         interconnect.Draw(topology, *registers.streamOutputEnable, false, vertexArrayCount, vertexArrayStart, instanceCount, 0, globalBaseInstanceIndex);
+        registers.globalBaseInstanceIndex = 0;
     }
 
-    void Maxwell3D::DrawIndexedInstanced(bool setRegs, u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) {
-        auto topology{static_cast<type::DrawTopology>(drawTopology)};
-        if (setRegs) {
-            registers.begin->op = topology;
-            registers.drawIndexBuffer->count = indexBufferCount;
-            registers.indexBuffer->first = indexBufferFirst;
-            registers.globalBaseVertexIndex = globalBaseVertexIndex;
-            registers.globalBaseInstanceIndex = globalBaseInstanceIndex;
-        }
+    void Maxwell3D::DrawIndexedInstanced(u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) {
+        FlushEngineState();
 
+        auto topology{static_cast<type::DrawTopology>(drawTopology)};
         interconnect.Draw(topology, *registers.streamOutputEnable, true, indexBufferCount, indexBufferFirst, instanceCount, globalBaseVertexIndex, globalBaseInstanceIndex);
     }
 
     void Maxwell3D::DrawIndexedIndirect(u32 drawTopology, span<u8> indirectBuffer, u32 count, u32 stride) {
+        FlushEngineState();
+
         auto topology{static_cast<type::DrawTopology>(drawTopology)};
         interconnect.DrawIndirect(topology, *registers.streamOutputEnable, true, indirectBuffer, count, stride);
     }

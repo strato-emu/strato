@@ -63,7 +63,7 @@ namespace skyline::gpu::interconnect {
         executor.AttachBuffer(clearBuf);
 
         clearBuf.GetBuffer()->BlockSequencedCpuBackingWrites();
-        clearBuf.GetBuffer()->MarkGpuDirty();
+        clearBuf.GetBuffer()->MarkGpuDirty(executor.usageTracker);
 
         executor.AddOutsideRpCommand([clearBuf, value](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &gpu) {
             commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eTransfer, {}, vk::MemoryBarrier{

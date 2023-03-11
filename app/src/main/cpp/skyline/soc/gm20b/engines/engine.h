@@ -106,11 +106,11 @@ namespace skyline::soc::gm20b::engine {
          */
         virtual u32 ReadMethodFromMacro(u32 method) = 0;
 
-        virtual void DrawInstanced(bool setRegs, u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) {
+        virtual void DrawInstanced(u32 drawTopology, u32 vertexArrayCount, u32 instanceCount, u32 vertexArrayStart, u32 globalBaseInstanceIndex) {
             throw exception("DrawInstanced is not implemented for this engine");
         }
 
-        virtual void DrawIndexedInstanced(bool setRegs, u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) {
+        virtual void DrawIndexedInstanced(u32 drawTopology, u32 indexBufferCount, u32 instanceCount, u32 globalBaseVertexIndex, u32 indexBufferFirst, u32 globalBaseInstanceIndex) {
             throw exception("DrawIndexedInstanced is not implemented for this engine");
         }
 
