@@ -51,6 +51,8 @@ namespace skyline::gpu::interconnect {
 
         size_t padding{ssbo.address & (ctx.gpu.traits.minimumStorageBufferAlignment - 1)};
         cachedView.Update(ctx, ssbo.address - padding, util::AlignUp(ssbo.size + padding, ctx.gpu.traits.minimumStorageBufferAlignment));
+        if (!cachedView.view) // Return a dummy buffer if the SSBO isn't bound
+            return BufferBinding{ctx.gpu.megaBufferAllocator.Allocate(ctx.executor.cycle, PAGE_SIZE).buffer, 0, PAGE_SIZE};
 
         auto view{cachedView.view};
         ctx.executor.AttachBuffer(view);
