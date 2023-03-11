@@ -77,6 +77,9 @@ namespace skyline::gpu::interconnect {
 
     static BindlessHandle ReadBindlessHandle(InterconnectContext &ctx, auto &constantBuffers, const auto &desc, size_t arrayIdx) {
         ConstantBuffer &primaryCbuf{constantBuffers[desc.cbuf_index]};
+        if (!primaryCbuf.view)
+            return { .raw = 0 };
+
         size_t elemOffset{arrayIdx << desc.size_shift};
         size_t primaryCbufOffset{desc.cbuf_offset + elemOffset};
         u32 primaryVal{primaryCbuf.Read<u32>(ctx.executor, primaryCbufOffset)};
