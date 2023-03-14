@@ -89,7 +89,7 @@ class GridCompatBinding(parent : ViewGroup) : LayoutBinding<AppItemGridCompactBi
 
 private typealias InteractionFunction = (appItem : AppItem) -> Unit
 
-class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val missingIcon : Bitmap, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem<LayoutBinding<*>>() {
+class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem<LayoutBinding<*>>() {
     override fun getViewBindingFactory() = LayoutBindingFactory(layoutType)
 
     override fun bind(holder : GenericViewHolder<LayoutBinding<*>>, position : Int) {
@@ -102,7 +102,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         binding.textVersion.isSelected = true
         binding.textAuthor.isSelected = true
 
-        binding.icon.setImageBitmap(item.icon ?: missingIcon)
+        binding.icon.setImageBitmap(item.bitmapIcon)
 
         if (layoutType == LayoutType.List) {
             binding.icon.setOnClickListener { showIconDialog(it.context, item) }
@@ -123,7 +123,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         builder.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         val imageView = ImageView(context)
-        imageView.setImageBitmap(appItem.icon ?: missingIcon)
+        imageView.setImageBitmap(appItem.bitmapIcon)
 
         builder.addContentView(imageView, RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         builder.show()

@@ -15,8 +15,6 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
@@ -65,9 +63,7 @@ class AppDialog : BottomSheetDialogFragment() {
             }
         }
 
-        val missingIcon = ContextCompat.getDrawable(requireActivity(), R.drawable.default_icon)!!.toBitmap(256, 256)
-
-        binding.gameIcon.setImageBitmap(item.icon ?: missingIcon)
+        binding.gameIcon.setImageBitmap(item.bitmapIcon)
         binding.gameTitle.text = item.title
         binding.gameVersion.text = item.version ?: item.loaderResultString(requireContext())
         binding.gameTitleId.text = item.titleId
@@ -94,7 +90,7 @@ class AppDialog : BottomSheetDialogFragment() {
             val info = ShortcutInfo.Builder(context, item.title)
             info.setShortLabel(item.title)
             info.setActivity(ComponentName(requireContext(), EmulationActivity::class.java))
-            info.setIcon(Icon.createWithAdaptiveBitmap(item.icon ?: missingIcon))
+            info.setIcon(Icon.createWithAdaptiveBitmap(item.bitmapIcon))
 
             val intent = Intent(context, EmulationActivity::class.java)
             intent.data = item.uri

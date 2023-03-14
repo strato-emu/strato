@@ -6,8 +6,12 @@
 package emu.skyline.data
 
 import android.content.Context
+import android.graphics.Bitmap
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import emu.skyline.BuildConfig
 import emu.skyline.R
+import emu.skyline.SkylineApplication
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
 import java.io.Serializable
@@ -16,6 +20,8 @@ import java.io.Serializable
  * The tag used to pass [AppItem]s between activities and fragments
  */
 const val AppItemTag = BuildConfig.APPLICATION_ID + ".APP_ITEM"
+
+private val missingIcon by lazy { ContextCompat.getDrawable(SkylineApplication.instance, R.drawable.default_icon)!!.toBitmap(256, 256) }
 
 sealed class DataItem : Serializable
 
@@ -29,6 +35,8 @@ data class AppItem(private val meta : AppEntry) : DataItem() {
      * The icon of the application
      */
     val icon get() = meta.icon
+
+    val bitmapIcon : Bitmap get() = meta.icon ?: missingIcon
 
     /**
      * The title of the application

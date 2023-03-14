@@ -61,8 +61,6 @@ class MainActivity : AppCompatActivity() {
 
     private val layoutType get() = LayoutType.values()[appSettings.layoutType]
 
-    private val missingIcon by lazy { ContextCompat.getDrawable(this, R.drawable.default_icon)!!.toBitmap(256, 256) }
-
     private val viewModel by viewModels<MainViewModel>()
 
     private var formatFilter : RomFormat? = null
@@ -97,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         if (appSettings.refreshRequired) loadRoms(false)
     }
 
-    private fun AppItem.toViewItem() = AppViewItem(layoutType, this, missingIcon, ::selectStartGame, ::selectShowGameDialog)
+    private fun AppItem.toViewItem() = AppViewItem(layoutType, this, ::selectStartGame, ::selectShowGameDialog)
 
     override fun onCreate(savedInstanceState : Bundle?) {
         // Need to create new instance of settings, dependency injection happens
