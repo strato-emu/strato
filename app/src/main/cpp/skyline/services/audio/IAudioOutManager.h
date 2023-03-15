@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2022 yuzu Emulator Project (https://github.com/yuzu-emu/)
 
 #pragma once
 

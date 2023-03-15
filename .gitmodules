@@ -57,3 +57,9 @@
 [submodule "app/libraries/thread-pool"]
 	path = app/libraries/thread-pool
 	url = https://github.com/bshoshany/thread-pool.git
+[submodule "app/libraries/cubeb"]
+	path = app/libraries/cubeb
+	url = https://github.com/skyline-emu/cubeb
+[submodule "app/libraries/audio-core"]
+	path = app/libraries/audio-core
+	url = https://github.com/skyline-emu/audio-core

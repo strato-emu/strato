@@ -51,10 +51,6 @@ add_subdirectory("libraries/fmt")
 add_subdirectory("libraries/tzcode")
 target_compile_options(tzcode PRIVATE -Wno-everything)
 
-# Oboe
-add_subdirectory("libraries/oboe")
-include_directories(SYSTEM "libraries/oboe/include")
-
 # LZ4
 set(LZ4_BUILD_CLI OFF CACHE BOOL "Build LZ4 CLI" FORCE)
 set(LZ4_BUILD_LEGACY_LZ4C OFF CACHE BOOL "Build lz4c progam with legacy argument support" FORCE)
@@ -94,6 +90,13 @@ set(OPUS_INSTALL_CMAKE_CONFIG_MODULE OFF CACHE BOOL "Install Opus CMake package 
 include_directories(SYSTEM "libraries/opus/include")
 add_subdirectory("libraries/opus")
 target_compile_definitions(opus PRIVATE OPUS_WILL_BE_SLOW=1) # libopus will warn when built without optimizations
+
+# Cubeb
+set(USE_AAUDIO ON)
+set(USE_SANITIZERS OFF)
+set(BUNDLE_SPEEX ON)
+add_subdirectory("libraries/cubeb")
+include_directories(SYSTEM "libraries/cubeb/include")
 
 # Perfetto SDK
 include_directories(SYSTEM "libraries/perfetto/sdk")
@@ -142,6 +145,11 @@ add_subdirectory("libraries/shader-compiler")
 target_include_directories(shader_recompiler PUBLIC "libraries/shader-compiler/include")
 target_link_libraries_system(shader_recompiler Boost::intrusive Boost::container range-v3)
 
+# yuzu Audio Core
+add_subdirectory("libraries/audio-core")
+include_directories(SYSTEM "libraries/audio-core/include")
+target_link_libraries_system(audio_core Boost::intrusive Boost::container range-v3)
+
 # Skyline
 add_library(skyline SHARED
         ${source_DIR}/driver_jni.cpp
@@ -168,9 +176,6 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/kernel/types/KPrivateMemory.cpp
         ${source_DIR}/skyline/kernel/types/KSyncObject.cpp
         ${source_DIR}/skyline/audio.cpp
-        ${source_DIR}/skyline/audio/track.cpp
-        ${source_DIR}/skyline/audio/resampler.cpp
-        ${source_DIR}/skyline/audio/adpcm_decoder.cpp
         ${source_DIR}/skyline/gpu.cpp
         ${source_DIR}/skyline/gpu/trait_manager.cpp
         ${source_DIR}/skyline/gpu/memory_manager.cpp
@@ -265,9 +270,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/audio/IAudioOut.cpp
         ${source_DIR}/skyline/services/audio/IAudioDevice.cpp
         ${source_DIR}/skyline/services/audio/IAudioRendererManager.cpp
-        ${source_DIR}/skyline/services/audio/IAudioRenderer/IAudioRenderer.cpp
-        ${source_DIR}/skyline/services/audio/IAudioRenderer/voice.cpp
-        ${source_DIR}/skyline/services/audio/IAudioRenderer/memory_pool.cpp
+        ${source_DIR}/skyline/services/audio/IAudioRenderer.cpp
         ${source_DIR}/skyline/services/settings/ISettingsServer.cpp
         ${source_DIR}/skyline/services/settings/ISystemSettingsServer.cpp
         ${source_DIR}/skyline/services/apm/IManager.cpp
@@ -397,5 +400,5 @@ target_include_directories(skyline PRIVATE ${source_DIR}/skyline)
 # target_precompile_headers(skyline PRIVATE ${source_DIR}/skyline/common.h) # PCH will currently break Intellisense
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field -Wno-dangling-else -Wconversion -fsigned-bitfields)
 
-target_link_libraries(skyline PRIVATE shader_recompiler)
-target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode oboe vkma mbedcrypto opus Boost::intrusive Boost::container range-v3 adrenotools tsl::robin_map)
+target_link_libraries(skyline PRIVATE shader_recompiler audio_core)
+target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode vkma mbedcrypto opus Boost::intrusive Boost::container range-v3 adrenotools tsl::robin_map)

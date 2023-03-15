@@ -1,90 +1,65 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2022 yuzu Emulator Project (https://github.com/yuzu-emu/)
 
-#include "IAudioRenderer/IAudioRenderer.h"
+#include <audio_core/common/audio_renderer_parameter.h>
+#include <audio_core/audio_render_manager.h>
+#include <common/utils.h>
+#include <audio.h>
+#include "IAudioRenderer.h"
 #include "IAudioDevice.h"
 #include "IAudioRendererManager.h"
 
 namespace skyline::service::audio {
-    IAudioRendererManager::IAudioRendererManager(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
+    IAudioRendererManager::IAudioRendererManager(const DeviceState &state, ServiceManager &manager)
+        : BaseService(state, manager) {}
 
     Result IAudioRendererManager::OpenAudioRenderer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        IAudioRenderer::AudioRendererParameters params{request.Pop<IAudioRenderer::AudioRendererParameters>()};
+        const auto &params{request.Pop<AudioCore::AudioRendererParameterInternal>()};
+        u64 transferMemorySize{request.Pop<u64>()};
+        u64 appletResourceUserId{request.Pop<u64>()};
+        auto transferMemoryHandle{request.copyHandles.at(0)};
+        auto processHandle{request.copyHandles.at(1)};
 
-        Logger::Debug("Opening a rev {} IAudioRenderer with sample rate: {}, voice count: {}, effect count: {}", IAudioRenderer::ExtractVersionFromRevision(params.revision), params.sampleRate, params.voiceCount, params.effectCount);
+        i32 sessionId{state.audio->audioRendererManager->GetSessionId()};
+        if (sessionId == -1) {
+            Logger::Warn("Out of audio renderer sessions!");
+            return Result{Service::Audio::ResultOutOfSessions};
+        }
 
-        manager.RegisterService(std::make_shared<IAudioRenderer::IAudioRenderer>(state, manager, params), session, response);
+        manager.RegisterService(std::make_shared<IAudioRenderer>(state, manager,
+                                                                 *state.audio->audioRendererManager,
+                                                                 params,
+                                                                 transferMemorySize, processHandle, appletResourceUserId, sessionId),
+                                session, response);
 
         return {};
     }
 
-    Result IAudioRendererManager::GetAudioRendererWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        IAudioRenderer::AudioRendererParameters params{request.Pop<IAudioRenderer::AudioRendererParameters>()};
+    Result IAudioRendererManager::GetWorkBufferSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        const auto &params{request.Pop<AudioCore::AudioRendererParameterInternal>()};
 
-        IAudioRenderer::RevisionInfo revisionInfo{};
-        revisionInfo.SetUserRevision(params.revision);
+        u64 size{};
+        auto err{state.audio->audioRendererManager->GetWorkBufferSize(params, size)};
+        if (err.IsError())
+            Logger::Warn("Failed to calculate work buffer size");
 
-        u32 totalMixCount{params.subMixCount + 1};
-
-        u64 size{util::AlignUp(params.mixBufferCount * 4, constant::BufferAlignment) +
-            params.subMixCount * 0x400 +
-            totalMixCount * 0x940 +
-            params.voiceCount * 0x3F0 +
-            util::AlignUp(totalMixCount * 8, 16) +
-            util::AlignUp(params.voiceCount * 8, 16) +
-            util::AlignUp(((params.sinkCount + params.subMixCount) * 0x3C0 + params.sampleCount * 4) * (params.mixBufferCount + 6), constant::BufferAlignment) + (params.sinkCount + params.subMixCount) * 0x2C0 + (params.effectCount + params.voiceCount * 4) * 0x30 + 0x50};
-
-        if (revisionInfo.SplitterSupported()) {
-            i32 nodeStateWorkSize{static_cast<i32>(util::AlignUp(totalMixCount, constant::BufferAlignment))};
-            if (nodeStateWorkSize < 0)
-                nodeStateWorkSize |= 7;
-
-            nodeStateWorkSize = static_cast<i32>(4 * (totalMixCount * totalMixCount) + 12 * totalMixCount + static_cast<u32>(2 * (nodeStateWorkSize / 8)));
-
-            i32 edgeMatrixWorkSize{static_cast<i32>(util::AlignUp(totalMixCount * totalMixCount, constant::BufferAlignment))};
-            if (edgeMatrixWorkSize < 0)
-                edgeMatrixWorkSize |= 7;
-
-            edgeMatrixWorkSize /= 8;
-            size += util::AlignUp(static_cast<u32>(edgeMatrixWorkSize + nodeStateWorkSize), 16);
-        }
-
-        u64 splitterWorkSize{};
-        if (revisionInfo.SplitterSupported()) {
-            splitterWorkSize += params.splitterDestinationDataCount * 0xE0 + params.splitterCount * 0x20;
-
-            if (revisionInfo.SplitterBugFixed())
-                splitterWorkSize += util::AlignUp(4 * params.splitterDestinationDataCount, 16);
-        }
-
-        size = params.sinkCount * 0x170 + (params.sinkCount + params.subMixCount) * 0x280 + params.effectCount * 0x4C0 + ((size + splitterWorkSize + 0x30 * params.effectCount + (4 * params.voiceCount) + 0x8F) & ~0x3FUL) + ((params.voiceCount << 8) | 0x40);
-
-        if (params.performanceManagerCount > 0) {
-            i64 performanceMetricsBufferSize{};
-            if (revisionInfo.UsesPerformanceMetricDataFormatV2()) {
-                performanceMetricsBufferSize = (params.voiceCount + params.effectCount + totalMixCount + params.sinkCount) + 0x990;
-            } else {
-                performanceMetricsBufferSize = ((static_cast<i64>((params.voiceCount + params.effectCount + totalMixCount + params.sinkCount)) << 32) >> 0x1C) + 0x658;
-            }
-
-            size += static_cast<u64>((performanceMetricsBufferSize * (params.performanceManagerCount + 1) + 0xFF) & ~0x3FL);
-        }
-
-        if (revisionInfo.VaradicCommandBufferSizeSupported()) {
-            size += params.effectCount * 0x840 + params.subMixCount * 0x5A38 + params.sinkCount * 0x148 + params.splitterDestinationDataCount * 0x540 + (params.splitterCount * 0x68 + 0x2E0) * params.voiceCount + ((params.voiceCount + params.subMixCount + params.effectCount + params.sinkCount + 0x65) << 6) + 0x3F8 + 0x7E;
-        } else {
-            size += 0x1807E;
-        }
-
-        size = util::AlignUp(size, 0x1000);
-
-        Logger::Debug("Work buffer size: 0x{:X}", size);
         response.Push<u64>(size);
-        return {};
+
+        return Result{err};
     }
 
     Result IAudioRendererManager::GetAudioDeviceService(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        manager.RegisterService(SRVREG(IAudioDevice), session, response);
+        u64 appletResourceUserId{request.Pop<u64>()};
+        manager.RegisterService(std::make_shared<IAudioDevice>(state, manager, appletResourceUserId, util::MakeMagic<u32>("REV1")), session, response);
         return {};
     }
+
+    Result IAudioRendererManager::GetAudioDeviceServiceWithRevisionInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        u32 revision{request.Pop<u32>()};
+        u64 appletResourceUserId{request.Pop<u64>()};
+        manager.RegisterService(std::make_shared<IAudioDevice>(state, manager, appletResourceUserId, revision), session, response);
+        return {};
+    }
+
 }

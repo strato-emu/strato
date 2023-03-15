@@ -1,60 +1,47 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
+// Copyright © 2022 yuzu Emulator Project (https://github.com/yuzu-emu/)
 
+#include <audio.h>
 #include <kernel/types/KProcess.h>
 #include "IAudioOut.h"
 
 namespace skyline::service::audio {
-    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, u8 channelCount, u32 sampleRate)
-        : sampleRate(sampleRate),
-          channelCount(channelCount),
-          releaseEvent(std::make_shared<type::KEvent>(state, false)),
-          BaseService(state, manager) {
-        track = state.audio->OpenTrack(channelCount, constant::SampleRate, [this]() { releaseEvent->Signal(); });
+    IAudioOut::IAudioOut(const DeviceState &state, ServiceManager &manager, size_t sessionId,
+                         std::string_view deviceName, AudioCore::AudioOut::AudioOutParameter parameters,
+                         KHandle handle, u32 appletResourceUserId)
+        :  BaseService{state, manager},
+           releaseEvent{std::make_shared<type::KEvent>(state, false)},
+           releaseEventWrapper{[releaseEvent = this->releaseEvent]() { releaseEvent->Signal(); },
+                               [releaseEvent = this->releaseEvent]() { releaseEvent->ResetSignal(); }},
+           impl{std::make_shared<AudioCore::AudioOut::Out>(state.audio->audioSystem, *state.audio->audioOutManager, &releaseEventWrapper, sessionId)} {
+
+        if (impl->GetSystem().Initialize(std::string{deviceName}, parameters, handle, appletResourceUserId).IsError())
+            Logger::Warn("Failed to initialise Audio Out");
     }
 
     IAudioOut::~IAudioOut() {
-        state.audio->CloseTrack(track);
+        impl->Free();
     }
 
     Result IAudioOut::GetAudioOutState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push(static_cast<u32>(track->playbackState));
+        response.Push(static_cast<u32>(impl->GetState()));
         return {};
     }
 
     Result IAudioOut::StartAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        Logger::Debug("Start playback");
-        track->Start();
-        return {};
+        return Result{impl->StartSystem()};
     }
 
     Result IAudioOut::StopAudioOut(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        Logger::Debug("Stop playback");
-        track->Stop();
-        return {};
+        return Result{impl->StopSystem()};
     }
 
     Result IAudioOut::AppendAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        struct Data {
-            i16 *nextBuffer;
-            i16 *sampleBuffer;
-            u64 sampleCapacity;
-            u64 sampleSize;
-            u64 sampleOffset;
-        } &data{request.inputBuf.at(0).as<Data>()};
+        const auto &buffer{request.inputBuf.at(0).as<AudioCore::AudioOut::AudioOutBuffer>()};
         auto tag{request.Pop<u64>()};
 
-        Logger::Debug("Appending buffer at 0x{:X}, Size: 0x{:X}", data.sampleBuffer, data.sampleSize);
-
-        span samples(data.sampleBuffer, data.sampleSize / sizeof(i16));
-        if (sampleRate != constant::SampleRate) {
-            auto resampledBuffer{resampler.ResampleBuffer(samples, static_cast<double>(sampleRate) / constant::SampleRate, channelCount)};
-            track->AppendBuffer(tag, resampledBuffer);
-        } else {
-            track->AppendBuffer(tag, samples);
-        }
-
-        return {};
+        return Result{impl->AppendBuffer(buffer, tag)};
     }
 
     Result IAudioOut::RegisterBufferEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -65,22 +52,45 @@ namespace skyline::service::audio {
     }
 
     Result IAudioOut::GetReleasedAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto maxCount{static_cast<u32>(request.outputBuf.at(0).size() >> 3)};
-        auto releasedBuffers{track->GetReleasedBuffers(maxCount)};
-        auto count{static_cast<u32>(releasedBuffers.size())};
+        auto maxCount{request.outputBuf.at(0).size() >> 3};
 
-        // Fill rest of output buffer with zeros
-        releasedBuffers.resize(maxCount, 0);
+        std::vector<u64> releasedBuffers(maxCount);
+        auto count{impl->GetReleasedBuffers(releasedBuffers)};
+
         request.outputBuf.at(0).copy_from(releasedBuffers);
-
         response.Push<u32>(count);
         return {};
     }
 
     Result IAudioOut::ContainsAudioOutBuffer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto tag{request.Pop<u64>()};
+        response.Push(static_cast<u32>(impl->ContainsAudioBuffer(tag)));
+        return {};
+    }
 
-        response.Push(static_cast<u32>(track->ContainsBuffer(tag)));
+    Result IAudioOut::GetAudioOutBufferCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(impl->GetBufferCount());
+        return {};
+    }
+
+    Result IAudioOut::GetAudioOutPlayedSampleCount(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(impl->GetPlayedSampleCount());
+        return {};
+    }
+
+    Result IAudioOut::FlushAudioOutBuffers(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(static_cast<u32>(impl->FlushAudioOutBuffers()));
+        return {};
+    }
+
+    Result IAudioOut::SetAudioOutVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto volume{request.Pop<float>()};
+        impl->SetVolume(volume);
+        return {};
+    }
+
+    Result IAudioOut::GetAudioOutVolume(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(impl->GetVolume());
         return {};
     }
 }
