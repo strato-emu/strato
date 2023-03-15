@@ -49,25 +49,27 @@ namespace skyline::util {
 
     inline const u64 ClockFrequency{detail::InitFrequency()}; //!< The system counter clock frequency in Hz
 
+    template<i64 TargetFrequency>
+    inline i64 GetTimeScaled() {
+        u64 frequency{ClockFrequency};
+        u64 ticks;
+        asm volatile("MRS %0, CNTVCT_EL0" : "=r"(ticks));
+        return static_cast<i64>(((ticks / frequency) * TargetFrequency) + (((ticks % frequency) * TargetFrequency + (frequency / 2)) / frequency));
+    }
     /**
      * @brief Returns the current time in nanoseconds
      * @return The current time in nanoseconds
      */
     inline i64 GetTimeNs() {
-        u64 frequency{ClockFrequency};
-        u64 ticks;
-        asm volatile("MRS %0, CNTVCT_EL0" : "=r"(ticks));
-        return static_cast<i64>(((ticks / frequency) * constant::NsInSecond) + (((ticks % frequency) * constant::NsInSecond + (frequency / 2)) / frequency));
+        return GetTimeScaled<constant::NsInSecond>();
     }
 
     /**
-     * @brief Returns the current time in arbitrary ticks
-     * @return The current time in ticks
+     * @return The current time in guest ticks
      */
     inline u64 GetTimeTicks() {
-        u64 ticks;
-        asm volatile("MRS %0, CNTVCT_EL0" : "=r"(ticks));
-        return ticks;
+        constexpr i64 TegraX1ClockFrequency{19200000};    // The clock frequency of the Tegra X1 (19.2 MHz)
+        return static_cast<u64>(GetTimeScaled<TegraX1ClockFrequency>());
     }
 
     /**
