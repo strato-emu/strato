@@ -28,7 +28,8 @@ namespace skyline {
          * @param copyOffset The offset into the buffer after which to use memcpy rather than copyFunction, -1 will use it for the entire buffer
          * @return The amount of data written into the input buffer in units of Type
          */
-        size_t Read(span <Type> buffer, void copyFunction(Type *, Type *) = {}, ssize_t copyOffset = -1) {
+        template<typename CopyFunc>
+        size_t Read(span <Type> buffer, CopyFunc copyFunction) {
             std::scoped_lock guard{mtx};
 
             if (empty)
@@ -48,40 +49,19 @@ namespace skyline {
                 size = sizeBegin + sizeEnd;
             }
 
-            if (copyFunction && (copyOffset != 0 && copyOffset < sizeEnd)) {
-                auto sourceEnd{start + ((copyOffset != -1) ? copyOffset : sizeEnd)};
+            {
+                auto sourceEnd{start + sizeEnd};
 
-                for (auto source{start}, destination{pointer}; source < sourceEnd; source++, destination++)
-                    copyFunction(source, destination);
-
-                if (copyOffset != -1) {
-                    std::memcpy(pointer + copyOffset, start + copyOffset, static_cast<size_t>(sizeEnd - copyOffset) * sizeof(Type));
-                    copyOffset -= sizeEnd;
-                }
-            } else {
-                if (copyOffset)
-                    copyOffset -= static_cast<size_t>(sizeEnd) * sizeof(Type);
-                std::memcpy(pointer, start, static_cast<size_t>(sizeEnd) * sizeof(Type));
+                for (; start < sourceEnd; start++, pointer++)
+                    copyFunction(start, pointer);
             }
 
-            pointer += sizeEnd;
-
             if (sizeBegin) {
-                if (copyFunction && copyOffset) {
-                    auto sourceEnd{array.begin() + ((copyOffset != -1) ? copyOffset : sizeBegin)};
+                start = array.begin();
+                auto sourceEnd{array.begin() + sizeBegin};
 
-                    for (auto source{array.begin()}, destination{pointer}; source < sourceEnd; source++, destination++)
-                        copyFunction(source, destination);
-
-                    if (copyOffset != -1)
-                        std::memcpy(array.begin() + copyOffset, pointer + copyOffset, static_cast<size_t>(sizeBegin - copyOffset) * sizeof(Type));
-                } else {
-                    std::memcpy(pointer, array.begin(), static_cast<size_t>(sizeBegin) * sizeof(Type));
-                }
-
-                start = array.begin() + sizeBegin;
-            } else {
-                start += sizeEnd;
+                for (; start < sourceEnd; start++, pointer++)
+                    copyFunction(start, pointer);
             }
 
             if (start == end)
@@ -97,48 +77,24 @@ namespace skyline {
             std::scoped_lock guard{mtx};
 
             Type *pointer{buffer.data()};
-            ssize_t size{static_cast<ssize_t>(buffer.size())};
-            while (size) {
-                if (start <= end && end != array.end()) {
-                    auto sizeEnd{std::min(array.end() - end, size)};
-                    std::memcpy(end, pointer, static_cast<size_t>(sizeEnd) * sizeof(Type));
-
-                    pointer += sizeEnd;
-                    size -= sizeEnd;
-
-                    end += sizeEnd;
-                } else {
-                    auto sizePreStart{(end == array.end()) ? std::min(start - array.begin(), size) : std::min(start - end, size)};
-                    auto sizePostStart{std::min(array.end() - start, size - sizePreStart)};
-
-                    if (sizePreStart)
-                        std::memcpy((end == array.end()) ? array.begin() : end, pointer, static_cast<size_t>(sizePreStart) * sizeof(Type));
-
-                    if (end == array.end())
-                        end = array.begin() + sizePreStart;
+            ssize_t remainingSize{static_cast<ssize_t>(buffer.size())};
+            while (remainingSize) {
+                ssize_t writeSize{std::min([&]() {
+                    if (start <= end)
+                        return array.end() - end;
                     else
-                        end += sizePreStart;
+                        return start - end - 1;
+                }(), remainingSize)};
 
-                    pointer += sizePreStart;
-                    size -= sizePreStart;
-
-                    if (sizePostStart)
-                        std::memcpy(end, pointer, static_cast<size_t>(sizePostStart) * sizeof(Type));
-
-                    if (start == array.end())
-                        start = array.begin() + sizePostStart;
-                    else
-                        start += sizePostStart;
-
-                    if (end == array.end())
-                        end = array.begin() + sizePostStart;
-                    else
-                        end += sizePostStart;
-
-                    pointer += sizePostStart;
-                    size -= sizePostStart;
+                if (writeSize) {
+                    std::memcpy(end, pointer, static_cast<size_t>(writeSize) * sizeof(Type));
+                    remainingSize -= writeSize;
+                    end += writeSize;
+                    pointer += writeSize;
                 }
 
+                if (end == array.end())
+                    end = array.begin();
                 empty = false;
             }
         }
