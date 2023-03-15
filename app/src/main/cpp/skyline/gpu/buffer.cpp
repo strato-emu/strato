@@ -312,12 +312,15 @@ namespace skyline::gpu {
         RefreshGpuWritesActiveDirect(true, flushHostCallback);
 
         if (directTrackedShadowActive && RefreshGpuReadsActiveDirect()) {
-            size_t curOffset{offset};
-            while (curOffset != data.size() + offset) {
-                auto result{directTrackedWrites.Query(curOffset)};
+            size_t dstOffset{};
+            while (dstOffset != data.size()) {
+                auto srcOffset{dstOffset + offset};
+                auto dstRemaining{data.size() - dstOffset};
+                auto result{directTrackedWrites.Query(srcOffset)};
+                auto size{result.size ? std::min(result.size, dstRemaining) : dstRemaining};
                 auto srcData{result.enclosed ? directTrackedShadow.data() : mirror.data()};
-                std::memcpy(data.data() + curOffset - offset, srcData + curOffset, result.size);
-                curOffset += result.size;
+                std::memcpy(data.data() + dstOffset, srcData + srcOffset, size);
+                dstOffset += size;
             }
         } else [[likely]] {
             std::memcpy(data.data(), mirror.data() + offset, data.size());
