@@ -92,7 +92,7 @@ add_subdirectory("libraries/opus")
 target_compile_definitions(opus PRIVATE OPUS_WILL_BE_SLOW=1) # libopus will warn when built without optimizations
 
 # Cubeb
-set(USE_AAUDIO ON)
+set(USE_OPENSL ON)
 set(USE_SANITIZERS OFF)
 set(BUNDLE_SPEEX ON)
 add_subdirectory("libraries/cubeb")
