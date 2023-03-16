@@ -60,6 +60,10 @@ android {
         targetCompatibility javaVersion
     }
 
+    packagingOptions {
+        jniLibs.useLegacyPackaging = true
+    }
+
     signingConfigs {
         ci {
             storeFile file(System.getenv("SIGNING_STORE_PATH") ?: "${System.getenv("user.home")}/keystore.jks")
