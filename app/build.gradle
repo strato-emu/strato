@@ -51,13 +51,13 @@ android {
 
     /* JVM Bytecode Options */
     def javaVersion = JavaVersion.VERSION_1_8
-    compileOptions {
-        sourceCompatibility javaVersion
-        targetCompatibility javaVersion
-    }
     kotlinOptions {
         jvmTarget = javaVersion.toString()
         freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+    }
+    compileOptions {
+        sourceCompatibility javaVersion
+        targetCompatibility javaVersion
     }
 
     signingConfigs {
