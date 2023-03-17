@@ -82,8 +82,10 @@ abstract class OnScreenButton(
 
     var hapticFeedback = false
 
-    var isEditing = false
-        private set
+    /**
+     * The edit session information, populated by the view
+     */
+    protected var editInfo = onScreenControllerView.editInfo
 
     protected open fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) {
         buttonSymbolPaint.apply {
@@ -133,19 +135,35 @@ abstract class OnScreenButton(
         relativeY = config.relativeY
     }
 
-    fun startEdit() {
-        isEditing = true
+    /**
+     * Starts an edit session
+     * @param x The x coordinate of the initial touch
+     * @param y The y coordinate of the initial touch
+     */
+    open fun startEdit(x : Float, y : Float) {
     }
 
     open fun edit(x : Float, y : Float) {
+        when (editInfo.editMode) {
+            EditMode.Move -> move(x, y)
+            else -> return
+        }
+    }
+
+    /**
+     * Moves this button to the given coordinates
+     */
+    open fun move(x : Float, y : Float) {
         relativeX = x / width
         relativeY = (y - heightDiff) / adjustedHeight
     }
 
-    fun endEdit() {
+    /**
+     * Ends the current edit session
+     */
+    open fun endEdit() {
         config.relativeX = relativeX
         config.relativeY = relativeY
-        isEditing = false
     }
 
     open fun resetRelativeValues() {
