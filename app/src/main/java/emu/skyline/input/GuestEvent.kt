@@ -7,49 +7,44 @@ package emu.skyline.input
 
 import emu.skyline.R.string
 import java.io.Serializable
-import java.util.*
+import java.util.Objects
 import kotlin.math.abs
 
 /**
  * This enumerates all of the buttons that the emulator recognizes
  */
-enum class ButtonId(val short : String? = null, val long : Int? = null) {
-    A("A", string.a_button),
-    B("B", string.b_button),
-    X("X", string.x_button),
-    Y("Y", string.y_button),
-    LeftStick("L", string.left_stick),
-    RightStick("R", string.right_stick),
-    L("L", string.left_shoulder),
-    R("R", string.right_shoulder),
-    ZL("ZL", string.left_trigger),
-    ZR("ZR", string.right_trigger),
-    Plus("+", string.plus_button),
-    Minus("-", string.minus_button),
-    DpadLeft("◀︎", string.left),
-    DpadUp("▲︎", string.up),
-    DpadRight("▶︎", string.right),
-    DpadDown("▼︎", string.down),
-    LeftStickLeft,
-    LeftStickUp,
-    LeftStickRight,
-    LeftStickDown,
-    RightStickLeft,
-    RightStickUp,
-    RightStickRight,
-    RightStickDown,
-    LeftSL("SL", string.left_shoulder),
-    LeftSR("SR", string.right_shoulder),
-    RightSL("SL", string.left_shoulder),
-    RightSR("SR", string.right_shoulder),
-    Menu("⌂︎", string.emu_menu_button);
-
-    /**
-     * This returns the value as setting the [ordinal]-th bit in a [Long]
-     */
-    fun value() : Long {
-        return (1.toLong()) shl ordinal
-    }
+enum class ButtonId(val value : Long, val short : String? = null, val long : Int? = null) {
+    A(1 shl 0, "A", string.a_button),
+    B(1 shl 1, "B", string.b_button),
+    X(1 shl 2, "X", string.x_button),
+    Y(1 shl 3, "Y", string.y_button),
+    LeftStick(1 shl 4, "L", string.left_stick),
+    RightStick(1 shl 5, "R", string.right_stick),
+    L3(1 shl 4, "L3", string.left_stick_button),
+    R3(1 shl 5, "R3", string.right_stick_button),
+    L(1 shl 6, "L", string.left_shoulder),
+    R(1 shl 7, "R", string.right_shoulder),
+    ZL(1 shl 8, "ZL", string.left_trigger),
+    ZR(1 shl 9, "ZR", string.right_trigger),
+    Plus(1 shl 10, "+", string.plus_button),
+    Minus(1 shl 11, "-", string.minus_button),
+    DpadLeft(1 shl 12, "◀︎", string.left),
+    DpadUp(1 shl 13, "▲︎", string.up),
+    DpadRight(1 shl 14, "▶︎", string.right),
+    DpadDown(1 shl 15, "▼︎", string.down),
+    LeftStickLeft(1 shl 16),
+    LeftStickUp(1 shl 17),
+    LeftStickRight(1 shl 18),
+    LeftStickDown(1 shl 19),
+    RightStickLeft(1 shl 20),
+    RightStickUp(1 shl 21),
+    RightStickRight(1 shl 22),
+    RightStickDown(1 shl 23),
+    LeftSL(1 shl 24, "SL", string.left_shoulder),
+    LeftSR(1 shl 25, "SR", string.right_shoulder),
+    RightSL(1 shl 26, "SL", string.left_shoulder),
+    RightSR(1 shl 27, "SR", string.right_shoulder),
+    Menu(1 shl 28, "⌂︎", string.emu_menu_button);
 }
 
 /**

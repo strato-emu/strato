@@ -13,13 +13,56 @@ import java.io.Serializable
  *
  * @param stringRes The string resource of the controller's name
  * @param firstController If the type only applies to the first controller
+ * @param optionalButtons Optional buttons that are allowed to be displayed on screen, but shouldn't be included in the controller mapping activity
  */
-enum class ControllerType(val stringRes : Int, val firstController : Boolean, val sticks : Array<StickId> = arrayOf(), val buttons : Array<ButtonId> = arrayOf(), val id : Int) {
+enum class ControllerType(val stringRes : Int, val firstController : Boolean, val sticks : Array<StickId> = arrayOf(), val buttons : Array<ButtonId> = arrayOf(), val optionalButtons : Array<ButtonId> = arrayOf(), val id : Int) {
     None(R.string.none, false, id = 0b0),
-    ProController(R.string.procon, false, arrayOf(StickId.Left, StickId.Right), arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y, ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight, ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR, ButtonId.Plus, ButtonId.Minus), 0b1),
-    HandheldProController(R.string.handheld_procon, true, arrayOf(StickId.Left, StickId.Right), arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y, ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight, ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR, ButtonId.Plus, ButtonId.Minus), 0b10),
-    JoyConLeft(R.string.ljoycon, false, arrayOf(StickId.Left), arrayOf(ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight, ButtonId.L, ButtonId.ZL, ButtonId.Minus, ButtonId.LeftSL, ButtonId.LeftSR), 0b1000),
-    JoyConRight(R.string.rjoycon, false, arrayOf(StickId.Right), arrayOf(ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y, ButtonId.R, ButtonId.ZR, ButtonId.Plus, ButtonId.RightSL, ButtonId.RightSR), 0b10000),
+    ProController(
+        R.string.procon,
+        false,
+        arrayOf(StickId.Left, StickId.Right),
+        arrayOf(
+            ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y,
+            ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight,
+            ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR, ButtonId.Plus, ButtonId.Minus
+        ),
+        arrayOf(ButtonId.L3, ButtonId.R3),
+        0b1
+    ),
+    HandheldProController(
+        R.string.handheld_procon,
+        true,
+        arrayOf(StickId.Left, StickId.Right),
+        arrayOf(
+            ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y,
+            ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight,
+            ButtonId.L, ButtonId.R, ButtonId.ZL, ButtonId.ZR, ButtonId.Plus, ButtonId.Minus
+        ),
+        arrayOf(ButtonId.L3, ButtonId.R3),
+        0b10
+    ),
+    JoyConLeft(
+        R.string.ljoycon,
+        false,
+        arrayOf(StickId.Left),
+        arrayOf(
+            ButtonId.DpadUp, ButtonId.DpadDown, ButtonId.DpadLeft, ButtonId.DpadRight,
+            ButtonId.L, ButtonId.ZL, ButtonId.Minus, ButtonId.LeftSL, ButtonId.LeftSR
+        ),
+        arrayOf(ButtonId.L3),
+        0b1000
+    ),
+    JoyConRight(
+        R.string.rjoycon,
+        false,
+        arrayOf(StickId.Right),
+        arrayOf(
+            ButtonId.A, ButtonId.B, ButtonId.X, ButtonId.Y,
+            ButtonId.R, ButtonId.ZR, ButtonId.Plus, ButtonId.RightSL, ButtonId.RightSR
+        ),
+        arrayOf(ButtonId.R3),
+        0b10000
+    ),
 }
 
 /**

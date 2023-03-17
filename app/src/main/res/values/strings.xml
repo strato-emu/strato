@@ -220,6 +220,8 @@
     <string name="dpad">D-pad</string>
     <string name="left_stick">Left Stick</string>
     <string name="right_stick">Right Stick</string>
+    <string name="left_stick_button">Left Stick Button</string>
+    <string name="right_stick_button">Right Stick Button</string>
     <string name="face_buttons">Face Buttons</string>
     <string name="shoulder_trigger">Shoulder &amp; Trigger Buttons</string>
     <string name="shoulder_rail">Shoulder Buttons on Joy-Con Rail</string>

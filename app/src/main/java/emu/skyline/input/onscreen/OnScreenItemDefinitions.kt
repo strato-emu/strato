@@ -25,7 +25,8 @@ open class CircularButton(
     defaultRelativeX : Float,
     defaultRelativeY : Float,
     defaultRelativeRadiusToX : Float,
-    drawableId : Int = R.drawable.ic_button
+    drawableId : Int = R.drawable.ic_button,
+    defaultEnabled : Boolean = true
 ) : OnScreenButton(
     onScreenControllerView,
     buttonId,
@@ -33,7 +34,8 @@ open class CircularButton(
     defaultRelativeY,
     defaultRelativeRadiusToX * 2f,
     defaultRelativeRadiusToX * CONFIGURED_ASPECT_RATIO * 2f,
-    drawableId
+    drawableId,
+    defaultEnabled
 ) {
     val radius get() = itemWidth / 2f
 
@@ -60,7 +62,7 @@ class JoystickButton(
     private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
     var recenterSticks = false
-    private lateinit var initialTapPosition : PointF
+    private var initialTapPosition = PointF()
     private var fingerDownTime = 0L
     private var fingerUpTime = 0L
     var shortDoubleTapped = false
@@ -156,7 +158,8 @@ open class RectangularButton(
     defaultRelativeY : Float,
     defaultRelativeWidth : Float,
     defaultRelativeHeight : Float,
-    drawableId : Int = R.drawable.ic_rectangular_button
+    drawableId : Int = R.drawable.ic_rectangular_button,
+    defaultEnabled : Boolean = true
 ) : OnScreenButton(
     onScreenControllerView,
     buttonId,
@@ -164,7 +167,8 @@ open class RectangularButton(
     defaultRelativeY,
     defaultRelativeWidth,
     defaultRelativeHeight,
-    drawableId
+    drawableId,
+    defaultEnabled
 ) {
     override fun isTouched(x : Float, y : Float) = currentBounds.contains(x.roundToInt(), y.roundToInt())
 }
@@ -209,13 +213,18 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     private val buttonZL = TriggerButton(onScreenControllerView, ZL, 0.1f, 0.1f, 0.09f, 0.1f)
     private val buttonZR = TriggerButton(onScreenControllerView, ZR, 0.9f, 0.1f, 0.09f, 0.1f)
 
+    private val buttonL3 = CircularButton(onScreenControllerView, L3, 0.35f, 0.87f, 0.025f, defaultEnabled = false)
+    private val buttonR3 = CircularButton(onScreenControllerView, R3, 0.65f, 0.87f, 0.025f, defaultEnabled = false)
+
     private val circularButtonPairs = listOf(setOf(buttonA, buttonB, buttonX, buttonY), setOf(buttonDpadLeft, buttonDpadUp, buttonDpadRight, buttonDpadDown))
 
     private val triggerButtonPairs = listOf(setOf(buttonL, buttonZL), setOf(buttonR, buttonZR))
 
+    private val stickButtons = setOf(buttonL3, buttonR3)
+
     val buttonPairs = circularButtonPairs + triggerButtonPairs
 
-    val circularButtons = circularButtonPairs.flatten() + listOf(
+    val circularButtons = circularButtonPairs.flatten() + stickButtons + listOf(
         CircularButton(onScreenControllerView, Plus, 0.57f, 0.75f, 0.025f),
         CircularButton(onScreenControllerView, Minus, 0.43f, 0.75f, 0.025f),
         CircularButton(onScreenControllerView, Menu, 0.5f, 0.75f, 0.025f)

@@ -27,7 +27,8 @@ abstract class OnScreenButton(
     private val defaultRelativeY : Float,
     private val defaultRelativeWidth : Float,
     private val defaultRelativeHeight : Float,
-    drawableId : Int
+    drawableId : Int,
+    private val defaultEnabled : Boolean
 ) {
     companion object {
         /**
@@ -36,7 +37,7 @@ abstract class OnScreenButton(
         const val CONFIGURED_ASPECT_RATIO = 2074f / 874f
     }
 
-    val config = OnScreenConfiguration(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY)
+    val config = OnScreenConfiguration(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY, defaultEnabled)
 
     protected val drawable = ContextCompat.getDrawable(onScreenControllerView.context, drawableId)!!
 
@@ -242,7 +243,7 @@ abstract class OnScreenButton(
 
     open fun resetConfig() {
         resetRelativeValues()
-        config.enabled = true
+        config.enabled = defaultEnabled
         config.scale = OnScreenConfiguration.DefaultScale
     }
 }

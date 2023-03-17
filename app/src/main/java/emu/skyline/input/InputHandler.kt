@@ -221,7 +221,7 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
         return when (val guestEvent = inputManager.eventMap[KeyHostEvent(event.device.descriptor, event.keyCode)]) {
             is ButtonGuestEvent -> {
                 if (guestEvent.button != ButtonId.Menu)
-                    setButtonState(guestEvent.id, guestEvent.button.value(), action.state)
+                    setButtonState(guestEvent.id, guestEvent.button.value, action.state)
                 true
             }
 
@@ -274,7 +274,7 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
                         is ButtonGuestEvent -> {
                             val action = if (abs(value) >= guestEvent.threshold) ButtonState.Pressed.state else ButtonState.Released.state
                             if (guestEvent.button != ButtonId.Menu)
-                                setButtonState(guestEvent.id, guestEvent.button.value(), action)
+                                setButtonState(guestEvent.id, guestEvent.button.value, action)
                         }
 
                         is AxisGuestEvent -> {

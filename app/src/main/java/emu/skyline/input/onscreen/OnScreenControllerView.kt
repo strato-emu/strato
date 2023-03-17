@@ -35,7 +35,7 @@ typealias OnStickStateChangedListener = (stickId : StickId, position : PointF) -
 class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = 0, defStyleRes : Int = 0) : View(context, attrs, defStyleAttr, defStyleRes) {
     companion object {
         private val controllerTypeMappings = mapOf(*ControllerType.values().map {
-            it to (setOf(*it.buttons) to setOf(*it.sticks))
+            it to (setOf(*it.buttons) + setOf(*it.optionalButtons) to setOf(*it.sticks))
         }.toTypedArray())
 
         private const val SCALE_STEP = 0.05f

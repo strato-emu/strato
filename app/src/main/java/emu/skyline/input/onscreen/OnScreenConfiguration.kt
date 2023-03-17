@@ -10,7 +10,7 @@ import emu.skyline.input.ButtonId
 import emu.skyline.utils.SwitchColors
 import emu.skyline.utils.sharedPreferences
 
-class OnScreenConfiguration(private val context : Context, private val buttonId : ButtonId, defaultRelativeX : Float, defaultRelativeY : Float) {
+class OnScreenConfiguration(private val context : Context, private val buttonId : ButtonId, defaultRelativeX : Float, defaultRelativeY : Float, defaultEnabled : Boolean) {
     companion object {
         const val DefaultAlpha = 130
         const val DefaultGlobalScale = 1.15f
@@ -19,7 +19,7 @@ class OnScreenConfiguration(private val context : Context, private val buttonId 
 
     private inline fun <reified T> config(default : T, prefix : String = "${buttonId.name}_") = sharedPreferences(context, default, prefix, "controller_config")
 
-    var enabled by config(true)
+    var enabled by config(defaultEnabled)
 
     var alpha by config(DefaultAlpha, "")
     var textColor by config(SwitchColors.BLACK.color)
