@@ -76,6 +76,7 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
         external fun setTouchState(points : IntArray)
     }
 
+    @Suppress("ArrayInDataClass")
     data class MotionSensorInput(
         var timestamp : u64 = 0uL,
         var deltaTimestamp : u64 = 0uL,
@@ -100,10 +101,10 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
      * Used for adjusting motion to phone orientation
      */
     private val motionRotationMatrix = FloatArray(9)
-    private val motionGyroOrientation : FloatArray = FloatArray(3);
-    private val motionAcelOrientation : FloatArray = FloatArray(3);
-    private var motionAxisOrientationX = SensorManager.AXIS_Y;
-    private var motionAxisOrientationY = SensorManager.AXIS_X;
+    private val motionGyroOrientation : FloatArray = FloatArray(3)
+    private val motionAcelOrientation : FloatArray = FloatArray(3)
+    private var motionAxisOrientationX = SensorManager.AXIS_Y
+    private var motionAxisOrientationY = SensorManager.AXIS_X
 
     /**
      * Initializes all of the controllers from [InputManager] on the guest
@@ -151,15 +152,15 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
             }
         }
 
-        setMotionOrientation90();
+        setMotionOrientation90()
         val orientationEventListener = object : OrientationEventListener(context) {
             override fun onOrientationChanged(orientation : Int) {
                 when {
                     isWithinOrientationRange(orientation, 270) -> {
-                        setMotionOrientation270();
+                        setMotionOrientation270()
                     }
                     isWithinOrientationRange(orientation, 90) -> {
-                        setMotionOrientation90();
+                        setMotionOrientation90()
                     }
                 }
             }
@@ -184,8 +185,8 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
         motionAcelOrientation[0] = -1.0f
         motionAcelOrientation[1] = 1.0f
         motionAcelOrientation[2] = -1.0f
-        motionAxisOrientationX = SensorManager.AXIS_Y;
-        motionAxisOrientationY = SensorManager.AXIS_X;
+        motionAxisOrientationX = SensorManager.AXIS_Y
+        motionAxisOrientationY = SensorManager.AXIS_X
     }
 
     /**
@@ -200,8 +201,8 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
         motionAcelOrientation[2] = -1.0f
 
         // TODO: Find the correct configuration here
-        motionAxisOrientationX = SensorManager.AXIS_Y;
-        motionAxisOrientationY = SensorManager.AXIS_X;
+        motionAxisOrientationX = SensorManager.AXIS_Y
+        motionAxisOrientationY = SensorManager.AXIS_X
     }
 
     /**
@@ -320,7 +321,7 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
                 motionSensor.quaternion[2] = event.values[2]
                 motionSensor.quaternion[3] = event.values[3]
                 SensorManager.getRotationMatrixFromVector(motionRotationMatrix, motionSensor.quaternion)
-                SensorManager.remapCoordinateSystem(motionRotationMatrix, motionAxisOrientationX, motionAxisOrientationY, motionSensor.orientationMatrix);
+                SensorManager.remapCoordinateSystem(motionRotationMatrix, motionAxisOrientationX, motionAxisOrientationY, motionSensor.orientationMatrix)
             }
 
             Sensor.TYPE_GAME_ROTATION_VECTOR -> {
@@ -329,7 +330,7 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
                 motionSensor.quaternion[2] = event.values[2]
                 motionSensor.quaternion[3] = event.values[3]
                 SensorManager.getRotationMatrixFromVector(motionRotationMatrix, motionSensor.quaternion)
-                SensorManager.remapCoordinateSystem(motionRotationMatrix, motionAxisOrientationX, motionAxisOrientationY, motionSensor.orientationMatrix);
+                SensorManager.remapCoordinateSystem(motionRotationMatrix, motionAxisOrientationX, motionAxisOrientationY, motionSensor.orientationMatrix)
             }
 
             else -> {}
@@ -341,11 +342,11 @@ class InputHandler(private val inputManager : InputManager, private val emulatio
 
         motionSensor.deltaTimestamp = event.timestamp.toULong() - motionSensor.timestamp
         motionSensor.timestamp = event.timestamp.toULong()
-        motionDataBuffer.clear();
+        motionDataBuffer.clear()
         setMotionState(0, 0, motionSensor.writeToByteBuffer(motionDataBuffer))
-        motionDataBuffer.clear();
+        motionDataBuffer.clear()
         setMotionState(0, 1, motionSensor.writeToByteBuffer(motionDataBuffer))
-        motionDataBuffer.clear();
+        motionDataBuffer.clear()
         setMotionState(0, 2, motionSensor.writeToByteBuffer(motionDataBuffer))
     }
 

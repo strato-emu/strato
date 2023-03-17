@@ -48,7 +48,7 @@ open class Controller(val id : Int, var type : ControllerType, var rumbleDeviceD
      */
     companion object {
         @JvmStatic
-        private val serialVersionUID = 6529685098267757690L
+        val serialVersionUID = 6529685098267757690L
 
         /**
          * The value of [rumbleDeviceDescriptor] when the built-in Vibrator should be utilized
@@ -60,23 +60,39 @@ open class Controller(val id : Int, var type : ControllerType, var rumbleDeviceD
 /**
  * This Controller class is for the Handheld-ProCon controller that change based on the operation mode
  */
-class HandheldController(id : Int) : Controller(id, ControllerType.HandheldProController)
+class HandheldController(id : Int) : Controller(id, ControllerType.HandheldProController) {
+    companion object {
+        private val serialVersionUID = Controller.serialVersionUID
+    }
+}
 
 /**
  * This Controller class is for the Pro Controller (ProCon)
  */
-class ProController(id : Int) : Controller(id, ControllerType.ProController)
+class ProController(id : Int) : Controller(id, ControllerType.ProController) {
+    companion object {
+        private val serialVersionUID = Controller.serialVersionUID
+    }
+}
 
 /**
  * This Controller class is for the left Joy-Con controller
  *
  * @param partnerId The ID of the corresponding right Joy-Con if this is a pair
  */
-class JoyConLeftController(id : Int, var partnerId : Int? = null) : Controller(id, ControllerType.JoyConLeft)
+class JoyConLeftController(id : Int, var partnerId : Int? = null) : Controller(id, ControllerType.JoyConLeft) {
+    companion object {
+        private val serialVersionUID = Controller.serialVersionUID
+    }
+}
 
 /**
  * This Controller class is for the right Joy-Con controller
  *
  * @param partnerId The ID of the corresponding left Joy-Con if this is a pair
  */
-class JoyConRightController(id : Int, var partnerId : Int? = null) : Controller(id, ControllerType.JoyConRight)
+class JoyConRightController(id : Int, var partnerId : Int? = null) : Controller(id, ControllerType.JoyConRight) {
+    companion object {
+        private val serialVersionUID = Controller.serialVersionUID
+    }
+}

@@ -87,5 +87,5 @@ data class AppItem(private val meta : AppEntry) : DataItem() {
     /**
      * The name and author is used as the key
      */
-    fun key() = meta.name + if (meta.author != null) " ${meta.author}" else ""
+    fun key() = "${meta.name}${meta.author.let { it ?: "" }}"
 }
