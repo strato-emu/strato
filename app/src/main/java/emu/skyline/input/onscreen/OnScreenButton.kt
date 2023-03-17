@@ -51,13 +51,24 @@ abstract class OnScreenButton(
     private val relativeWidth get() = defaultRelativeWidth * config.globalScale
     private val relativeHeight get() = defaultRelativeHeight * config.globalScale
 
+    /**
+     * The width of the view this button is in, populated by the view during draw
+     */
     var width = 0
+
+    /**
+     * The height of the view this button is in, populated by the view during draw
+     */
     var height = 0
 
+    /**
+     * The height of the view this button is in, adjusted to an arbitrary aspect ratio used during configuration
+     */
     protected val adjustedHeight get() = width / CONFIGURED_ASPECT_RATIO
 
     /**
-     * Buttons should be at bottom when device have large height than [adjustedHeight]
+     * The difference between the view height and the adjusted view height.
+     * This is used to offset the buttons to the bottom of the screen when the view height is larger than [adjustedHeight]
      */
     protected val heightDiff get() = (height - adjustedHeight).coerceAtLeast(0f)
 
