@@ -269,8 +269,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun resetControls() {
         controls.allButtons.forEach {
-            it.resetRelativeValues()
-            it.config.enabled = true
+            it.resetConfig()
         }
         controls.globalScale = 1.15f
         controls.alpha = 155

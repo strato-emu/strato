@@ -184,4 +184,9 @@ abstract class OnScreenButton(
         relativeX = defaultRelativeX
         relativeY = defaultRelativeY
     }
+
+    open fun resetConfig() {
+        resetRelativeValues()
+        config.enabled = true
+    }
 }
