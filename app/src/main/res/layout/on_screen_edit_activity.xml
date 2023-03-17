@@ -4,6 +4,11 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
+    <emu.skyline.views.AlignmentGridView
+        android:id="@+id/alignment_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <emu.skyline.input.onscreen.OnScreenControllerView
         android:id="@+id/on_screen_controller_view"
         android:layout_width="match_parent"

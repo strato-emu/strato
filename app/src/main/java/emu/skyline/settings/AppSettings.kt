@@ -31,6 +31,7 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
     var onScreenControl by sharedPreferences(context, true)
     var onScreenControlFeedback by sharedPreferences(context, true)
     var onScreenControlRecenterSticks by sharedPreferences(context, true)
+    var onScreenControlSnapToGrid by sharedPreferences(context, false)
 
     // Other
     var romFormatFilter by sharedPreferences(context, 0)

@@ -69,6 +69,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
     lateinit var vibrator : Vibrator
     private val effectClick = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
 
+    // Ensure controls init happens after editInfo is initialized so that the buttons have a valid reference to it
     private val controls = Controls(this)
 
     override fun onDraw(canvas : Canvas) {
@@ -263,8 +264,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun setEditMode(editMode : EditMode) {
         editInfo.editMode = editMode
-        setOnTouchListener(if (editMode == EditMode.None) playingTouchHandler else editingTouchHandler)
-        invalidate()
+        setOnTouchListener(if (isEditing) editingTouchHandler else playingTouchHandler )
     }
 
     fun resetControls() {
@@ -284,6 +284,10 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
     fun decreaseScale() {
         controls.globalScale -= SCALE_STEP
         invalidate()
+    }
+
+    fun setSnapToGrid(snap : Boolean) {
+        editInfo.snapToGrid = snap
     }
 
     fun increaseOpacity() {

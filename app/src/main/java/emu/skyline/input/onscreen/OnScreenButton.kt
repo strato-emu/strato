@@ -179,8 +179,40 @@ abstract class OnScreenButton(
      * Moves this button to the given coordinates
      */
     open fun move(x : Float, y : Float) {
-        relativeX = x / width
-        relativeY = (y - heightDiff) / adjustedHeight
+        var adjustedX = x
+        var adjustedY = y
+
+        if (editInfo.snapToGrid) {
+            val centerX = width / 2f
+            val centerY = height / 2f
+            val gridSize = editInfo.gridSize
+            // The coordinates of the first grid line for each axis, because the grid is centered and might not start at [0,0]
+            val startX = centerX % gridSize
+            val startY = centerY % gridSize
+
+            /**
+             * The offset to apply to a coordinate to snap it to the grid is the remainder of
+             * the coordinate divided by the grid size.
+             * Since the grid is centered on the screen and might not start at [0,0] we need to
+             * subtract the grid start offset, otherwise we'd be calculating the offset for a grid that starts at [0,0].
+             *
+             * Example: Touch event X: 158 | Grid size: 50 | Grid start X: 40 -> Grid lines at 40, 90, 140, 190, ...
+             * Snap offset: 158 - 40 = 118 -> 118 % 50 = 18
+             * Apply offset to X: 158 - 18 = 140 which is a grid line
+             *
+             * If we didn't subtract the grid start offset:
+             * Snap offset: 158 % 50 = 8
+             * Apply offset to X: 158 - 8 = 150 which is not a grid line
+             */
+            val snapOffsetX = (x - startX) % gridSize
+            val snapOffsetY = (y - startY) % gridSize
+
+            adjustedX = x - snapOffsetX
+            adjustedY = y - snapOffsetY
+        }
+
+        relativeX = adjustedX / width
+        relativeY = (adjustedY - heightDiff) / adjustedHeight
     }
 
     /**

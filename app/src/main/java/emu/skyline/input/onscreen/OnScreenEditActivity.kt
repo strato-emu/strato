@@ -12,6 +12,7 @@ import android.os.VibratorManager
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isGone
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
@@ -108,12 +109,26 @@ class OnScreenEditActivity : AppCompatActivity() {
         }
     }
 
+    private val enableGridAction = {
+        appSettings.onScreenControlSnapToGrid = true
+        binding.onScreenControllerView.setSnapToGrid(true)
+        binding.alignmentGrid.isGone = false
+    }
+
+    private val disableGridAction = {
+        appSettings.onScreenControlSnapToGrid = false
+        binding.onScreenControllerView.setSnapToGrid(false)
+        binding.alignmentGrid.isGone = true
+    }
+
     private val actions : List<Pair<Int, () -> Unit>> = listOf(
         Pair(R.drawable.ic_palette, paletteAction),
         Pair(R.drawable.ic_restore) { binding.onScreenControllerView.resetControls() },
         Pair(R.drawable.ic_toggle, toggleAction),
         Pair(R.drawable.ic_move, moveAction),
         Pair(R.drawable.ic_resize, resizeAction),
+        Pair(R.drawable.ic_grid_on, enableGridAction),
+        Pair(R.drawable.ic_grid_off, disableGridAction),
         Pair(R.drawable.ic_zoom_out) { binding.onScreenControllerView.decreaseScale() },
         Pair(R.drawable.ic_zoom_in) { binding.onScreenControllerView.increaseScale() },
         Pair(R.drawable.ic_opacity_minus) { binding.onScreenControllerView.decreaseOpacity() },
@@ -146,6 +161,12 @@ class OnScreenEditActivity : AppCompatActivity() {
             getSystemService(VIBRATOR_SERVICE) as Vibrator
 
         binding.onScreenControllerView.recenterSticks = appSettings.onScreenControlRecenterSticks
+
+        val snapToGrid = appSettings.onScreenControlSnapToGrid
+        binding.onScreenControllerView.setSnapToGrid(snapToGrid)
+
+        binding.alignmentGrid.isGone = !snapToGrid
+        binding.alignmentGrid.gridSize = OnScreenEditInfo.GridSize
 
         actions.forEach { pair ->
             binding.fabParent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, binding.fabParent, false).apply {

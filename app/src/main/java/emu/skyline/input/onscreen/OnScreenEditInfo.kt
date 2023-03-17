@@ -5,6 +5,9 @@
 
 package emu.skyline.input.onscreen
 
+import android.util.TypedValue
+import emu.skyline.SkylineApplication
+
 enum class EditMode {
     None,
     Move,
@@ -26,5 +29,20 @@ class OnScreenEditInfo {
      */
     var editButton : OnScreenButton? = null
 
+    /**
+     * Whether the buttons should snap to a grid when in edit mode
+     */
+    var snapToGrid : Boolean = false
+
+    var gridSize : Int = GridSize
+
     val isEditing get() = editMode != EditMode.None
+
+    companion object {
+
+        /**
+         * The size of the grid, calculated from the value of 8dp
+         */
+        val GridSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8f, SkylineApplication.context.resources.displayMetrics).toInt()
+    }
 }
