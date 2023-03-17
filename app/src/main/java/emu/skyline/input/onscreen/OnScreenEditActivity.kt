@@ -58,6 +58,11 @@ class OnScreenEditActivity : AppCompatActivity() {
         toggleFabVisibility(false)
     }
 
+    private val resizeAction = {
+        binding.onScreenControllerView.setEditMode(EditMode.Resize)
+        toggleFabVisibility(false)
+    }
+
     private val toggleAction : () -> Unit = {
         val buttonProps = binding.onScreenControllerView.getButtonProps()
         val checkedButtonsArray = buttonProps.map { it.enabled }.toBooleanArray()
@@ -107,7 +112,8 @@ class OnScreenEditActivity : AppCompatActivity() {
         Pair(R.drawable.ic_palette, paletteAction),
         Pair(R.drawable.ic_restore) { binding.onScreenControllerView.resetControls() },
         Pair(R.drawable.ic_toggle, toggleAction),
-        Pair(R.drawable.ic_edit, moveAction),
+        Pair(R.drawable.ic_move, moveAction),
+        Pair(R.drawable.ic_resize, resizeAction),
         Pair(R.drawable.ic_zoom_out) { binding.onScreenControllerView.decreaseScale() },
         Pair(R.drawable.ic_zoom_in) { binding.onScreenControllerView.increaseScale() },
         Pair(R.drawable.ic_opacity_minus) { binding.onScreenControllerView.decreaseOpacity() },

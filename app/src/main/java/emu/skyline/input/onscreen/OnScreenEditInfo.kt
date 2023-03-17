@@ -8,6 +8,7 @@ package emu.skyline.input.onscreen
 enum class EditMode {
     None,
     Move,
+    Resize
 }
 
 /**
