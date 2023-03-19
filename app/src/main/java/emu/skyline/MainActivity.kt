@@ -351,5 +351,7 @@ class MainActivity : AppCompatActivity() {
             setAppListDecoration()
             adapter.notifyItemRangeChanged(0, adapter.currentItems.size)
         }
+
+        viewModel.checkRomHash(Uri.parse(appSettings.searchLocation), EmulationSettings.global.systemLanguage)
     }
 }
