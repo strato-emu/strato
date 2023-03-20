@@ -2,10 +2,9 @@
 <com.google.android.material.floatingactionbutton.FloatingActionButton xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="?attr/floatingActionButtonSmallStyle"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
     app:ensureMinTouchTargetSize="false"
-    app:fabSize="mini"
-    app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.ExtraLarge"
-    tools:ignore="ContentDescription" />
+    tools:ignore="ContentDescription,SpeakableTextPresentCheck,TouchTargetSizeCheck" />
