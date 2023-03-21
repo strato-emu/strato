@@ -56,7 +56,8 @@ namespace skyline::gpu::interconnect {
           fence{gpu.vkDevice, vk::FenceCreateInfo{ .flags = vk::FenceCreateFlagBits::eSignaled }},
           semaphore{gpu.vkDevice, vk::SemaphoreCreateInfo{}},
           cycle{std::make_shared<FenceCycle>(gpu.vkDevice, *fence, *semaphore, true)},
-          nodes{allocator} {
+          nodes{allocator},
+          pendingPostRenderPassNodes{allocator} {
         Begin();
     }
 
@@ -68,6 +69,7 @@ namespace skyline::gpu::interconnect {
           cycle{std::move(other.cycle)},
           allocator{std::move(other.allocator)},
           nodes{std::move(other.nodes)},
+          pendingPostRenderPassNodes{std::move(other.pendingPostRenderPassNodes)},
           ready{other.ready} {}
 
     std::shared_ptr<FenceCycle> CommandRecordThread::Slot::Reset(GPU &gpu) {
@@ -372,9 +374,11 @@ namespace skyline::gpu::interconnect {
             // We need to create a render pass if one doesn't already exist or the current one isn't compatible
             if (renderPass != nullptr) {
                 slot->nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
+                slot->nodes.splice(slot->nodes.end(), slot->pendingPostRenderPassNodes);
                 renderPassIndex++;
             }
             renderPass = &std::get<node::RenderPassNode>(slot->nodes.emplace_back(std::in_place_type_t<node::RenderPassNode>(), renderArea));
+            renderPassIt = std::prev(slot->nodes.end());
             addSubpass();
             subpassCount = 1;
         } else if (!attachmentsMatch) {
@@ -399,6 +403,7 @@ namespace skyline::gpu::interconnect {
     void CommandExecutor::FinishRenderPass() {
         if (renderPass) {
             slot->nodes.emplace_back(std::in_place_type_t<node::RenderPassEndNode>());
+            slot->nodes.splice(slot->nodes.end(), slot->pendingPostRenderPassNodes);
             renderPassIndex++;
 
             renderPass = nullptr;
@@ -502,6 +507,22 @@ namespace skyline::gpu::interconnect {
         slot->nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
     }
 
+    void CommandExecutor::AddCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
+        slot->nodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
+    }
+
+    void CommandExecutor::InsertPreExecuteCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
+        slot->nodes.emplace(slot->nodes.begin(), std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
+    }
+
+    void CommandExecutor::InsertPreRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
+        slot->nodes.emplace(renderPass ? renderPassIt : slot->nodes.end(), std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
+    }
+
+    void CommandExecutor::InsertPostRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function) {
+        slot->pendingPostRenderPassNodes.emplace_back(std::in_place_type_t<node::FunctionNode>(), std::forward<decltype(function)>(function));
+    }
+
     void CommandExecutor::AddFullBarrier() {
         AddOutsideRpCommand([](vk::raii::CommandBuffer &commandBuffer, const std::shared_ptr<FenceCycle> &, GPU &) {
             RecordFullBarrier(commandBuffer);
@@ -570,6 +591,10 @@ namespace skyline::gpu::interconnect {
             callback();
     }
 
+    std::optional<u32> CommandExecutor::GetRenderPassIndex() {
+        return renderPassIndex;
+    }
+
     u32 CommandExecutor::AddCheckpointImpl(std::string_view annotation) {
         if (renderPass)
             FinishRenderPass();
@@ -588,6 +613,8 @@ namespace skyline::gpu::interconnect {
     void CommandExecutor::SubmitInternal() {
         if (renderPass)
             FinishRenderPass();
+
+        slot->nodes.splice(slot->nodes.end(), slot->pendingPostRenderPassNodes);
 
         {
             slot->WaitReady();

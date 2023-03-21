@@ -41,6 +41,7 @@ namespace skyline::gpu::interconnect {
             std::shared_ptr<FenceCycle> cycle;
             LinearAllocatorState<> allocator;
             std::list<node::NodeVariant, LinearAllocator<node::NodeVariant>> nodes;
+            std::list<node::NodeVariant, LinearAllocator<node::NodeVariant>> pendingPostRenderPassNodes;
             std::mutex beginLock;
             std::condition_variable beginCondition;
             ContextTag executionTag;
@@ -148,6 +149,7 @@ namespace skyline::gpu::interconnect {
         ExecutionWaiterThread waiterThread;
         std::optional<CheckpointPollerThread> checkpointPollerThread;
         node::RenderPassNode *renderPass{};
+        std::list<node::NodeVariant, LinearAllocator<node::NodeVariant>>::iterator renderPassIt;
         size_t subpassCount{}; //!< The number of subpasses in the current render pass
         u32 renderPassIndex{};
         bool preserveLocked{};
@@ -310,6 +312,26 @@ namespace skyline::gpu::interconnect {
         void AddOutsideRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
 
         /**
+         * @brief Adds a command that can be executed inside or outside of an RP
+         */
+        void AddCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+
+        /**
+         * @brief Inserts the input command into the node list at the beginning of the execution
+         */
+        void InsertPreExecuteCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+
+        /**
+         * @brief Inserts the input command into the node list before the current RP begins (or immediately if not in an RP)
+         */
+        void InsertPreRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+
+        /**
+         * @brief Inserts the input command into the node list after the current RP (or execution) finishes
+         */
+        void InsertPostRpCommand(std::function<void(vk::raii::CommandBuffer &, const std::shared_ptr<FenceCycle> &, GPU &)> &&function);
+
+        /**
          * @brief Adds a full pipeline barrier to the command buffer
          */
         void AddFullBarrier();
@@ -328,6 +350,8 @@ namespace skyline::gpu::interconnect {
          * @brief Calls all registered pipeline change callbacks
          */
         void NotifyPipelineChange();
+
+        std::optional<u32> GetRenderPassIndex();
 
         /**
          * @brief Records a checkpoint into the GPU command stream at the current
