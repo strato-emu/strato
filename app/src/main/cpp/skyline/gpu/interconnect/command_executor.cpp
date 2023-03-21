@@ -616,6 +616,7 @@ namespace skyline::gpu::interconnect {
 
         slot->nodes.splice(slot->nodes.end(), slot->pendingPostRenderPassNodes);
 
+
         {
             slot->WaitReady();
 

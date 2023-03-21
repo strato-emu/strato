@@ -69,6 +69,8 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             }
         } deferredDraw{};
 
+        bool CheckRenderEnable();
+
         type::DrawTopology ApplyTopologyOverride(type::DrawTopology beginMethodTopology);
 
         void FlushDeferredDraw();
@@ -268,6 +270,19 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             Register<0x54F, type::MultisampleControl> multisampleControl;
 
+            struct RenderEnable {
+                enum class Mode : u32 {
+                    False = 0,
+                    True = 1,
+                    Conditional = 2,
+                    RenderIfEqual = 3,
+                    RenderIfNotEqual = 4,
+                };
+                Address offset;
+                Mode mode;
+            };
+            Register<0x554, RenderEnable> renderEnable;
+
             Register<0x557, TexSamplerPool> texSamplerPool;
 
             Register<0x55B, float> slopeScaleDepthBias;
@@ -374,6 +389,19 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x649, u32> pixelCentreImage;
             Register<0x64B, u32> viewportScaleOffsetEnable;
             Register<0x64F, type::ViewportClipControl> viewportClipControl;
+
+            struct RenderEnableOverride {
+                enum class Mode : u8 {
+                    UseRenderEnable = 0,
+                    AlwaysRender = 1,
+                    NeverRender = 2,
+                };
+
+                Mode mode : 2;
+                u32 _pad_ : 30;
+            };
+            Register<0x651, RenderEnableOverride> renderEnableOverride;
+
 
             Register<0x652, type::PrimitiveTopologyControl> primitiveTopologyControl;
             Register<0x65C, type::PrimitiveTopology> primitiveTopology;
