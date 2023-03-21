@@ -216,6 +216,10 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 i2m.LoadInlineData(*registers.i2m, loadInlineData);
             })
 
+            ENGINE_CASE(clearReportValue, {
+                interconnect.ResetCounter(clearReportValue.type);
+            })
+
             ENGINE_CASE(syncpointAction, {
                 Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.Submit([=, syncpoints = &this->syncpoints, index = syncpointAction.id]() {
@@ -360,11 +364,15 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     case type::SemaphoreInfo::Op::Counter: {
                         switch (info.counterType) {
                             case type::SemaphoreInfo::CounterType::Zero:
-                                WriteSemaphoreResult(*registers.semaphore, registers.semaphore->payload);
+                                channelCtx.executor.Submit([=, this, semaphore = *registers.semaphore]() {
+                                    WriteSemaphoreResult(semaphore, semaphore.payload);
+                                });
                                 break;
                             case type::SemaphoreInfo::CounterType::SamplesPassed:
                                 // Return a fake result for now
-                                WriteSemaphoreResult(*registers.semaphore, 0xffffff);
+                                interconnect.Query({registers.semaphore->address}, info.counterType,
+                                                   registers.semaphore->info.structureSize == type::SemaphoreInfo::StructureSize::FourWords ?
+                                                   GetGpuTimeTicks() : std::optional<u64>{});
                                 break;
 
                             default:

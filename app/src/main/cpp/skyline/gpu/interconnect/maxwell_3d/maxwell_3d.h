@@ -6,9 +6,11 @@
 #include <gpu/descriptor_allocator.h>
 #include <gpu/interconnect/common/samplers.h>
 #include <gpu/interconnect/common/textures.h>
+#include <soc/gm20b/gmmu.h>
 #include "common.h"
 #include "active_state.h"
 #include "constant_buffers.h"
+#include "queries.h"
 
 namespace skyline::gpu::interconnect::maxwell3d {
     /**
@@ -50,6 +52,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         std::shared_ptr<memory::Buffer> quadConversionBuffer{};
         bool quadConversionBufferAttached{};
         BufferView indirectBufferView;
+        Queries queries;
 
         static constexpr size_t DescriptorBatchSize{0x100};
         std::shared_ptr<boost::container::static_vector<DescriptorAllocator::ActiveDescriptorSet, DescriptorBatchSize>> attachedDescriptorSets;
@@ -105,5 +108,11 @@ namespace skyline::gpu::interconnect::maxwell3d {
         void Draw(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, u32 count, u32 first, u32 instanceCount, u32 vertexOffset, u32 firstInstance);
 
         void DrawIndirect(engine::DrawTopology topology, bool transformFeedbackEnable, bool indexed, span<u8> indirectBuffer, u32 count, u32 stride);
+
+        void Query(soc::gm20b::IOVA address, engine::SemaphoreInfo::CounterType type, std::optional<u64> timestamp);
+
+        void ResetCounter(engine::ClearReportValue::Type type);
+
+        bool QueryPresentAtAddress(soc::gm20b::IOVA address);
     };
 }

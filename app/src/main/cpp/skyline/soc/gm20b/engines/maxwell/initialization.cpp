@@ -276,6 +276,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         HandleMethod(0x86, 0x10);
         HandleMethod(0x4B7, 0x10);
         HandleMethod(0x365, 0x1);
+        HandleMethod(0x556, 0x1);
         HandleMethod(0x559, 0xFFF);
         HandleMethod(0x55F, 0xFFFFF);
         HandleMethod(0x584, 0x12);

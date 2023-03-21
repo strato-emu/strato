@@ -260,6 +260,9 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             Register<0x547, u32> zCullStatCountersEnable;
             Register<0x548, u32> pointSpriteEnable;
             Register<0x54A, u32> shaderExceptions;
+
+            Register<0x54C, type::ClearReportValue> clearReportValue;
+
             Register<0x54D, u32> multisampleEnable;
             Register<0x54E, type::ZtSelect> ztSelect;
 

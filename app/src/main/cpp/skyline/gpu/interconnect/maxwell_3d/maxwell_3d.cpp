@@ -24,7 +24,8 @@ namespace skyline::gpu::interconnect::maxwell3d {
           samplers{manager, registerBundle.samplerPoolRegisters},
           samplerBinding{registerBundle.samplerBinding},
           textures{manager, registerBundle.texturePoolRegisters},
-          directState{activeState.directState} {
+          directState{activeState.directState},
+          queries{gpu} {
         ctx.executor.AddFlushCallback([this] {
             if (attachedDescriptorSets) {
                 ctx.executor.AttachDependency(attachedDescriptorSets);
@@ -38,6 +39,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             textures.MarkAllDirty();
             quadConversionBufferAttached = false;
             constantBuffers.DisableQuickBind();
+            queries.PurgeCaches(ctx);
         });
 
         ctx.executor.AddPipelineChangeCallback([this] {
@@ -414,5 +416,27 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 commandBuffer.endTransformFeedbackEXT(0, {}, {});
         }, scissor, activeDescriptorSetSampledImages, {}, activeState.GetColorAttachments(), activeState.GetDepthAttachment(), !ctx.gpu.traits.quirks.relaxedRenderPassCompatibility, srcStageMask, dstStageMask);
         ctx.executor.AddCheckpoint("After indirect draw");
+    }
+
+    void Maxwell3D::Query(soc::gm20b::IOVA address, engine::SemaphoreInfo::CounterType type, std::optional<u64> timestamp) {
+        if (type != engine::SemaphoreInfo::CounterType::SamplesPassed) {
+            Logger::Error("Unsupported query type: {}", static_cast<u32>(type));
+            return;
+        }
+
+        queries.Query(ctx, address, Queries::CounterType::Occulusion, timestamp);
+    }
+
+    void Maxwell3D::ResetCounter(engine::ClearReportValue::Type type) {
+        if (type != engine::ClearReportValue::Type::ZPassPixelCount) {
+            Logger::Error("Unsupported query type: {}", static_cast<u32>(type));
+            return;
+        }
+
+        queries.ResetCounter(ctx, Queries::CounterType::Occulusion);
+    }
+
+    bool Maxwell3D::QueryPresentAtAddress(soc::gm20b::IOVA address) {
+        return queries.QueryPresentAtAddress(address);
     }
 }

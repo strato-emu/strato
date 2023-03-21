@@ -753,6 +753,33 @@ namespace skyline::soc::gm20b::engine::maxwell3d::type {
     };
     static_assert(sizeof(ClearSurface) == sizeof(u32));
 
+    struct ClearReportValue {
+        enum class Type : u32 {
+            ZPassPixelCount = 0x01,
+            ZCullStats = 0x02,
+            StreamingPrimitvesNeededMinusSucceeded = 0x03,
+            AlphaBetaClocks = 0x04,
+            StreamingPrimitivesSucceeded = 0x10,
+            StreamingPrimitivesNeeded = 0x11,
+            VerticesGenerated = 0x12,
+            PrimitivesGenerated = 0x13,
+            VertexShaderInvocations = 0x15,
+            TessellationInitInvocations = 0x16,
+            TessellationShaderInvocations = 0x17,
+            TessellationShaderPrimitivesGenerated = 0x18,
+            GeometryShaderInvocations = 0x1A,
+            GeometryShaderPrimitivesGenerated = 0x1B,
+            ClipperInvocations = 0x1C,
+            ClipperPrimitivesGenerated = 0x1D,
+            PixelShaderInvocations = 0x1E,
+            VtgPrimitivesOut = 0x1F
+        };
+
+        Type type : 5;
+        u32 _pad_ : 27;
+    };
+    static_assert(sizeof(ClearReportValue) == sizeof(u32));
+
     struct SemaphoreInfo {
         enum class Op : u8 {
             Release = 0,
