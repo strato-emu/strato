@@ -271,8 +271,8 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         controls.allButtons.forEach {
             it.resetConfig()
         }
-        controls.globalScale = 1.15f
-        controls.alpha = 155
+        controls.globalScale = OnScreenConfiguration.DefaultGlobalScale
+        controls.alpha = OnScreenConfiguration.DefaultAlpha
         invalidate()
     }
 

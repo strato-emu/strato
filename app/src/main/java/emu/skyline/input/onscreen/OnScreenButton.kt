@@ -243,6 +243,6 @@ abstract class OnScreenButton(
     open fun resetConfig() {
         resetRelativeValues()
         config.enabled = true
-        config.scale = 0f
+        config.scale = OnScreenConfiguration.DefaultScale
     }
 }
