@@ -21,6 +21,8 @@ namespace skyline::service::prepo {
 
         Result SaveReportWithUserOld2 (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result SaveReport (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         Result SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         Result RequestImmediateTransmission(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -28,6 +30,7 @@ namespace skyline::service::prepo {
         SERVICE_DECL(
             SFUNC(0x2775, IPrepoService, SaveReportWithUserOld),
             SFUNC(0x2777, IPrepoService, SaveReportWithUserOld2),
+            SFUNC(0x2778, IPrepoService, SaveReport),
             SFUNC(0x2779, IPrepoService, SaveReportWithUser),
             SFUNC(0x27D8, IPrepoService, RequestImmediateTransmission)
         )

@@ -14,6 +14,10 @@ namespace skyline::service::prepo {
         return {};
     }
 
+    Result IPrepoService::SaveReport (type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IPrepoService::SaveReportWithUser(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }

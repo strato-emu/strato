@@ -21,9 +21,12 @@ namespace skyline::service::aocsrv {
 
         Result GetPurchasedEventReadableHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result PopPurchasedProductInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, IPurchaseEventManager, SetDefaultDeliveryTarget),
-            SFUNC(0x2, IPurchaseEventManager, GetPurchasedEventReadableHandle)
+            SFUNC(0x2, IPurchaseEventManager, GetPurchasedEventReadableHandle),
+            SFUNC(0x3, IPurchaseEventManager, PopPurchasedProductInfo)
         )
     };
 }

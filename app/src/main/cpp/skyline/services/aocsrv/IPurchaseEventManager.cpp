@@ -20,4 +20,8 @@ namespace skyline::service::aocsrv {
         response.copyHandles.push_back(handle);
         return {};
     }
+
+    Result IPurchaseEventManager::PopPurchasedProductInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

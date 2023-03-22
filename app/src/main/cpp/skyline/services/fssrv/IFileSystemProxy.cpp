@@ -6,6 +6,7 @@
 #include <loader/loader.h>
 #include "results.h"
 #include "IStorage.h"
+#include "IMultiCommitManager.h"
 #include "IFileSystemProxy.h"
 
 namespace skyline::service::fssrv {
@@ -98,6 +99,11 @@ namespace skyline::service::fssrv {
 
     Result IFileSystemProxy::GetGlobalAccessLogMode(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(0);
+        return {};
+    }
+
+    Result IFileSystemProxy::OpenMultiCommitManager(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(IMultiCommitManager), session, response);
         return {};
     }
 }
