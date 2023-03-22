@@ -197,24 +197,24 @@ class TriggerButton(
 )
 
 class Controls(onScreenControllerView : OnScreenControllerView) {
-    private val buttonA = CircularButton(onScreenControllerView, A, 0.95f, 0.65f, 0.025f)
-    private val buttonB = CircularButton(onScreenControllerView, B, 0.9f, 0.765f, 0.025f)
-    private val buttonX = CircularButton(onScreenControllerView, X, 0.9f, 0.535f, 0.025f)
-    private val buttonY = CircularButton(onScreenControllerView, Y, 0.85f, 0.65f, 0.025f)
+    private val buttonA = CircularButton(onScreenControllerView, A, 0.81f, 0.73f, 0.025f)
+    private val buttonB = CircularButton(onScreenControllerView, B, 0.76f, 0.85f, 0.025f)
+    private val buttonX = CircularButton(onScreenControllerView, X, 0.76f, 0.61f, 0.025f)
+    private val buttonY = CircularButton(onScreenControllerView, Y, 0.71f, 0.73f, 0.025f)
 
-    private val buttonDpadLeft = CircularButton(onScreenControllerView, DpadLeft, 0.2f, 0.65f, 0.025f)
-    private val buttonDpadUp = CircularButton(onScreenControllerView, DpadUp, 0.25f, 0.535f, 0.025f)
-    private val buttonDpadRight = CircularButton(onScreenControllerView, DpadRight, 0.3f, 0.65f, 0.025f)
-    private val buttonDpadDown = CircularButton(onScreenControllerView, DpadDown, 0.25f, 0.765f, 0.025f)
+    private val buttonDpadLeft = CircularButton(onScreenControllerView, DpadLeft, 0.06f, 0.53f, 0.025f)
+    private val buttonDpadUp = CircularButton(onScreenControllerView, DpadUp, 0.11f, 0.41f, 0.025f)
+    private val buttonDpadRight = CircularButton(onScreenControllerView, DpadRight, 0.16f, 0.53f, 0.025f)
+    private val buttonDpadDown = CircularButton(onScreenControllerView, DpadDown, 0.11f, 0.65f, 0.025f)
 
-    private val buttonL = RectangularButton(onScreenControllerView, L, 0.1f, 0.25f, 0.09f, 0.1f)
-    private val buttonR = RectangularButton(onScreenControllerView, R, 0.9f, 0.25f, 0.09f, 0.1f)
+    private val buttonL = RectangularButton(onScreenControllerView, L, 0.1f, 0.22f, 0.09f, 0.1f)
+    private val buttonR = RectangularButton(onScreenControllerView, R, 0.9f, 0.22f, 0.09f, 0.1f)
 
-    private val buttonZL = TriggerButton(onScreenControllerView, ZL, 0.1f, 0.1f, 0.09f, 0.1f)
-    private val buttonZR = TriggerButton(onScreenControllerView, ZR, 0.9f, 0.1f, 0.09f, 0.1f)
+    private val buttonZL = TriggerButton(onScreenControllerView, ZL, 0.1f, 0.08f, 0.09f, 0.1f)
+    private val buttonZR = TriggerButton(onScreenControllerView, ZR, 0.9f, 0.08f, 0.09f, 0.1f)
 
-    private val buttonL3 = CircularButton(onScreenControllerView, L3, 0.35f, 0.87f, 0.025f, defaultEnabled = false)
-    private val buttonR3 = CircularButton(onScreenControllerView, R3, 0.65f, 0.87f, 0.025f, defaultEnabled = false)
+    private val buttonL3 = CircularButton(onScreenControllerView, L3, 0.12f, 0.87f, 0.025f, defaultEnabled = false)
+    private val buttonR3 = CircularButton(onScreenControllerView, R3, 0.88f, 0.87f, 0.025f, defaultEnabled = false)
 
     private val circularButtonPairs = listOf(setOf(buttonA, buttonB, buttonX, buttonY), setOf(buttonDpadLeft, buttonDpadUp, buttonDpadRight, buttonDpadDown))
 
@@ -225,14 +225,14 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     val buttonPairs = circularButtonPairs + triggerButtonPairs
 
     val circularButtons = circularButtonPairs.flatten() + stickButtons + listOf(
-        CircularButton(onScreenControllerView, Plus, 0.57f, 0.75f, 0.025f),
-        CircularButton(onScreenControllerView, Minus, 0.43f, 0.75f, 0.025f),
-        CircularButton(onScreenControllerView, Menu, 0.5f, 0.75f, 0.025f)
+        CircularButton(onScreenControllerView, Plus, 0.57f, 0.85f, 0.025f),
+        CircularButton(onScreenControllerView, Minus, 0.43f, 0.85f, 0.025f),
+        CircularButton(onScreenControllerView, Menu, 0.5f, 0.85f, 0.025f)
     )
 
     val joysticks = listOf(
-        JoystickButton(onScreenControllerView, Left, 0.1f, 0.8f, 0.05f),
-        JoystickButton(onScreenControllerView, Right, 0.75f, 0.6f, 0.05f)
+        JoystickButton(onScreenControllerView, Left, 0.24f, 0.75f, 0.053f),
+        JoystickButton(onScreenControllerView, Right, 0.9f, 0.53f, 0.053f)
     )
 
     val rectangularButtons = listOf(buttonL, buttonR)
