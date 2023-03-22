@@ -67,7 +67,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     // Populated externally by the activity, as retrieving the vibrator service inside the view crashes the layout editor
     lateinit var vibrator : Vibrator
-    private val effectClick = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+    private val effectClick = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
 
     // Ensure controls init happens after editInfo is initialized so that the buttons have a valid reference to it
     private val controls = Controls(this)
