@@ -73,8 +73,10 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
         findPreference<GpuDriverPreference>("gpu_driver")?.item = item
 
         // Hide settings that don't support per-game configuration
-        findPreference<Preference>("profile_picture_value")?.isVisible = false
-        findPreference<Preference>("log_level")?.isVisible = false
+        var prefToRemove = findPreference<Preference>("profile_picture_value")
+        prefToRemove?.parent?.removePreference(prefToRemove)
+        prefToRemove = findPreference<Preference>("log_level")
+        prefToRemove?.parent?.removePreference(prefToRemove)
 
         // TODO: remove this once we have more settings under the debug category
         // Avoid showing the debug category if no settings under it are visible

@@ -24,6 +24,7 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.forEach
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.internal.ToolbarUtils
+import emu.skyline.BuildConfig
 import emu.skyline.R
 import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.SettingsActivityBinding
@@ -37,7 +38,11 @@ private const val PREFERENCE_DIALOG_FRAGMENT_TAG = "androidx.preference.Preferen
 
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
-    val creditsCategories = arrayOf("category_credits", "category_licenses")
+    val hiddenCategoriesFromSearch = if (BuildConfig.BUILD_TYPE == "release") {
+        arrayOf("category_debug", "category_credits", "category_licenses")
+    } else {
+        arrayOf("category_credits", "category_licenses")
+    }
 
     /**
      * The instance of [PreferenceFragmentCompat] that is shown inside [R.id.settings]
@@ -141,7 +146,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 val queries = newText.split(",")
                 if (newText.isNotEmpty()) {
                     preferenceFragment.preferenceScreen.forEach { preferenceCategory ->
-                        if (creditsCategories.contains(preferenceCategory.key)) {
+                        if (hiddenCategoriesFromSearch.contains(preferenceCategory.key)) {
                             preferenceCategory.isVisible = false
                             return@forEach
                         }
