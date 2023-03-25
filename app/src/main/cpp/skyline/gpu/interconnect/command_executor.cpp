@@ -672,23 +672,37 @@ namespace skyline::gpu::interconnect {
 
         executionTag = AllocateTag();
 
-        if (!slot->nodes.empty()) {
-            TRACE_EVENT("gpu", "CommandExecutor::Submit");
+        // Ensure all pushed callbacks wait for the submission to have finished GPU execution
+        if (!slot->nodes.empty())
+            waiterThread.Queue(cycle, {});
 
-            if (callback && *state.settings->useDirectMemoryImport)
-                waiterThread.Queue(cycle, std::move(callback));
-            else
-                waiterThread.Queue(cycle, {});
+        if (*state.settings->useDirectMemoryImport) {
+            // When DMI is in use, callbacks and deferred actions should be executed in sequence with the host GPU
+            for (auto &actionCb : pendingDeferredActions)
+                waiterThread.Queue(nullptr, std::move(actionCb));
 
-            SubmitInternal();
-            submissionNumber++;
-        } else {
-            if (callback && *state.settings->useDirectMemoryImport)
+            pendingDeferredActions.clear();
+
+            if (callback)
                 waiterThread.Queue(nullptr, std::move(callback));
         }
 
-        if (callback && !*state.settings->useDirectMemoryImport)
-            callback();
+        if (!slot->nodes.empty()) {
+            TRACE_EVENT("gpu", "CommandExecutor::Submit");
+            SubmitInternal();
+            submissionNumber++;
+        }
+
+        if (!*state.settings->useDirectMemoryImport) {
+            // When DMI is not in use, execute callbacks immediately after submission
+            for (auto &actionCb : pendingDeferredActions)
+                actionCb();
+
+            pendingDeferredActions.clear();
+
+            if (callback)
+                callback();
+        }
 
         ResetInternal();
 
@@ -708,6 +722,10 @@ namespace skyline::gpu::interconnect {
             std::unique_lock lock{mutex};
             cv.wait(lock, [&gpuDone] { return gpuDone; });
         }
+    }
+
+    void CommandExecutor::AddDeferredAction(std::function<void()> &&callback) {
+        pendingDeferredActions.emplace_back(std::move(callback));
     }
 
     void CommandExecutor::LockPreserve() {

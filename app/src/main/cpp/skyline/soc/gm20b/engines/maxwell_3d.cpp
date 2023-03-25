@@ -264,7 +264,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             ENGINE_CASE(syncpointAction, {
                 Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
-                channelCtx.executor.Submit([=, syncpoints = &this->syncpoints, index = syncpointAction.id]() {
+                channelCtx.executor.AddDeferredAction([=, syncpoints = &this->syncpoints, index = syncpointAction.id]() {
                     syncpoints->at(index).host.Increment();
                 });
                 syncpoints.at(syncpointAction.id).guest.Increment();
@@ -399,7 +399,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
                 switch (info.op) {
                     case type::SemaphoreInfo::Op::Release:
-                        channelCtx.executor.Submit([=, this, semaphore = *registers.semaphore]() {
+                        channelCtx.executor.AddDeferredAction([=, this, semaphore = *registers.semaphore]() {
                             WriteSemaphoreResult(semaphore, semaphore.payload);
                         });
                         break;
@@ -407,7 +407,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     case type::SemaphoreInfo::Op::Counter: {
                         switch (info.counterType) {
                             case type::SemaphoreInfo::CounterType::Zero:
-                                channelCtx.executor.Submit([=, this, semaphore = *registers.semaphore]() {
+                                channelCtx.executor.AddDeferredAction([=, this, semaphore = *registers.semaphore]() {
                                     WriteSemaphoreResult(semaphore, semaphore.payload);
                                 });
                                 break;

@@ -19,7 +19,7 @@ namespace skyline::soc::gm20b::engine {
             ENGINE_STRUCT_CASE(syncpoint, action, {
                 if (action.operation == Registers::Syncpoint::Operation::Incr) {
                     Logger::Debug("Increment syncpoint: {}", +action.index);
-                    channelCtx.executor.Submit([=, syncpoints = &this->syncpoints, index = action.index]() {
+                    channelCtx.executor.AddDeferredAction([=, syncpoints = &this->syncpoints, index = action.index]() {
                         syncpoints->at(index).host.Increment();
                     });
                     syncpoints.at(action.index).guest.Increment();
@@ -50,7 +50,7 @@ namespace skyline::soc::gm20b::engine {
                         channelCtx.Lock();
                         break;
                     case Registers::Semaphore::Operation::Release:
-                        channelCtx.executor.Submit([this, action, address, payload = registers.semaphore->payload] () {
+                        channelCtx.executor.AddDeferredAction([this, action, address, payload = registers.semaphore->payload] () {
                             // Write timestamp first to ensure ordering
                             if (action.releaseSize == Registers::Semaphore::ReleaseSize::SixteenBytes) {
                                 channelCtx.asCtx->gmmu.Write<u32>(address + 4, 0);
@@ -121,7 +121,7 @@ namespace skyline::soc::gm20b::engine {
                 channelCtx.executor.AddFullBarrier();
             })
             ENGINE_CASE(setReference, {
-                channelCtx.executor.Submit();
+                channelCtx.executor.AddFullBarrier();
             })
         }
     };

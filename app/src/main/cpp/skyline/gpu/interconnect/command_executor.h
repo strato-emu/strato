@@ -202,6 +202,8 @@ namespace skyline::gpu::interconnect {
         std::vector<std::function<void()>> flushCallbacks; //!< Set of persistent callbacks that will be called at the start of Execute in order to flush data required for recording
         std::vector<std::function<void()>> pipelineChangeCallbacks; //!< Set of persistent callbacks that will be called after any non-Maxwell 3D engine changes the active pipeline
 
+        std::vector<std::function<void()>> pendingDeferredActions;
+
         u32 nextCheckpointId{}; //!< The ID of the next debug checkpoint to be allocated
 
         void RotateRecordSlot();
@@ -371,6 +373,11 @@ namespace skyline::gpu::interconnect {
          * @param wait Whether to wait synchronously for GPU completion of the submit
          */
         void Submit(std::function<void()> &&callback = {}, bool wait = false);
+
+        /**
+         * @brief Adds an action to be executed upon current cycle completion (if DMI is on, otherwise after submission)
+         */
+        void AddDeferredAction(std::function<void()> &&callback);
 
         /**
          * @brief Locks all preserve attached buffers/textures
