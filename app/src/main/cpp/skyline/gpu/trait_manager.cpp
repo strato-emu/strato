@@ -237,6 +237,7 @@ namespace skyline::gpu {
                 relaxedRenderPassCompatibility = true; // Adreno drivers support relaxed render pass compatibility rules
                 brokenPushDescriptors = true;
                 brokenSpirvPositionInput = true;
+                brokenSpirvAccessChainOpt = true;
 
                 if (deviceProperties.driverVersion < VK_MAKE_VERSION(512, 600, 0))
                     maxSubpassCount = 64; // Driver will segfault while destroying the renderpass and associated objects if this is exceeded on all 5xx and below drivers
@@ -248,6 +249,7 @@ namespace skyline::gpu {
                     brokenSubgroupMaskExtractDynamic = true;
 
                 brokenSubgroupShuffle = true;
+                brokenSpirvVectorAccessChain = true;
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
                 break;
             }
@@ -262,6 +264,7 @@ namespace skyline::gpu {
                 if (deviceProperties.driverVersion < VK_MAKE_VERSION(42, 0, 0))
                     brokenDynamicStateVertexBindings = true;
 
+                brokenSpirvAccessChainOpt = true;
                 vkImageMutableFormatCostly = true; // Disables AFBC in some cases
                 maxGlobalPriority = vk::QueueGlobalPriorityEXT::eHigh;
                 break;
