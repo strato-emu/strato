@@ -20,7 +20,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
       public:
         ConstantBufferSelectorState(dirty::Handle dirtyHandle, DirtyManager &manager, const EngineRegisters &engine);
 
-        CachedMappedBufferView view;
+        CachedMappedBufferView view{};
 
         void Flush(InterconnectContext &ctx, size_t minSize = 0);
 

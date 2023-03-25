@@ -75,7 +75,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         std::array<Counter, static_cast<u32>(CounterType::MaxValue)> counters;
 
-        CachedMappedBufferView view; //!< Cached view for looking up query buffers from IOVAs
+        CachedMappedBufferView view{}; //!< Cached view for looking up query buffers from IOVAs
 
         std::unordered_set<u64> usedQueryAddresses;
 
