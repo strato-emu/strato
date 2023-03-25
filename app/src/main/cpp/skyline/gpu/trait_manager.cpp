@@ -234,7 +234,6 @@ namespace skyline::gpu {
                 vkImageMutableFormatCostly = true; // Disables UBWC
                 adrenoRelaxedFormatAliasing = true;
                 adrenoBrokenFormatReport = true;
-                brokenDescriptorAliasing = true;
                 relaxedRenderPassCompatibility = true; // Adreno drivers support relaxed render pass compatibility rules
                 brokenPushDescriptors = true;
                 brokenSpirvPositionInput = true;
@@ -285,8 +284,8 @@ namespace skyline::gpu {
 
     std::string TraitManager::QuirkManager::Summary() {
         return fmt::format(
-            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}\n* Adreno Relaxed Format Aliasing: {}\n* Adreno Broken Format Reporting: {}\n* Broken Descriptor Aliasing: {}\n* Relaxed Render Pass Compatibility: {}\n* Max Subpass Count: {}\n* Max Global Queue Priority: {}",
-            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly, adrenoRelaxedFormatAliasing, adrenoBrokenFormatReport, brokenDescriptorAliasing, relaxedRenderPassCompatibility, maxSubpassCount, vk::to_string(maxGlobalPriority)
+            "\n* Needs Individual Texture Binding Writes: {}\n* VkImage Mutable Format is costly: {}\n* Adreno Relaxed Format Aliasing: {}\n* Adreno Broken Format Reporting: {}\n* Relaxed Render Pass Compatibility: {}\n* Max Subpass Count: {}\n* Max Global Queue Priority: {}",
+            needsIndividualTextureBindingWrites, vkImageMutableFormatCostly, adrenoRelaxedFormatAliasing, adrenoBrokenFormatReport, relaxedRenderPassCompatibility, maxSubpassCount, vk::to_string(maxGlobalPriority)
         );
     }
 
