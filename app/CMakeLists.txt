@@ -94,6 +94,8 @@ target_compile_definitions(opus PRIVATE OPUS_WILL_BE_SLOW=1) # libopus will warn
 # Cubeb
 set(USE_OPENSL ON)
 set(USE_SANITIZERS OFF)
+set(USE_LAZY_LOAD_LIBS OFF)
+set(USE_AAUDIO OFF)
 set(BUNDLE_SPEEX ON)
 add_subdirectory("libraries/cubeb")
 include_directories(SYSTEM "libraries/cubeb/include")
