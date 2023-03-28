@@ -16,7 +16,7 @@ import android.view.View
  * A view that draws a grid, used for aligning on-screen controller buttons
  */
 class AlignmentGridView @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = 0) : View(context, attrs, defStyleAttr) {
-    var gridSize = 0
+    var gridSize = 16
         set(value) {
             field = value
             invalidate()

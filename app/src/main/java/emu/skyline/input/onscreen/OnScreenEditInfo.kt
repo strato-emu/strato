@@ -5,8 +5,8 @@
 
 package emu.skyline.input.onscreen
 
+import android.content.res.Resources
 import android.util.TypedValue
-import emu.skyline.SkylineApplication
 
 enum class EditMode {
     None,
@@ -39,10 +39,9 @@ class OnScreenEditInfo {
     val isEditing get() = editMode != EditMode.None
 
     companion object {
-
         /**
          * The size of the grid, calculated from the value of 8dp
          */
-        val GridSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8f, SkylineApplication.context.resources.displayMetrics).toInt()
+        var GridSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 8f, Resources.getSystem().displayMetrics).toInt()
     }
 }
