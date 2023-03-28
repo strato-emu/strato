@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.*
+import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
@@ -27,6 +28,23 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class OnScreenEditActivity : AppCompatActivity() {
+    private enum class Action(@DrawableRes private val icon : Int, @DrawableRes private val activeIcon : Int = 0) {
+        Restore(R.drawable.ic_restore),
+        Toggle(R.drawable.ic_toggle_on),
+        Move(R.drawable.ic_move),
+        Resize(R.drawable.ic_resize),
+        Grid(R.drawable.ic_grid_off, R.drawable.ic_grid_on),
+        Palette(R.drawable.ic_palette),
+        ZoomOut(R.drawable.ic_zoom_out),
+        ZoomIn(R.drawable.ic_zoom_in),
+        OpacityMinus(R.drawable.ic_opacity_minus),
+        OpacityPlus(R.drawable.ic_opacity_plus),
+        Close(R.drawable.ic_close),
+        ;
+
+        fun getIcon(active : Boolean) = if (activeIcon != 0 && active) activeIcon else icon
+    }
+
     private val binding by lazy { OnScreenEditActivityBinding.inflate(layoutInflater) }
 
     private var fullEditVisible = true
@@ -41,13 +59,13 @@ class OnScreenEditActivity : AppCompatActivity() {
         } else {
             fullEditVisible = !fullEditVisible
             toggleFabVisibility(fullEditVisible)
-            fabMapping[R.drawable.ic_close]!!.animate().rotation(if (fullEditVisible) 0f else 45f)
+            fabMapping[Action.Close]!!.animate().rotation(if (fullEditVisible) 0f else 45f)
         }
     }
 
     private fun toggleFabVisibility(visible : Boolean) {
-        fabMapping.forEach { (id, fab) ->
-            if (id != R.drawable.ic_close) {
+        fabMapping.forEach { (action, fab) ->
+            if (action != Action.Close) {
                 if (visible) fab.show()
                 else fab.hide()
             }
@@ -109,34 +127,42 @@ class OnScreenEditActivity : AppCompatActivity() {
         }
     }
 
-    private val enableGridAction = {
-        appSettings.onScreenControlSnapToGrid = true
-        binding.onScreenControllerView.setSnapToGrid(true)
-        binding.alignmentGrid.isGone = false
+    private val toggleGridAction : () -> Unit = {
+        val snapToGrid = !appSettings.onScreenControlSnapToGrid
+        appSettings.onScreenControlSnapToGrid = snapToGrid
+
+        binding.onScreenControllerView.setSnapToGrid(snapToGrid)
+        binding.alignmentGrid.isGone = !snapToGrid
+        fabMapping[Action.Grid]!!.setImageResource(Action.Grid.getIcon(!snapToGrid))
     }
 
-    private val disableGridAction = {
-        appSettings.onScreenControlSnapToGrid = false
-        binding.onScreenControllerView.setSnapToGrid(false)
-        binding.alignmentGrid.isGone = true
+    private val resetAction : () -> Unit = {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.osc_reset)
+            .setMessage(R.string.osc_reset_confirm)
+            .setPositiveButton(R.string.confirm) { _, _ -> binding.onScreenControllerView.resetControls() }
+            .setNegativeButton(R.string.cancel, null)
+            .setOnDismissListener { fullScreen() }
+            .show()
     }
 
-    private val actions : List<Pair<Int, () -> Unit>> = listOf(
-        Pair(R.drawable.ic_palette, paletteAction),
-        Pair(R.drawable.ic_restore) { binding.onScreenControllerView.resetControls() },
-        Pair(R.drawable.ic_toggle, toggleAction),
-        Pair(R.drawable.ic_move, moveAction),
-        Pair(R.drawable.ic_resize, resizeAction),
-        Pair(R.drawable.ic_grid_on, enableGridAction),
-        Pair(R.drawable.ic_grid_off, disableGridAction),
-        Pair(R.drawable.ic_zoom_out) { binding.onScreenControllerView.decreaseScale() },
-        Pair(R.drawable.ic_zoom_in) { binding.onScreenControllerView.increaseScale() },
-        Pair(R.drawable.ic_opacity_minus) { binding.onScreenControllerView.decreaseOpacity() },
-        Pair(R.drawable.ic_opacity_plus) { binding.onScreenControllerView.increaseOpacity() },
-        Pair(R.drawable.ic_close, closeAction)
+    private data class ActionEntry(val action : Action, val callback : () -> Unit)
+
+    private val actions : List<ActionEntry> = listOf(
+        ActionEntry(Action.Restore, resetAction),
+        ActionEntry(Action.Toggle, toggleAction),
+        ActionEntry(Action.Move, moveAction),
+        ActionEntry(Action.Resize, resizeAction),
+        ActionEntry(Action.Grid, toggleGridAction),
+        ActionEntry(Action.Palette, paletteAction),
+        ActionEntry(Action.ZoomOut) { binding.onScreenControllerView.decreaseScale() },
+        ActionEntry(Action.ZoomIn) { binding.onScreenControllerView.increaseScale() },
+        ActionEntry(Action.OpacityMinus) { binding.onScreenControllerView.decreaseOpacity() },
+        ActionEntry(Action.OpacityPlus) { binding.onScreenControllerView.increaseOpacity() },
+        ActionEntry(Action.Close, closeAction),
     )
 
-    private val fabMapping = mutableMapOf<Int, FloatingActionButton>()
+    private val fabMapping = mutableMapOf<Action, FloatingActionButton>()
 
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
@@ -168,13 +194,15 @@ class OnScreenEditActivity : AppCompatActivity() {
         binding.alignmentGrid.isGone = !snapToGrid
         binding.alignmentGrid.gridSize = OnScreenEditInfo.GridSize
 
-        actions.forEach { pair ->
+        actions.forEach { (action, callback) ->
             binding.fabParent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, binding.fabParent, false).apply {
-                (this as FloatingActionButton).setImageDrawable(ContextCompat.getDrawable(context, pair.first))
-                setOnClickListener { pair.second.invoke() }
-                fabMapping[pair.first] = this
+                (this as FloatingActionButton).setImageDrawable(ContextCompat.getDrawable(context, action.getIcon(false)))
+                setOnClickListener { callback.invoke() }
+                fabMapping[action] = this
             })
         }
+
+        fabMapping[Action.Grid]!!.setImageDrawable(ContextCompat.getDrawable(this, Action.Grid.getIcon(!snapToGrid)))
     }
 
     override fun onResume() {

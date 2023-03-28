@@ -160,6 +160,8 @@
     <string name="osc_edit">Edit On-Screen Controls layout</string>
     <string name="osc_text_color">Text color</string>
     <string name="osc_background_color">Background color</string>
+    <string name="osc_reset">Reset On-Screen Controls</string>
+    <string name="osc_reset_confirm">Are you sure you want to reset the On-Screen Controls?</string>
     <string name="setup_guide">Setup Guide</string>
     <string name="setup_guide_description">Sequentially map every stick and button</string>
     <string name="joystick">Joystick</string>
