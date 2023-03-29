@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <dimen name="grid_padding">8dp</dimen>
     <dimen name="onScreenItemHorizontalMargin">10dp</dimen>
     <dimen name="cornerRadius">6dp</dimen>
     <dimen name="cornerRadiusMedium">12dp</dimen>
+
+    <!-- Remove the default material slider vertical padding -->
+    <dimen name="mtrl_slider_widget_height" tools:override="true">0dp</dimen>
 </resources>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -8,7 +9,8 @@
     <emu.skyline.views.AlignmentGridView
         android:id="@+id/alignment_grid"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        tools:visibility="gone" />
 
     <emu.skyline.input.onscreen.OnScreenControllerView
         android:id="@+id/on_screen_controller_view"
@@ -16,15 +18,261 @@
         android:layout_height="match_parent" />
 
     <LinearLayout
-        android:id="@+id/fab_parent"
+        android:id="@+id/control_panel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:background="@drawable/top_sheet_bg"
+        android:alpha="0.85"
+        android:animateLayoutChanges="true"
+        android:background="@drawable/rounded_background"
         android:backgroundTint="?attr/colorPrimaryContainer"
+        android:clickable="true"
+        android:clipChildren="false"
         android:clipToPadding="false"
-        android:orientation="horizontal"
-        android:padding="10dp"
-        tools:layout_height="72dp"
-        tools:layout_width="512dp" />
+        android:orientation="vertical"
+        android:translationY="12dp">
+
+        <!-- Tob Bar -->
+
+        <FrameLayout
+            android:id="@+id/top_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="8dp">
+
+            <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+                android:id="@+id/drag_handle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:minHeight="32dp"
+                android:paddingBottom="0dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/close_button"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="end"
+                android:padding="2dp"
+                app:icon="@drawable/ic_close"
+                app:iconTint="?attr/colorOnSurfaceVariant"
+                tools:ignore="ContentDescription,SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+        </FrameLayout>
+
+
+        <!-- Control Panel Content -->
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:id="@+id/current_button"
+                style="?attr/textAppearanceTitleLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/osc_current_button"
+                android:textSize="20sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/select_all_button"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="42dp"
+                android:text="@string/select_all"
+                app:layout_constraintBottom_toBottomOf="@id/current_button"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/current_button"
+                tools:ignore="TextContrastCheck,TouchTargetSizeCheck,VisualLintBounds" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/title_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="bottom"
+                app:constraint_referenced_ids="current_button,select_all_button" />
+
+            <!-- Checkboxes -->
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/enabled_checkbox"
+                style="?attr/checkboxStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="-6dp"
+                android:layout_marginTop="4dp"
+                android:minHeight="0dp"
+                android:paddingVertical="8dp"
+                android:text="@string/enabled"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/current_button"
+                tools:ignore="TouchTargetSizeCheck" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/toggle_mode_checkbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:paddingVertical="8dp"
+                android:text="@string/osc_toggle_mode"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="@+id/enabled_checkbox"
+                app:layout_constraintTop_toBottomOf="@id/enabled_checkbox"
+                tools:ignore="TouchTargetSizeCheck" />
+
+
+            <!-- Sliders -->
+
+            <include
+                android:id="@+id/scale_slider"
+                layout="@layout/osc_slider"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/toggle_mode_checkbox" />
+
+            <include
+                android:id="@+id/opacity_slider"
+                layout="@layout/osc_slider"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:layout_constraintStart_toStartOf="@id/scale_slider"
+                app:layout_constraintTop_toBottomOf="@id/scale_slider" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/sliders_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="end"
+                app:constraint_referenced_ids="scale_slider,opacity_slider,enabled_checkbox,toggle_mode_checkbox" />
+
+
+            <!-- Horizontal (Left and Right) Move Buttons -->
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/move_left_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                app:icon="@drawable/ic_keyboard_arrow_left"
+                app:layout_constraintBottom_toBottomOf="@id/actions_barrier"
+                app:layout_constraintEnd_toStartOf="@id/move_right_button"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintHorizontal_chainStyle="packed"
+                app:layout_constraintStart_toEndOf="@id/sliders_barrier"
+                app:layout_constraintTop_toTopOf="@id/title_barrier"
+                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/move_right_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/ic_keyboard_arrow_right"
+                app:layout_constraintBottom_toBottomOf="@id/actions_barrier"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@id/move_left_button"
+                app:layout_constraintTop_toTopOf="@id/title_barrier"
+                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+
+
+            <!-- Vertical (Up and Down) Move Buttons -->
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/move_up_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:icon="@drawable/ic_keyboard_arrow_up"
+                app:layout_constraintBottom_toTopOf="@id/move_down_button"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@id/sliders_barrier"
+                app:layout_constraintTop_toBottomOf="@id/title_barrier"
+                app:layout_constraintVertical_chainStyle="packed"
+                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/move_down_button"
+                style="@style/Widget.Material3.Button.IconButton.Outlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/ic_keyboard_arrow_down"
+                app:layout_constraintBottom_toTopOf="@id/actions_barrier"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@id/sliders_barrier"
+                app:layout_constraintTop_toBottomOf="@id/move_up_button"
+                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+
+
+            <!-- Action Buttons -->
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/color_button"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tooltipText="@string/button_color"
+                app:icon="@drawable/ic_palette"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/grid_button"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintHorizontal_chainStyle="spread"
+                app:layout_constraintStart_toEndOf="@id/sliders_barrier"
+                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/grid_button"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tooltipText="@string/toggle_grid"
+                app:icon="@drawable/ic_grid_on"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/reset_button"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@id/color_button"
+                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/reset_button"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tooltipText="@string/reset"
+                app:ensureMinTouchTargetSize="false"
+                app:icon="@drawable/ic_restore"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@id/grid_button"
+                tools:ignore="ContentDescription,SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/actions_barrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="top"
+                app:constraint_referenced_ids="reset_button,grid_button,color_button" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </LinearLayout>
 </FrameLayout>

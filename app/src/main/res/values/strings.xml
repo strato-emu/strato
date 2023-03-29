@@ -5,6 +5,7 @@
     <string name="error">An error has occurred</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="emulator">Emulator</string>
+    <string name="enabled">Enabled</string>
     <!-- Toolbar Main -->
     <string name="settings">Settings</string>
     <string name="share_logs">Share Logs</string>
@@ -160,8 +161,15 @@
     <string name="osc_edit">Edit On-Screen Controls layout</string>
     <string name="osc_text_color">Text color</string>
     <string name="osc_background_color">Background color</string>
-    <string name="osc_reset">Reset On-Screen Controls</string>
-    <string name="osc_reset_confirm">Are you sure you want to reset the On-Screen Controls?</string>
+    <string name="osc_reset">Reset Button: %1$s</string>
+    <string name="osc_reset_confirm">Are you sure you want to reset this button?</string>
+    <string name="osc_toggle_mode">Toggle Mode</string>
+    <string name="osc_current_button">Current Button: %1$s</string>
+    <string name="select_all">Select All</string>
+    <string name="osc_scale">Scale</string>
+    <string name="osc_opacity">Opacity</string>
+    <string name="button_color">Button color</string>
+    <string name="toggle_grid">Toggle grid</string>
     <string name="setup_guide">Setup Guide</string>
     <string name="setup_guide_description">Sequentially map every stick and button</string>
     <string name="joystick">Joystick</string>

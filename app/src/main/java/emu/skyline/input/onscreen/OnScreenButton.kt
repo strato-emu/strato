@@ -22,14 +22,14 @@ import kotlin.math.roundToInt
  */
 abstract class OnScreenButton(
     onScreenControllerView : OnScreenControllerView,
-    val buttonId : ButtonId,
+    final override val buttonId : ButtonId,
     private val defaultRelativeX : Float,
     private val defaultRelativeY : Float,
     private val defaultRelativeWidth : Float,
     private val defaultRelativeHeight : Float,
     drawableId : Int,
     private val defaultEnabled : Boolean
-) {
+) : ConfigurableButton {
     companion object {
         /**
          * Aspect ratio the default values were based on
@@ -37,7 +37,7 @@ abstract class OnScreenButton(
         const val CONFIGURED_ASPECT_RATIO = 2074f / 874f
     }
 
-    val config = OnScreenConfiguration(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY, defaultEnabled)
+    final override val config = OnScreenConfigurationImpl(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY, defaultEnabled)
 
     protected val drawable = ContextCompat.getDrawable(onScreenControllerView.context, drawableId)!!
 
@@ -50,8 +50,8 @@ abstract class OnScreenButton(
 
     var relativeX = config.relativeX
     var relativeY = config.relativeY
-    private val relativeWidth get() = defaultRelativeWidth * (config.globalScale + config.scale)
-    private val relativeHeight get() = defaultRelativeHeight * (config.globalScale + config.scale)
+    private val relativeWidth get() = defaultRelativeWidth * config.scale
+    private val relativeHeight get() = defaultRelativeHeight * config.scale
 
     /**
      * The width of the view this button is in, populated by the view during draw
@@ -158,28 +158,17 @@ abstract class OnScreenButton(
         relativeY = config.relativeY
     }
 
-    /**
-     * Starts an edit session
-     * @param x The x coordinate of the initial touch
-     * @param y The y coordinate of the initial touch
-     */
-    open fun startEdit(x : Float, y : Float) {
+    fun saveConfigValues() {
+        config.relativeX = relativeX
+        config.relativeY = relativeY
+    }
+
+    override fun startMove(x : Float, y : Float) {
         editInitialTouchPoint.set(x, y)
         editInitialScale = config.scale
     }
 
-    open fun edit(x : Float, y : Float) {
-        when (editInfo.editMode) {
-            EditMode.Move -> move(x, y)
-            EditMode.Resize -> resize(x, y)
-            else -> return
-        }
-    }
-
-    /**
-     * Moves this button to the given coordinates
-     */
-    open fun move(x : Float, y : Float) {
+    override fun move(x : Float, y : Float) {
         var adjustedX = x
         var adjustedY = y
 
@@ -216,34 +205,38 @@ abstract class OnScreenButton(
         relativeY = (adjustedY - heightDiff) / adjustedHeight
     }
 
-    /**
-     * Resizes this button based on the distance of the given Y coordinate from the initial Y coordinate
-     */
-    open fun resize(x : Float, y : Float) {
-        // Invert the distance because the Y coordinate increases as you move down the screen
-        val verticalDistance = editInitialTouchPoint.y - y
-        config.scale = editInitialScale + verticalDistance / 200f
+    override fun endMove() {
+        saveConfigValues()
     }
 
-    /**
-     * Ends the current edit session
-     */
-    open fun endEdit() {
-        config.relativeX = relativeX
-        config.relativeY = relativeY
+    override fun moveUp() {
+        move(currentX, currentY - editInfo.arrowKeyMoveAmount)
+        saveConfigValues()
     }
 
-    open fun resetRelativeValues() {
+    override fun moveDown() {
+        move(currentX, currentY + editInfo.arrowKeyMoveAmount)
+        saveConfigValues()
+    }
+
+    override fun moveLeft() {
+        move(currentX - editInfo.arrowKeyMoveAmount, currentY)
+        saveConfigValues()
+    }
+
+    override fun moveRight() {
+        move(currentX + editInfo.arrowKeyMoveAmount, currentY)
+        saveConfigValues()
+    }
+
+    override fun resetConfig() {
+        config.enabled = defaultEnabled
+        config.alpha = OnScreenConfiguration.DefaultAlpha
+        config.scale = OnScreenConfiguration.DefaultScale
         config.relativeX = defaultRelativeX
         config.relativeY = defaultRelativeY
 
         relativeX = defaultRelativeX
         relativeY = defaultRelativeY
-    }
-
-    open fun resetConfig() {
-        resetRelativeValues()
-        config.enabled = defaultEnabled
-        config.scale = OnScreenConfiguration.DefaultScale
     }
 }

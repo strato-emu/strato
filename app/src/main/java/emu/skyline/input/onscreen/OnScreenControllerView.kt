@@ -17,6 +17,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnTouchListener
+import androidx.annotation.IntRange
 import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonState
 import emu.skyline.input.ControllerType
@@ -37,14 +38,18 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         private val controllerTypeMappings = mapOf(*ControllerType.values().map {
             it to (setOf(*it.buttons) + setOf(*it.optionalButtons) to setOf(*it.sticks))
         }.toTypedArray())
-
-        private const val SCALE_STEP = 0.05f
-        private const val ALPHA_STEP = 25
-        private val ALPHA_RANGE = 55..255
     }
 
     private var onButtonStateChangedListener : OnButtonStateChangedListener? = null
+    fun setOnButtonStateChangedListener(listener : OnButtonStateChangedListener) {
+        onButtonStateChangedListener = listener
+    }
+
     private var onStickStateChangedListener : OnStickStateChangedListener? = null
+    fun setOnStickStateChangedListener(listener : OnStickStateChangedListener) {
+        onStickStateChangedListener = listener
+    }
+
     private val joystickAnimators = mutableMapOf<JoystickButton, Animator?>()
     var controllerType : ControllerType? = null
         set(value) {
@@ -62,8 +67,12 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons).forEach { it.hapticFeedback = hapticFeedback }
         }
 
-    val editInfo = OnScreenEditInfo()
+    internal val editInfo = OnScreenEditInfo()
     val isEditing get() = editInfo.isEditing
+    val editButton get() = editInfo.editButton
+    fun setOnEditButtonChangedListener(listener : OnEditButtonChangedListener?) {
+        editInfo.onEditButtonChangedListener = listener
+    }
 
     // Populated externally by the activity, as retrieving the vibrator service inside the view crashes the layout editor
     lateinit var vibrator : Vibrator
@@ -222,40 +231,52 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         handled.also { if (it) invalidate() }
     }
 
-    private val editingTouchHandler = OnTouchListener { _, event ->
-        var handled = false
+    /**
+     * Tracks whether the last pointer down event changed the active edit button
+     * Avoids moving the button when the user just wants to select it
+     */
+    private var activeEditButtonChanged = false
 
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN,
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                // Handle this event only if no other button is being edited
-                if (editInfo.editButton == null) {
-                    handled = controls.allButtons.any { button ->
-                        if (button.config.enabled && button.isTouched(event.x, event.y)) {
-                            editInfo.editButton = button
-                            button.startEdit(event.x, event.y)
-                            performClick()
-                            true
-                        } else false
+    private val editingTouchHandler = OnTouchListener { _, event ->
+        run {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN,
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    val touchedButton = controls.allButtons.firstOrNull { it.isTouched(event.x, event.y) } ?: return@OnTouchListener false
+
+                    // Update the selection if the user touched a button other than the selected one
+                    if (touchedButton != editInfo.editButton) {
+                        activeEditButtonChanged = true
+                        editInfo.editButton = touchedButton
+                        performClick()
+                        return@run
                     }
+
+                    editInfo.editButton.startMove(event.x, event.y)
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    // If the user just selected another button, don't move it yet
+                    if (activeEditButtonChanged)
+                        return@run
+
+                    editInfo.editButton.move(event.x, event.y)
+                    invalidate()
+                }
+
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_POINTER_UP,
+                MotionEvent.ACTION_CANCEL -> {
+                    if (activeEditButtonChanged) {
+                        activeEditButtonChanged = false
+                        return@run
+                    }
+
+                    editInfo.editButton.endMove()
                 }
             }
-
-            MotionEvent.ACTION_MOVE -> {
-                editInfo.editButton?.edit(event.x, event.y)
-                handled = true
-            }
-
-            MotionEvent.ACTION_UP,
-            MotionEvent.ACTION_POINTER_UP,
-            MotionEvent.ACTION_CANCEL -> {
-                editInfo.editButton?.endEdit()
-                editInfo.editButton = null
-                handled = true
-            }
         }
-
-        handled.also { if (it) invalidate() }
+        true
     }
 
     init {
@@ -264,39 +285,49 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun setEditMode(editMode : EditMode) {
         editInfo.editMode = editMode
-        setOnTouchListener(if (isEditing) editingTouchHandler else playingTouchHandler )
+        setOnTouchListener(if (isEditing) editingTouchHandler else playingTouchHandler)
     }
 
-    fun resetControls() {
-        controls.allButtons.forEach {
-            it.resetConfig()
-        }
-        controls.globalScale = OnScreenConfiguration.DefaultGlobalScale
-        controls.alpha = OnScreenConfiguration.DefaultAlpha
+    fun selectAllButtons() {
+        editInfo.editButton = allButtonsProxy
+    }
+
+    fun setButtonEnabled(enabled : Boolean) {
+        editInfo.editButton.config.enabled = enabled
         invalidate()
     }
 
-    fun increaseScale() {
-        controls.globalScale += SCALE_STEP
+    fun setButtonScale(@IntRange(from = 0, to = 100) scale : Int) {
+        fun toScaleRange(value : Int) : Float = (value / 100f) * (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) + OnScreenConfiguration.MinScale
+
+        editInfo.editButton.config.scale = toScaleRange(scale)
         invalidate()
     }
 
-    fun decreaseScale() {
-        controls.globalScale -= SCALE_STEP
+    fun setButtonOpacity(@IntRange(from = 0, to = 100) opacity : Int) {
+        fun toAlphaRange(value : Int) : Int = ((value / 100f) * (OnScreenConfiguration.MaxAlpha - OnScreenConfiguration.MinAlpha)).toInt() + OnScreenConfiguration.MinAlpha
+
+        editInfo.editButton.config.alpha = toAlphaRange(opacity)
         invalidate()
     }
 
-    fun setSnapToGrid(snap : Boolean) {
-        editInfo.snapToGrid = snap
-    }
-
-    fun increaseOpacity() {
-        controls.alpha = (controls.alpha + ALPHA_STEP).coerceIn(ALPHA_RANGE)
+    fun moveButtonUp() {
+        editInfo.editButton.moveUp()
         invalidate()
     }
 
-    fun decreaseOpacity() {
-        controls.alpha = (controls.alpha - ALPHA_STEP).coerceIn(ALPHA_RANGE)
+    fun moveButtonDown() {
+        editInfo.editButton.moveDown()
+        invalidate()
+    }
+
+    fun moveButtonLeft() {
+        editInfo.editButton.moveLeft()
+        invalidate()
+    }
+
+    fun moveButtonRight() {
+        editInfo.editButton.moveRight()
         invalidate()
     }
 
@@ -306,23 +337,6 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun getBackGroundColor() : Int {
         return controls.globalBackgroundColor
-    }
-
-    fun setOnButtonStateChangedListener(listener : OnButtonStateChangedListener) {
-        onButtonStateChangedListener = listener
-    }
-
-    fun setOnStickStateChangedListener(listener : OnStickStateChangedListener) {
-        onStickStateChangedListener = listener
-    }
-
-    data class ButtonProp(val buttonId : ButtonId, val enabled : Boolean)
-
-    fun getButtonProps() = controls.allButtons.map { ButtonProp(it.buttonId, it.config.enabled) }
-
-    fun setButtonEnabled(buttonId : ButtonId, enabled : Boolean) {
-        controls.allButtons.first { it.buttonId == buttonId }.config.enabled = enabled
-        invalidate()
     }
 
     fun setTextColor(color : Int) {
@@ -337,5 +351,91 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             button.config.backgroundColor = color
         }
         invalidate()
+    }
+
+    fun setSnapToGrid(snap : Boolean) {
+        editInfo.snapToGrid = snap
+        editInfo.arrowKeyMoveAmount = if (snap) editInfo.gridSize else OnScreenEditInfo.ArrowKeyMoveAmount
+    }
+
+    fun resetButton() {
+        editInfo.editButton.resetConfig()
+        editInfo.onEditButtonChangedListener?.invoke(editInfo.editButton)
+        invalidate()
+    }
+
+    /**
+     * A proxy button that is used to apply changes to all buttons
+     */
+    private val allButtonsProxy = object : ConfigurableButton {
+        override val buttonId : ButtonId = ButtonId.All
+
+        override val config = object : OnScreenConfiguration {
+            override var enabled : Boolean
+                get() = controls.allButtons.all { it.config.enabled }
+                set(value) {
+                    controls.allButtons.forEach { it.config.enabled = value }
+                }
+
+            override val groupEnabled : Int
+                get() {
+                    if (controls.allButtons.all { it.config.enabled })
+                        return OnScreenConfiguration.GroupEnabled
+                    if (controls.allButtons.all { !it.config.enabled })
+                        return OnScreenConfiguration.GroupDisabled
+                    return OnScreenConfiguration.GroupIndeterminate
+                }
+
+            override var alpha : Int
+                get() = controls.allButtons.sumOf { it.config.alpha } / controls.allButtons.size
+                set(value) {
+                    controls.allButtons.forEach { it.config.alpha = value }
+                }
+
+            override var textColor : Int
+                get() = controls.globalTextColor
+                set(value) {
+                    setTextColor(value)
+                }
+
+            override var backgroundColor : Int
+                get() = controls.globalBackgroundColor
+                set(value) {
+                    setBackGroundColor(value)
+                }
+
+            override var scale : Float
+                get() = (controls.allButtons.sumOf { it.config.scale.toDouble() } / controls.allButtons.size).toFloat()
+                set(value) {
+                    controls.allButtons.forEach { it.config.scale = value }
+                }
+
+            override var relativeX = 0f
+            override var relativeY = 0f
+        }
+
+        override fun startMove(x : Float, y : Float) {}
+        override fun move(x : Float, y : Float) {}
+        override fun endMove() {}
+
+        override fun moveUp() {
+            controls.allButtons.forEach { it.moveUp() }
+        }
+
+        override fun moveDown() {
+            controls.allButtons.forEach { it.moveDown() }
+        }
+
+        override fun moveLeft() {
+            controls.allButtons.forEach { it.moveLeft() }
+        }
+
+        override fun moveRight() {
+            controls.allButtons.forEach { it.moveRight() }
+        }
+
+        override fun resetConfig() {
+            controls.allButtons.forEach { it.resetConfig() }
+        }
     }
 }

@@ -10,32 +10,50 @@ import emu.skyline.input.ButtonId
 import emu.skyline.utils.SwitchColors
 import emu.skyline.utils.sharedPreferences
 
-class OnScreenConfiguration(private val context : Context, private val buttonId : ButtonId, defaultRelativeX : Float, defaultRelativeY : Float, defaultEnabled : Boolean) {
+interface OnScreenConfiguration {
     companion object {
-        const val DefaultAlpha = 130
-        const val DefaultGlobalScale = 1.15f
-        const val DefaultScale = 0.0f
+        const val GroupDisabled = 0
+        const val GroupEnabled = 1
+        const val GroupIndeterminate = 2
+
+        const val MinAlpha = 0
+        const val MaxAlpha = 255
+        const val DefaultAlpha = 128
+
+        const val MinScale = 0.5f
+        const val MaxScale = 2.5f
+        const val DefaultScale = 1.15f
+
+        val DefaultTextColor = SwitchColors.BLACK.color
+        val DefaultBackgroundColor = SwitchColors.WHITE.color
     }
 
+    var enabled : Boolean
+
+    /**
+     * The state of a group of buttons, returns an integer that can be used to set the state of a MaterialCheckBox
+     */
+    val groupEnabled get() = if (enabled) GroupEnabled else GroupDisabled
+
+    var alpha : Int
+    var textColor : Int
+    var backgroundColor : Int
+
+    var scale : Float
+    var relativeX : Float
+    var relativeY : Float
+}
+
+class OnScreenConfigurationImpl(private val context : Context, private val buttonId : ButtonId, defaultRelativeX : Float, defaultRelativeY : Float, defaultEnabled : Boolean) : OnScreenConfiguration {
     private inline fun <reified T> config(default : T, prefix : String = "${buttonId.name}_") = sharedPreferences(context, default, prefix, "controller_config")
 
-    var enabled by config(defaultEnabled)
+    override var enabled by config(defaultEnabled)
 
-    var alpha by config(DefaultAlpha, "")
-    var textColor by config(SwitchColors.BLACK.color)
-    var backgroundColor by config(SwitchColors.WHITE.color)
+    override var alpha by config(OnScreenConfiguration.DefaultAlpha)
+    override var textColor by config(OnScreenConfiguration.DefaultTextColor)
+    override var backgroundColor by config(OnScreenConfiguration.DefaultBackgroundColor)
 
-    /**
-     * The global scale applied to all buttons
-     */
-    var globalScale by config(DefaultGlobalScale, "")
-
-    /**
-     * The scale of each button, this is added to the global scale
-     * Allows buttons to have their own size, while still be controlled by the global scale
-     */
-    var scale by config(DefaultScale)
-
-    var relativeX by config(defaultRelativeX)
-    var relativeY by config(defaultRelativeY)
+    override var scale by config(OnScreenConfiguration.DefaultScale)
+    override var relativeX by config(defaultRelativeX)
+    override var relativeY by config(defaultRelativeY)
 }

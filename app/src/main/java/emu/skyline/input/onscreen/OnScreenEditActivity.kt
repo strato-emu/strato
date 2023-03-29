@@ -5,109 +5,35 @@
 
 package emu.skyline.input.onscreen
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.*
-import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.R
 import emu.skyline.databinding.OnScreenEditActivityBinding
+import emu.skyline.databinding.OscSliderBinding
 import emu.skyline.settings.AppSettings
 import emu.skyline.utils.SwitchColors
 import emu.skyline.utils.SwitchColors.*
 import petrov.kristiyan.colorpicker.DoubleColorPicker
 import petrov.kristiyan.colorpicker.DoubleColorPicker.OnChooseDoubleColorListener
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 class OnScreenEditActivity : AppCompatActivity() {
-    private enum class Action(@DrawableRes private val icon : Int, @DrawableRes private val activeIcon : Int = 0) {
-        Restore(R.drawable.ic_restore),
-        Toggle(R.drawable.ic_toggle_on),
-        Move(R.drawable.ic_move),
-        Resize(R.drawable.ic_resize),
-        Grid(R.drawable.ic_grid_off, R.drawable.ic_grid_on),
-        Palette(R.drawable.ic_palette),
-        ZoomOut(R.drawable.ic_zoom_out),
-        ZoomIn(R.drawable.ic_zoom_in),
-        OpacityMinus(R.drawable.ic_opacity_minus),
-        OpacityPlus(R.drawable.ic_opacity_plus),
-        Close(R.drawable.ic_close),
-        ;
-
-        fun getIcon(active : Boolean) = if (activeIcon != 0 && active) activeIcon else icon
-    }
-
     private val binding by lazy { OnScreenEditActivityBinding.inflate(layoutInflater) }
-
-    private var fullEditVisible = true
 
     @Inject
     lateinit var appSettings : AppSettings
 
-    private val closeAction : () -> Unit = {
-        if (binding.onScreenControllerView.isEditing) {
-            toggleFabVisibility(true)
-            binding.onScreenControllerView.setEditMode(EditMode.None)
-        } else {
-            fullEditVisible = !fullEditVisible
-            toggleFabVisibility(fullEditVisible)
-            fabMapping[Action.Close]!!.animate().rotation(if (fullEditVisible) 0f else 45f)
-        }
-    }
-
-    private fun toggleFabVisibility(visible : Boolean) {
-        fabMapping.forEach { (action, fab) ->
-            if (action != Action.Close) {
-                if (visible) fab.show()
-                else fab.hide()
-            }
-        }
-    }
-
-    private val moveAction = {
-        binding.onScreenControllerView.setEditMode(EditMode.Move)
-        toggleFabVisibility(false)
-    }
-
-    private val resizeAction = {
-        binding.onScreenControllerView.setEditMode(EditMode.Resize)
-        toggleFabVisibility(false)
-    }
-
-    private val toggleAction : () -> Unit = {
-        val buttonProps = binding.onScreenControllerView.getButtonProps()
-        val checkedButtonsArray = buttonProps.map { it.enabled }.toBooleanArray()
-
-        MaterialAlertDialogBuilder(this)
-            .setMultiChoiceItems(
-                buttonProps.map { button ->
-                    val longText = getString(button.buttonId.long!!)
-                    if (button.buttonId.short == longText) longText else "$longText: ${button.buttonId.short}"
-                }.toTypedArray(),
-                checkedButtonsArray
-            ) { _, which, isChecked ->
-                checkedButtonsArray[which] = isChecked
-            }
-            .setPositiveButton(R.string.confirm) { _, _ ->
-                buttonProps.forEachIndexed { index, button ->
-                    if (checkedButtonsArray[index] != button.enabled)
-                        binding.onScreenControllerView.setButtonEnabled(button.buttonId, checkedButtonsArray[index])
-                }
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .setOnDismissListener { fullScreen() }
-            .show()
-    }
-
-    private val paletteAction : () -> Unit = {
+    private fun paletteAction() {
         DoubleColorPicker(this@OnScreenEditActivity).apply {
             setTitle(this@OnScreenEditActivity.getString(R.string.osc_background_color))
             setDefaultColorButton(binding.onScreenControllerView.getBackGroundColor())
@@ -127,42 +53,24 @@ class OnScreenEditActivity : AppCompatActivity() {
         }
     }
 
-    private val toggleGridAction : () -> Unit = {
+    private fun toggleGridAction() {
         val snapToGrid = !appSettings.onScreenControlSnapToGrid
         appSettings.onScreenControlSnapToGrid = snapToGrid
 
         binding.onScreenControllerView.setSnapToGrid(snapToGrid)
         binding.alignmentGrid.isGone = !snapToGrid
-        fabMapping[Action.Grid]!!.setImageResource(Action.Grid.getIcon(!snapToGrid))
+        binding.gridButton.setIconResource(if (!snapToGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
     }
 
-    private val resetAction : () -> Unit = {
+    private fun resetAction() {
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.osc_reset)
+            .setTitle(getString(R.string.osc_reset, binding.onScreenControllerView.editButton.buttonId.short))
             .setMessage(R.string.osc_reset_confirm)
-            .setPositiveButton(R.string.confirm) { _, _ -> binding.onScreenControllerView.resetControls() }
+            .setPositiveButton(R.string.confirm) { _, _ -> binding.onScreenControllerView.resetButton() }
             .setNegativeButton(R.string.cancel, null)
             .setOnDismissListener { fullScreen() }
             .show()
     }
-
-    private data class ActionEntry(val action : Action, val callback : () -> Unit)
-
-    private val actions : List<ActionEntry> = listOf(
-        ActionEntry(Action.Restore, resetAction),
-        ActionEntry(Action.Toggle, toggleAction),
-        ActionEntry(Action.Move, moveAction),
-        ActionEntry(Action.Resize, resizeAction),
-        ActionEntry(Action.Grid, toggleGridAction),
-        ActionEntry(Action.Palette, paletteAction),
-        ActionEntry(Action.ZoomOut) { binding.onScreenControllerView.decreaseScale() },
-        ActionEntry(Action.ZoomIn) { binding.onScreenControllerView.increaseScale() },
-        ActionEntry(Action.OpacityMinus) { binding.onScreenControllerView.decreaseOpacity() },
-        ActionEntry(Action.OpacityPlus) { binding.onScreenControllerView.increaseOpacity() },
-        ActionEntry(Action.Close, closeAction),
-    )
-
-    private val fabMapping = mutableMapOf<Action, FloatingActionButton>()
 
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
@@ -194,20 +102,40 @@ class OnScreenEditActivity : AppCompatActivity() {
         binding.alignmentGrid.isGone = !snapToGrid
         binding.alignmentGrid.gridSize = OnScreenEditInfo.GridSize
 
-        actions.forEach { (action, callback) ->
-            binding.fabParent.addView(LayoutInflater.from(this).inflate(R.layout.on_screen_edit_mini_fab, binding.fabParent, false).apply {
-                (this as FloatingActionButton).setImageDrawable(ContextCompat.getDrawable(context, action.getIcon(false)))
-                setOnClickListener { callback.invoke() }
-                fabMapping[action] = this
-            })
+        binding.onScreenControllerView.setOnEditButtonChangedListener { button ->
+            updateActiveButtonDisplayInfo(button)
         }
 
-        fabMapping[Action.Grid]!!.setImageDrawable(ContextCompat.getDrawable(this, Action.Grid.getIcon(!snapToGrid)))
+        binding.selectAllButton.setOnClickListener { binding.onScreenControllerView.selectAllButtons() }
+
+        populateSlider(binding.scaleSlider, getString(R.string.osc_scale)) {
+            binding.onScreenControllerView.setButtonScale(it)
+        }
+        populateSlider(binding.opacitySlider, getString(R.string.osc_opacity)) {
+            binding.onScreenControllerView.setButtonOpacity(it)
+        }
+
+        binding.enabledCheckbox.setOnClickListener { _ ->
+            binding.onScreenControllerView.setButtonEnabled(binding.enabledCheckbox.isChecked)
+        }
+
+        binding.moveUpButton.setOnClickListener { binding.onScreenControllerView.moveButtonUp() }
+        binding.moveDownButton.setOnClickListener { binding.onScreenControllerView.moveButtonDown() }
+        binding.moveLeftButton.setOnClickListener { binding.onScreenControllerView.moveButtonLeft() }
+        binding.moveRightButton.setOnClickListener { binding.onScreenControllerView.moveButtonRight() }
+
+        binding.colorButton.setOnClickListener { paletteAction() }
+        binding.gridButton.setOnClickListener { toggleGridAction() }
+        binding.gridButton.setIconResource(if (!snapToGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
+        binding.resetButton.setOnClickListener { resetAction() }
+
+        binding.onScreenControllerView.setEditMode(EditMode.Move)
+        binding.onScreenControllerView.selectAllButtons()
     }
 
     override fun onResume() {
         super.onResume()
-
+        updateActiveButtonDisplayInfo(binding.onScreenControllerView.editButton)
         fullScreen()
     }
 
@@ -221,5 +149,37 @@ class OnScreenEditActivity : AppCompatActivity() {
                     or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                     or View.SYSTEM_UI_FLAG_FULLSCREEN)
         }
+    }
+
+    /**
+     * Initializes the slider in the range [0,100], with the given label and value listener
+     */
+    @SuppressLint("SetTextI18n")
+    private fun populateSlider(slider : OscSliderBinding, label : String, valueListener : ((Int) -> Unit)? = null) {
+        slider.title.text = label
+        slider.slider.apply {
+            valueFrom = 0f
+            valueTo = 100f
+            stepSize = 0f
+            // Always update the value label
+            addOnChangeListener { _, value, _ ->
+                slider.valueLabel.text = "${value.roundToInt()}%"
+            }
+            // Only call the value listener if the user is dragging the slider
+            addOnChangeListener { _, value, fromUser ->
+                if (fromUser)
+                    valueListener?.invoke(value.roundToInt())
+            }
+        }
+    }
+
+    /**
+     * Updates the control panel UI elements to reflect the currently selected button
+     */
+    private fun updateActiveButtonDisplayInfo(button : ConfigurableButton) {
+        binding.enabledCheckbox.checkedState = button.config.groupEnabled
+        binding.currentButton.text = getString(R.string.osc_current_button, button.buttonId.short)
+        binding.scaleSlider.slider.value = (button.config.scale - OnScreenConfiguration.MinScale) / (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) * 100f
+        binding.opacitySlider.slider.value = (button.config.alpha - OnScreenConfiguration.MinAlpha) / (OnScreenConfiguration.MaxAlpha - OnScreenConfiguration.MinAlpha).toFloat() * 100f
     }
 }

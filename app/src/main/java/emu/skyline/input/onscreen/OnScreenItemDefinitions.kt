@@ -136,15 +136,15 @@ class JoystickButton(
 
     fun outerToInnerRelative() = outerToInner().multiply(1f / radius)
 
-    override fun edit(x : Float, y : Float) {
-        super.edit(x, y)
+    override fun move(x : Float, y : Float) {
+        super.move(x, y)
 
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
     }
 
-    override fun resetRelativeValues() {
-        super.resetRelativeValues()
+    override fun resetConfig() {
+        super.resetConfig()
 
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
@@ -240,24 +240,6 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     val triggerButtons = listOf(buttonZL, buttonZR)
 
     val allButtons = circularButtons + joysticks + rectangularButtons + triggerButtons
-
-    /**
-     * We can take any of the global scale variables from the buttons since the value is shared across all buttons
-     */
-    var globalScale
-        get() = circularButtons.first().config.globalScale
-        set(value) {
-            circularButtons.first().config.globalScale = value
-        }
-
-    /**
-     * We can take any of the alpha variables from the buttons since the value is shared across all buttons
-     */
-    var alpha
-        get() = circularButtons.first().config.alpha
-        set(value) {
-            circularButtons.first().config.alpha = value
-        }
 
     /**
      * We can take any of the global text color variables from the buttons

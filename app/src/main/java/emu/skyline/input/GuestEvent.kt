@@ -44,7 +44,8 @@ enum class ButtonId(val value : Long, val short : String? = null, val long : Int
     LeftSR(1 shl 25, "SR", string.right_shoulder),
     RightSL(1 shl 26, "SL", string.left_shoulder),
     RightSR(1 shl 27, "SR", string.right_shoulder),
-    Menu(1 shl 28, "⌂︎", string.emu_menu_button);
+    Menu(1 shl 28, "⌂︎", string.emu_menu_button),
+    All(0x1FFFFFFF, "All");
 }
 
 /**
