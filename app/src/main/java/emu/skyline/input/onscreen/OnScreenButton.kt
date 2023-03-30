@@ -123,7 +123,7 @@ abstract class OnScreenButton(
 
     open fun render(canvas : Canvas) {
         val bounds = currentBounds
-        val alpha = if (isPressed) (config.alpha - 130).coerceIn(30..255) else config.alpha
+        val alpha = if (isPressed) config.alpha / 3 else config.alpha
         renderColors(drawable)
         drawable.apply {
             this.bounds = bounds
