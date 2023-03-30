@@ -209,23 +209,34 @@ abstract class OnScreenButton(
         saveConfigValues()
     }
 
+    /**
+     * Returns the amount to move the button when the user presses an arrow key
+     * @param gridOffset The offset to apply to the grid size so that the button always ends up on a grid line
+     */
+    private fun getMoveAmount(gridOffset : Int) : Int {
+        return if (editInfo.snapToGrid)
+            editInfo.gridSize + gridOffset
+        else
+            OnScreenEditInfo.ArrowKeyMoveAmount
+    }
+
     override fun moveUp() {
-        move(currentX, currentY - editInfo.arrowKeyMoveAmount)
+        move(currentX, currentY - getMoveAmount(-1))
         saveConfigValues()
     }
 
     override fun moveDown() {
-        move(currentX, currentY + editInfo.arrowKeyMoveAmount)
+        move(currentX, currentY + getMoveAmount(+1))
         saveConfigValues()
     }
 
     override fun moveLeft() {
-        move(currentX - editInfo.arrowKeyMoveAmount, currentY)
+        move(currentX - getMoveAmount(-1), currentY)
         saveConfigValues()
     }
 
     override fun moveRight() {
-        move(currentX + editInfo.arrowKeyMoveAmount, currentY)
+        move(currentX + getMoveAmount(+1), currentY)
         saveConfigValues()
     }
 

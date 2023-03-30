@@ -40,8 +40,6 @@ class OnScreenEditInfo {
 
     var gridSize : Int = GridSize
 
-    var arrowKeyMoveAmount : Int = ArrowKeyMoveAmount
-
     companion object {
         /**
          * The size of the grid, calculated from the value of 8dp

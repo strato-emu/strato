@@ -373,7 +373,6 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun setSnapToGrid(snap : Boolean) {
         editInfo.snapToGrid = snap
-        editInfo.arrowKeyMoveAmount = if (snap) editInfo.gridSize else OnScreenEditInfo.ArrowKeyMoveAmount
     }
 
     fun resetButton() {
