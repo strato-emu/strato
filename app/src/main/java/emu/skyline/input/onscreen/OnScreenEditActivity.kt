@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.*
+import android.view.View.OnTouchListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -72,6 +73,7 @@ class OnScreenEditActivity : AppCompatActivity() {
             .show()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
@@ -129,6 +131,8 @@ class OnScreenEditActivity : AppCompatActivity() {
         binding.gridButton.setIconResource(if (!snapToGrid) R.drawable.ic_grid_on else R.drawable.ic_grid_off)
         binding.resetButton.setOnClickListener { resetAction() }
 
+        binding.dragHandle.setOnTouchListener(dragPanelListener)
+
         binding.onScreenControllerView.setEditMode(EditMode.Move)
         binding.onScreenControllerView.selectAllButtons()
     }
@@ -181,5 +185,14 @@ class OnScreenEditActivity : AppCompatActivity() {
         binding.currentButton.text = getString(R.string.osc_current_button, button.buttonId.short)
         binding.scaleSlider.slider.value = (button.config.scale - OnScreenConfiguration.MinScale) / (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) * 100f
         binding.opacitySlider.slider.value = (button.config.alpha - OnScreenConfiguration.MinAlpha) / (OnScreenConfiguration.MaxAlpha - OnScreenConfiguration.MinAlpha).toFloat() * 100f
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private val dragPanelListener = OnTouchListener { view : View, event : MotionEvent ->
+        if (event.action == MotionEvent.ACTION_MOVE) {
+            binding.controlPanel.x = event.rawX - binding.controlPanel.width / 2
+            binding.controlPanel.y = event.rawY - view.height / 2
+        }
+        true
     }
 }
