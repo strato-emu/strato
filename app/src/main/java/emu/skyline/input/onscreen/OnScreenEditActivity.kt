@@ -133,8 +133,7 @@ class OnScreenEditActivity : AppCompatActivity() {
 
         binding.dragHandle.setOnTouchListener(dragPanelListener)
 
-        binding.onScreenControllerView.setEditMode(EditMode.Move)
-        binding.onScreenControllerView.selectAllButtons()
+        binding.onScreenControllerView.setEditMode(true)
     }
 
     override fun onResume() {

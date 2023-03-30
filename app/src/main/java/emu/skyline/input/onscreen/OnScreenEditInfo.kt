@@ -8,11 +8,6 @@ package emu.skyline.input.onscreen
 import android.content.res.Resources
 import android.util.TypedValue
 
-enum class EditMode {
-    None,
-    Move
-}
-
 typealias OnEditButtonChangedListener = ((ConfigurableButton) -> Unit)
 
 /**
@@ -21,9 +16,9 @@ typealias OnEditButtonChangedListener = ((ConfigurableButton) -> Unit)
  */
 class OnScreenEditInfo {
     /**
-     * The current edit mode
+     * Whether the buttons are currently in edit mode
      */
-    var editMode : EditMode = EditMode.None
+    var isEditing : Boolean = false
 
     /**
      * The button that is currently being edited
@@ -46,8 +41,6 @@ class OnScreenEditInfo {
     var gridSize : Int = GridSize
 
     var arrowKeyMoveAmount : Int = ArrowKeyMoveAmount
-
-    val isEditing get() = editMode != EditMode.None
 
     companion object {
         /**
