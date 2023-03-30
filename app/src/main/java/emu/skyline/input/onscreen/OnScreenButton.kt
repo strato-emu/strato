@@ -98,12 +98,12 @@ abstract class OnScreenButton(
     /**
      * The edit session information, populated by the view
      */
-    protected var editInfo = onScreenControllerView.editInfo
+    protected val editInfo = onScreenControllerView.editInfo
 
     /**
      * The touch point when the edit session started
      */
-    protected var editInitialTouchPoint = PointF()
+    protected val editInitialTouchPoint = PointF()
 
     /**
      * The scale of the button when the edit session started
