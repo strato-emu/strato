@@ -83,7 +83,7 @@ abstract class OnScreenButton(
     private val left get() = currentX - itemWidth / 2f
     private val top get() = currentY - itemHeight / 2f
 
-    protected val currentBounds get() = Rect(left.roundToInt(), top.roundToInt(), (left + itemWidth).roundToInt(), (top + itemHeight).roundToInt())
+    val currentBounds get() = Rect(left.roundToInt(), top.roundToInt(), (left + itemWidth).roundToInt(), (top + itemHeight).roundToInt())
 
     /**
      * Keeps track of finger when there are multiple touches

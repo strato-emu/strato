@@ -10,14 +10,18 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PointF
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnTouchListener
 import androidx.annotation.IntRange
+import emu.skyline.R
 import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonState
 import emu.skyline.input.ControllerType
@@ -73,6 +77,12 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         editInfo.onEditButtonChangedListener = listener
     }
 
+    private val selectionPaint = Paint().apply {
+        color = context.obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).getColor(0, Color.RED)
+        style = Paint.Style.STROKE
+        strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, context.resources.displayMetrics)
+    }
+
     // Populated externally by the activity, as retrieving the vibrator service inside the view crashes the layout editor
     lateinit var vibrator : Vibrator
     private val effectClick = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
@@ -95,6 +105,10 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                 button.render(canvas)
             }
         }
+
+        // Draw the selection box around the edit button
+        if (editInfo.isEditing && editInfo.editButton is OnScreenButton)
+            canvas.drawRect((editInfo.editButton as OnScreenButton).currentBounds, selectionPaint)
     }
 
     private val playingTouchHandler = OnTouchListener { _, event ->
@@ -248,6 +262,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         activeEditButtonChanged = true
                         editInfo.editButton = touchedButton
                         performClick()
+                        invalidate()
                         return@run
                     }
 
@@ -292,6 +307,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     fun selectAllButtons() {
         editInfo.editButton = allButtonsProxy
+        invalidate()
     }
 
     fun setButtonEnabled(enabled : Boolean) {
