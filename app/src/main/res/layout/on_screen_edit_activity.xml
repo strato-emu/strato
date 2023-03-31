@@ -54,7 +54,8 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_gravity="end"
-                android:padding="2dp"
+                android:padding="0dp"
+                app:iconGravity="textStart"
                 app:icon="@drawable/ic_close"
                 app:iconTint="?attr/colorOnSurfaceVariant"
                 tools:ignore="ContentDescription,SpeakableTextPresentCheck,TouchTargetSizeCheck" />

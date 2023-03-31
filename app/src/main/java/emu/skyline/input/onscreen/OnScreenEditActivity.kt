@@ -6,12 +6,13 @@
 package emu.skyline.input.onscreen
 
 import android.annotation.SuppressLint
+import android.graphics.PointF
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.TypedValue
 import android.view.*
-import android.view.View.OnTouchListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -132,6 +133,7 @@ class OnScreenEditActivity : AppCompatActivity() {
         binding.resetButton.setOnClickListener { resetAction() }
 
         binding.dragHandle.setOnTouchListener(dragPanelListener)
+        binding.closeButton.setOnClickListener { togglePanelVisibility() }
 
         binding.onScreenControllerView.setEditMode(true)
     }
@@ -187,11 +189,55 @@ class OnScreenEditActivity : AppCompatActivity() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private val dragPanelListener = OnTouchListener { view : View, event : MotionEvent ->
+    private val dragPanelListener = { view : View, event : MotionEvent ->
         if (event.action == MotionEvent.ACTION_MOVE) {
             binding.controlPanel.x = event.rawX - binding.controlPanel.width / 2
             binding.controlPanel.y = event.rawY - view.height / 2
         }
         true
+    }
+
+    private var isPanelVisible = true
+    private val openPanelTranslation = PointF()
+
+    private fun togglePanelVisibility() {
+        isPanelVisible = !isPanelVisible
+        binding.content.isGone = !isPanelVisible
+        binding.dragHandle.isGone = !isPanelVisible
+
+        binding.closeButton.apply {
+            if (isPanelVisible) {
+                animate().rotation(0f).start()
+
+                val buttonSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 32f, resources.displayMetrics).toInt() // 32dp
+                layoutParams.width = buttonSize
+                layoutParams.height = buttonSize
+            } else {
+                animate().rotation(-225f).start()
+
+                val buttonSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 40f, resources.displayMetrics).toInt() // 40dp
+                layoutParams.width = buttonSize
+                layoutParams.height = buttonSize
+            }
+        }
+
+        if (!isPanelVisible) {
+            // Save the current open position to restore later
+            openPanelTranslation.set(binding.controlPanel.translationX, binding.controlPanel.translationY)
+
+            // Animate to the closed position
+            binding.controlPanel.animate()
+                .translationX(0f)
+                .translationY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics)) // 12dp
+                .start()
+        } else {
+            // Animate to the previously saved open position
+            binding.controlPanel.animate()
+                .translationX(openPanelTranslation.x)
+                .translationY(openPanelTranslation.y)
+                .start()
+        }
+
+        binding.onScreenControllerView.setEditMode(isPanelVisible)
     }
 }

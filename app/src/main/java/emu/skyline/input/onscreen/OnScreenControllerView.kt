@@ -303,6 +303,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             selectAllButtons()
         editInfo.isEditing = isEdit
         setOnTouchListener(if (isEdit) editingTouchHandler else playingTouchHandler)
+        invalidate()
     }
 
     fun selectAllButtons() {
