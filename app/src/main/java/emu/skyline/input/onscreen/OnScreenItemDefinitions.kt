@@ -240,16 +240,4 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
     val triggerButtons = listOf(buttonZL, buttonZR)
 
     val allButtons = circularButtons + joysticks + rectangularButtons + triggerButtons
-
-    /**
-     * We can take any of the global text color variables from the buttons
-     */
-    val globalTextColor
-        get() = circularButtons.first().config.textColor
-
-    /**
-     * We can take any of the global background color variables from the buttons
-     */
-    val globalBackgroundColor
-        get() = circularButtons.first().config.backgroundColor
 }

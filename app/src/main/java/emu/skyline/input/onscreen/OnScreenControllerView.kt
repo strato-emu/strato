@@ -350,25 +350,17 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         invalidate()
     }
 
-    fun getTextColor() : Int {
-        return controls.globalTextColor
-    }
+    // Used to retrieve the current color to use in the color picker dialog
+    fun getButtonTextColor() = editInfo.editButton.config.textColor
+    fun getButtonBackgroundColor() = editInfo.editButton.config.backgroundColor
 
-    fun getBackGroundColor() : Int {
-        return controls.globalBackgroundColor
-    }
-
-    fun setTextColor(color : Int) {
-        for (button in controls.allButtons) {
-            button.config.textColor = color
-        }
+    fun setButtonTextColor(color : Int) {
+        editInfo.editButton.config.textColor = color
         invalidate()
     }
 
-    fun setBackGroundColor(color : Int) {
-        for (button in controls.allButtons) {
-            button.config.backgroundColor = color
-        }
+    fun setButtonBackgroundColor(color : Int) {
+        editInfo.editButton.config.backgroundColor = color
         invalidate()
     }
 
@@ -411,15 +403,15 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                 }
 
             override var textColor : Int
-                get() = controls.globalTextColor
+                get() = controls.allButtons.first().config.textColor
                 set(value) {
-                    setTextColor(value)
+                    controls.allButtons.forEach { it.config.textColor = value }
                 }
 
             override var backgroundColor : Int
-                get() = controls.globalBackgroundColor
+                get() = controls.allButtons.first().config.backgroundColor
                 set(value) {
-                    setBackGroundColor(value)
+                    controls.allButtons.forEach { it.config.backgroundColor = value }
                 }
 
             override var scale : Float

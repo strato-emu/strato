@@ -38,15 +38,15 @@ class OnScreenEditActivity : AppCompatActivity() {
     private fun paletteAction() {
         DoubleColorPicker(this@OnScreenEditActivity).apply {
             setTitle(this@OnScreenEditActivity.getString(R.string.osc_background_color))
-            setDefaultColorButton(binding.onScreenControllerView.getBackGroundColor())
+            setDefaultColorButton(binding.onScreenControllerView.getButtonBackgroundColor())
             setRoundColorButton(true)
             setColors(*SwitchColors.colors.toIntArray())
-            setDefaultDoubleColorButton(binding.onScreenControllerView.getTextColor())
+            setDefaultDoubleColorButton(binding.onScreenControllerView.getButtonTextColor())
             setSecondTitle(this@OnScreenEditActivity.getString(R.string.osc_text_color))
             setOnChooseDoubleColorListener(object : OnChooseDoubleColorListener {
                 override fun onChooseColor(position : Int, color : Int, position2 : Int, color2 : Int) {
-                    binding.onScreenControllerView.setBackGroundColor(SwitchColors.colors[position])
-                    binding.onScreenControllerView.setTextColor(SwitchColors.colors[position2])
+                    binding.onScreenControllerView.setButtonBackgroundColor(SwitchColors.colors[position])
+                    binding.onScreenControllerView.setButtonTextColor(SwitchColors.colors[position2])
                 }
 
                 override fun onCancel() {}

@@ -243,6 +243,8 @@ abstract class OnScreenButton(
     override fun resetConfig() {
         config.enabled = defaultEnabled
         config.alpha = OnScreenConfiguration.DefaultAlpha
+        config.textColor = OnScreenConfiguration.DefaultTextColor
+        config.backgroundColor = OnScreenConfiguration.DefaultBackgroundColor
         config.scale = OnScreenConfiguration.DefaultScale
         config.relativeX = defaultRelativeX
         config.relativeY = defaultRelativeY
