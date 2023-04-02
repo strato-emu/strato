@@ -35,6 +35,8 @@ class OnScreenEditActivity : AppCompatActivity() {
     @Inject
     lateinit var appSettings : AppSettings
 
+    private var currentButtonName = ""
+
     private fun paletteAction() {
         DoubleColorPicker(this@OnScreenEditActivity).apply {
             setTitle(this@OnScreenEditActivity.getString(R.string.osc_background_color))
@@ -66,7 +68,7 @@ class OnScreenEditActivity : AppCompatActivity() {
 
     private fun resetAction() {
         MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.osc_reset, binding.onScreenControllerView.editButton.buttonId.short))
+            .setTitle(getString(R.string.osc_reset, currentButtonName))
             .setMessage(R.string.osc_reset_confirm)
             .setPositiveButton(R.string.confirm) { _, _ -> binding.onScreenControllerView.resetButton() }
             .setNegativeButton(R.string.cancel, null)
@@ -140,7 +142,7 @@ class OnScreenEditActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateActiveButtonDisplayInfo(binding.onScreenControllerView.editButton)
+        binding.onScreenControllerView.updateEditButtonInfo()
         fullScreen()
     }
 
@@ -183,7 +185,8 @@ class OnScreenEditActivity : AppCompatActivity() {
      */
     private fun updateActiveButtonDisplayInfo(button : ConfigurableButton) {
         binding.enabledCheckbox.checkedState = button.config.groupEnabled
-        binding.currentButton.text = getString(R.string.osc_current_button, button.buttonId.short)
+        currentButtonName = button.buttonId.short ?: ""
+        binding.currentButton.text = getString(R.string.osc_current_button, currentButtonName)
         binding.scaleSlider.slider.value = (button.config.scale - OnScreenConfiguration.MinScale) / (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) * 100f
         binding.opacitySlider.slider.value = (button.config.alpha - OnScreenConfiguration.MinAlpha) / (OnScreenConfiguration.MaxAlpha - OnScreenConfiguration.MinAlpha).toFloat() * 100f
     }

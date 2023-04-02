@@ -72,7 +72,6 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         }
 
     internal val editInfo = OnScreenEditInfo()
-    val editButton get() = editInfo.editButton
     fun setOnEditButtonChangedListener(listener : OnEditButtonChangedListener?) {
         editInfo.onEditButtonChangedListener = listener
     }
@@ -294,6 +293,10 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
     init {
         setOnTouchListener(playingTouchHandler)
+    }
+
+    fun updateEditButtonInfo() {
+        editInfo.onEditButtonChangedListener?.invoke(editInfo.editButton)
     }
 
     fun setEditMode(isEdit : Boolean) {
