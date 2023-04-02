@@ -78,7 +78,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
     }
 
     private val selectionPaint = Paint().apply {
-        color = context.obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).getColor(0, Color.RED)
+        color = context.obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.RED) }
         style = Paint.Style.STROKE
         strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, context.resources.displayMetrics)
     }
@@ -95,8 +95,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
         val allowedIds = controllerTypeMappings[controllerType]
         controls.allButtons.forEach { button ->
-            if (button.config.enabled
-                && allowedIds?.let { (buttonIds, stickIds) ->
+            if (allowedIds?.let { (buttonIds, stickIds) ->
                     if (button is JoystickButton) stickIds.contains(button.stickId) else buttonIds.contains(button.buttonId)
                 } != false
             ) {

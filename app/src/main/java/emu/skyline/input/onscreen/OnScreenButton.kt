@@ -6,6 +6,7 @@
 package emu.skyline.input.onscreen
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.Rect
@@ -13,7 +14,9 @@ import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.util.TypedValue
 import androidx.core.content.ContextCompat
+import emu.skyline.R
 import emu.skyline.input.ButtonId
 import kotlin.math.roundToInt
 
@@ -35,6 +38,18 @@ abstract class OnScreenButton(
          * Aspect ratio the default values were based on
          */
         const val CONFIGURED_ASPECT_RATIO = 2074f / 874f
+
+        private var disabledSelectionPaint : Paint? = null
+    }
+
+    init {
+        if (disabledSelectionPaint == null) {
+            disabledSelectionPaint = Paint().apply {
+                color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorTertiary)).use { it.getColor(0, Color.GREEN) }
+                style = Paint.Style.STROKE
+                strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, onScreenControllerView.context.resources.displayMetrics)
+            }
+        }
     }
 
     final override val config = OnScreenConfigurationImpl(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY, defaultEnabled)
@@ -121,26 +136,33 @@ abstract class OnScreenButton(
         canvas.drawText(text, x - textBoundsRect.width() / 2f - textBoundsRect.left, y + textBoundsRect.height() / 2f - textBoundsRect.bottom, buttonSymbolPaint)
     }
 
-    open fun render(canvas : Canvas) {
-        val bounds = currentBounds
-        val alpha = if (isPressed) config.alpha / 3 else config.alpha
-        renderColors(drawable)
-        drawable.apply {
-            this.bounds = bounds
-            this.alpha = alpha
-            draw(canvas)
-        }
-        renderCenteredText(canvas, buttonId.short!!, itemWidth.coerceAtMost(itemHeight) * 0.4f, bounds.centerX().toFloat(), bounds.centerY().toFloat(), alpha)
-    }
-
-    private fun renderColors(drawable : Drawable) {
+    private fun applyColorsToDrawable(drawable : Drawable) {
         when (drawable) {
             is GradientDrawable -> drawable.setColor(config.backgroundColor)
-            is LayerDrawable -> {
-                for (i in 0 until drawable.numberOfLayers) renderColors(drawable.getDrawable(i))
-            }
+            is LayerDrawable -> for (i in 0 until drawable.numberOfLayers) applyColorsToDrawable(drawable.getDrawable(i))
             else -> drawable.setTint(config.backgroundColor)
         }
+    }
+
+    open fun render(canvas : Canvas) {
+        var bounds : Rect? = null
+        if (config.enabled) {
+            bounds = currentBounds
+            val alpha = if (isPressed) config.alpha / 3 else config.alpha
+            drawable.apply {
+                this.bounds = bounds
+                this.alpha = alpha
+                applyColorsToDrawable(this)
+                draw(canvas)
+            }
+
+            renderCenteredText(canvas, buttonId.short!!, itemWidth.coerceAtMost(itemHeight) * 0.4f, bounds.centerX().toFloat(), bounds.centerY().toFloat(), alpha)
+            }
+        }
+
+        // Draw a box around the button when in edit mode and it's either disabled or the alpha is too low (< 5%)
+        if (editInfo.isEditing && (!config.enabled || config.alpha < 12))
+            canvas.drawRect(bounds ?: currentBounds, disabledSelectionPaint ?: return)
     }
 
     abstract fun isTouched(x : Float, y : Float) : Boolean
