@@ -16,6 +16,8 @@ interface OnScreenConfiguration {
         const val GroupEnabled = 1
         const val GroupIndeterminate = 2
 
+        const val DefaultToggleMode = false
+
         const val MinAlpha = 0
         const val MaxAlpha = 255
         const val DefaultAlpha = 128
@@ -35,6 +37,13 @@ interface OnScreenConfiguration {
      */
     val groupEnabled get() = if (enabled) GroupEnabled else GroupDisabled
 
+    var toggleMode : Boolean
+
+    /**
+     * The toggle mode of group of buttons, returns an integer that can be used to set the state of a MaterialCheckBox
+     */
+    val groupToggleMode get() = if (toggleMode) GroupEnabled else GroupDisabled
+
     var alpha : Int
     var textColor : Int
     var backgroundColor : Int
@@ -48,6 +57,7 @@ class OnScreenConfigurationImpl(private val context : Context, private val butto
     private inline fun <reified T> config(default : T, prefix : String = "${buttonId.name}_") = sharedPreferences(context, default, prefix, "controller_config")
 
     override var enabled by config(defaultEnabled)
+    override var toggleMode by config(OnScreenConfiguration.DefaultToggleMode)
 
     override var alpha by config(OnScreenConfiguration.DefaultAlpha)
     override var textColor by config(OnScreenConfiguration.DefaultTextColor)

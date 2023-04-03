@@ -107,6 +107,7 @@ abstract class OnScreenButton(
     var partnerPointerId = -1
 
     var isPressed = false
+    var isToggled = false
 
     var hapticFeedback = false
 
@@ -167,12 +168,26 @@ abstract class OnScreenButton(
 
     abstract fun isTouched(x : Float, y : Float) : Boolean
 
-    open fun onFingerDown(x : Float, y : Float) {
-        isPressed = true
+    /**
+     * @return Whether button events should be sent to guest
+     */
+    open fun onFingerDown(x : Float, y : Float) : Boolean {
+        if (!config.toggleMode || !isToggled)
+            isPressed = true
+
+        isToggled = !isToggled
+
+        return !config.toggleMode || isToggled
     }
 
-    open fun onFingerUp(x : Float, y : Float) {
-        isPressed = false
+    /**
+     * @return Whether button events should be sent to guest
+     */
+    open fun onFingerUp(x : Float, y : Float) : Boolean {
+        if (!config.toggleMode || !isToggled)
+            isPressed = false
+
+        return !isPressed
     }
 
     fun loadConfigValues() {
@@ -264,6 +279,7 @@ abstract class OnScreenButton(
 
     override fun resetConfig() {
         config.enabled = defaultEnabled
+        config.toggleMode = OnScreenConfiguration.DefaultToggleMode
         config.alpha = OnScreenConfiguration.DefaultAlpha
         config.textColor = OnScreenConfiguration.DefaultTextColor
         config.backgroundColor = OnScreenConfiguration.DefaultBackgroundColor

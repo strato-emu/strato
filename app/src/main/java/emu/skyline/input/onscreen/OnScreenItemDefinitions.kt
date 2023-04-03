@@ -68,6 +68,8 @@ class JoystickButton(
     var shortDoubleTapped = false
         private set
 
+    override fun supportsToggleMode() : Boolean = false
+
     override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) = Unit
 
     override fun render(canvas : Canvas) {
@@ -78,7 +80,7 @@ class JoystickButton(
         innerButton.render(canvas)
     }
 
-    override fun onFingerDown(x : Float, y : Float) {
+    override fun onFingerDown(x : Float, y : Float) : Boolean {
         val relativeX = x / width
         val relativeY = (y - heightDiff) / adjustedHeight
         if (recenterSticks) {
@@ -99,9 +101,11 @@ class JoystickButton(
             isPressed = true
         }
         fingerDownTime = currentTime
+
+        return true
     }
 
-    override fun onFingerUp(x : Float, y : Float) {
+    override fun onFingerUp(x : Float, y : Float) : Boolean {
         loadConfigValues()
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY
@@ -109,6 +113,8 @@ class JoystickButton(
         fingerUpTime = SystemClock.elapsedRealtime()
         shortDoubleTapped = false
         isPressed = false
+
+        return true
     }
 
     fun onFingerMoved(x : Float, y : Float, manualMove : Boolean = true) : PointF {

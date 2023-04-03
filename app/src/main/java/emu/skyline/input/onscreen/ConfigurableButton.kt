@@ -15,6 +15,12 @@ interface ConfigurableButton {
     val config : OnScreenConfiguration
 
     /**
+     * Returns whether this button supports toggle mode
+     * Usually true for buttons and false for sticks
+     */
+    fun supportsToggleMode() : Boolean = true
+
+    /**
      * Starts a button move session
      * @param x The x coordinate of the initial touch
      * @param y The y coordinate of the initial touch

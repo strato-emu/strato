@@ -122,13 +122,13 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                 MotionEvent.ACTION_POINTER_UP -> {
                     if (pointerId == button.touchPointerId) {
                         button.touchPointerId = -1
-                        button.onFingerUp(x, y)
-                        onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Released)
+                        if (button.onFingerUp(x, y))
+                            onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Released)
                         handled = true
                     } else if (pointerId == button.partnerPointerId) {
                         button.partnerPointerId = -1
-                        button.onFingerUp(x, y)
-                        onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Released)
+                        if (button.onFingerUp(x, y))
+                            onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Released)
                         handled = true
                     }
                 }
@@ -137,10 +137,10 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     if (button.config.enabled && button.isTouched(x, y)) {
                         button.touchPointerId = pointerId
-                        button.onFingerDown(x, y)
+                        if (button.onFingerDown(x, y))
+                            onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Pressed)
                         if (hapticFeedback) vibrator.vibrate(effectClick)
                         performClick()
-                        onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Pressed)
                         handled = true
                     }
                 }
@@ -153,9 +153,9 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                                     for (otherButton in buttonPair) {
                                         if (otherButton != button && otherButton.config.enabled && otherButton.isTouched(event.getX(fingerId), event.getY(fingerId))) {
                                             otherButton.partnerPointerId = fingerId
-                                            otherButton.onFingerDown(x, y)
+                                            if (otherButton.onFingerDown(x, y))
+                                                onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
                                             performClick()
-                                            onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
                                             handled = true
                                         }
                                     }
@@ -318,6 +318,11 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         invalidate()
     }
 
+    fun setButtonToggleMode(toggleMode : Boolean) {
+        editInfo.editButton.config.toggleMode = toggleMode
+        invalidate()
+    }
+
     fun setButtonScale(@IntRange(from = 0, to = 100) scale : Int) {
         fun toScaleRange(value : Int) : Float = (value / 100f) * (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) + OnScreenConfiguration.MinScale
 
@@ -394,6 +399,21 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                     if (controls.allButtons.all { it.config.enabled })
                         return OnScreenConfiguration.GroupEnabled
                     if (controls.allButtons.all { !it.config.enabled })
+                        return OnScreenConfiguration.GroupDisabled
+                    return OnScreenConfiguration.GroupIndeterminate
+                }
+
+            override var toggleMode : Boolean
+                get() = controls.allButtons.all { it.supportsToggleMode() == it.config.toggleMode }
+                set(value) {
+                    controls.allButtons.forEach { if (it.supportsToggleMode()) it.config.toggleMode = value }
+                }
+
+            override val groupToggleMode : Int
+                get() {
+                    if (controls.allButtons.all { !it.supportsToggleMode() || it.config.toggleMode })
+                        return OnScreenConfiguration.GroupEnabled
+                    if (controls.allButtons.all { !it.supportsToggleMode() || !it.config.toggleMode })
                         return OnScreenConfiguration.GroupDisabled
                     return OnScreenConfiguration.GroupIndeterminate
                 }

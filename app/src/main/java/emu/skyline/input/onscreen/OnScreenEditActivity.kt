@@ -123,6 +123,9 @@ class OnScreenEditActivity : AppCompatActivity() {
         binding.enabledCheckbox.setOnClickListener { _ ->
             binding.onScreenControllerView.setButtonEnabled(binding.enabledCheckbox.isChecked)
         }
+        binding.toggleModeCheckbox.setOnClickListener { _ ->
+            binding.onScreenControllerView.setButtonToggleMode(binding.toggleModeCheckbox.isChecked)
+        }
 
         binding.moveUpButton.setOnClickListener { binding.onScreenControllerView.moveButtonUp() }
         binding.moveDownButton.setOnClickListener { binding.onScreenControllerView.moveButtonDown() }
@@ -194,6 +197,8 @@ class OnScreenEditActivity : AppCompatActivity() {
      */
     private fun updateActiveButtonDisplayInfo(button : ConfigurableButton) {
         binding.enabledCheckbox.checkedState = button.config.groupEnabled
+        binding.toggleModeCheckbox.isEnabled = button.supportsToggleMode()
+        binding.toggleModeCheckbox.checkedState = button.config.groupToggleMode
         currentButtonName = button.buttonId.short ?: ""
         binding.currentButton.text = getString(R.string.osc_current_button, currentButtonName)
         binding.scaleSlider.slider.value = (button.config.scale - OnScreenConfiguration.MinScale) / (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) * 100f

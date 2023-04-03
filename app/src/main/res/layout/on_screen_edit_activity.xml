@@ -137,7 +137,6 @@
                 android:minHeight="0dp"
                 android:paddingVertical="8dp"
                 android:text="@string/osc_toggle_mode"
-                android:visibility="gone"
                 app:layout_constraintStart_toStartOf="@+id/enabled_checkbox"
                 app:layout_constraintTop_toBottomOf="@id/enabled_checkbox"
                 tools:ignore="TouchTargetSizeCheck" />
