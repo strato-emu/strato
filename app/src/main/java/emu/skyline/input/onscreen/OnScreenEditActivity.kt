@@ -76,7 +76,7 @@ class OnScreenEditActivity : AppCompatActivity() {
             .show()
     }
 
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint("ClickableViewAccessibility", "SetTextI18n")
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
@@ -136,6 +136,15 @@ class OnScreenEditActivity : AppCompatActivity() {
 
         binding.dragHandle.setOnTouchListener(dragPanelListener)
         binding.closeButton.setOnClickListener { togglePanelVisibility() }
+
+        binding.onScreenControllerView.setOnButtonStateChangedListener { buttonId, state ->
+            binding.lastInputEvent.text = "Timestamp: ${System.currentTimeMillis()}\nButton: ${buttonId.short}\n$state"
+        }
+        binding.onScreenControllerView.setOnStickStateChangedListener { stickId, position ->
+            val x = "%9.6f".format(position.x)
+            val y = "%9.6f".format(position.y)
+            binding.lastInputEvent.text = "Timestamp: ${System.currentTimeMillis()}\nStick: ${stickId.button.short}\nX: $x\nY: $y"
+        }
 
         binding.onScreenControllerView.setEditMode(true)
     }
@@ -205,6 +214,7 @@ class OnScreenEditActivity : AppCompatActivity() {
 
     private fun togglePanelVisibility() {
         isPanelVisible = !isPanelVisible
+        binding.lastInputEvent.text = null
         binding.content.isGone = !isPanelVisible
         binding.dragHandle.isGone = !isPanelVisible
 

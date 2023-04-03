@@ -17,6 +17,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <TextView
+        android:id="@+id/last_input_event"
+        style="?attr/textAppearanceTitleMedium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textAlignment="center"
+        android:textColor="#E6E1E5"
+        tools:text="Timestamp: 16000000000\nButton: A\nReleased" />
+
     <LinearLayout
         android:id="@+id/control_panel"
         android:layout_width="wrap_content"
