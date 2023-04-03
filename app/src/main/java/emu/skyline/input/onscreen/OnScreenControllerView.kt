@@ -151,7 +151,11 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                             for (buttonPair in controls.buttonPairs) {
                                 if (buttonPair.contains(button)) {
                                     for (otherButton in buttonPair) {
-                                        if (otherButton != button && otherButton.config.enabled && otherButton.isTouched(event.getX(fingerId), event.getY(fingerId))) {
+                                        if (otherButton.partnerPointerId == -1 &&
+                                            otherButton != button &&
+                                            otherButton.config.enabled &&
+                                            otherButton.isTouched(event.getX(fingerId), event.getY(fingerId))
+                                        ) {
                                             otherButton.partnerPointerId = fingerId
                                             if (otherButton.onFingerDown(x, y))
                                                 onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
