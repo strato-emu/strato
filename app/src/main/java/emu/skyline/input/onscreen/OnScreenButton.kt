@@ -40,12 +40,20 @@ abstract class OnScreenButton(
         const val CONFIGURED_ASPECT_RATIO = 2074f / 874f
 
         private var disabledSelectionPaint : Paint? = null
+        private var toggleModePaint : Paint? = null
     }
 
     init {
         if (disabledSelectionPaint == null) {
             disabledSelectionPaint = Paint().apply {
                 color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorTertiary)).use { it.getColor(0, Color.GREEN) }
+                style = Paint.Style.STROKE
+                strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, onScreenControllerView.context.resources.displayMetrics)
+            }
+        }
+
+        if (toggleModePaint == null) {
+            toggleModePaint = Paint().apply {
                 style = Paint.Style.STROKE
                 strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, onScreenControllerView.context.resources.displayMetrics)
             }
@@ -158,6 +166,12 @@ abstract class OnScreenButton(
             }
 
             renderCenteredText(canvas, buttonId.short!!, itemWidth.coerceAtMost(itemHeight) * 0.4f, bounds.centerX().toFloat(), bounds.centerY().toFloat(), alpha)
+
+            if (config.toggleMode) {
+                canvas.drawCircle(bounds.centerX().toFloat(), bounds.centerY().toFloat(), itemWidth.coerceAtMost(itemHeight) * 0.35f, toggleModePaint?.apply {
+                    color = config.textColor
+                    this.alpha = alpha
+                } ?: return)
             }
         }
 
