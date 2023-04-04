@@ -139,7 +139,8 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                         button.touchPointerId = pointerId
                         if (button.onFingerDown(x, y))
                             onButtonStateChangedListener?.invoke(button.buttonId, ButtonState.Pressed)
-                        if (hapticFeedback) vibrator.vibrate(effectClick)
+                        if (hapticFeedback)
+                            vibrator.vibrate(effectClick)
                         performClick()
                         handled = true
                     }
@@ -159,6 +160,8 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
                                             otherButton.partnerPointerId = fingerId
                                             if (otherButton.onFingerDown(x, y))
                                                 onButtonStateChangedListener?.invoke(otherButton.buttonId, ButtonState.Pressed)
+                                            if (hapticFeedback)
+                                                vibrator.vibrate(effectClick)
                                             performClick()
                                             handled = true
                                         }
