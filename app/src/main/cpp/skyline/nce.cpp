@@ -510,7 +510,7 @@ namespace skyline::nce {
                 /* Store new TLS value into ThreadContext */
                 *patch++ = x0x1 ? 0xD53BD040 : 0xD53BD042; // MRS X(0/2), TPIDR_EL0
                 *patch++ = instructions::Mov(x0x1 ? registers::X1 : registers::X3, registers::X(msr.srcReg)).raw;
-                *patch++ = x0x1 ? 0xF9015C01 : 0xF9015C03; // STR X(1/3), [X0, #0x4B8] (ThreadContext::tpidrEl0)
+                *patch++ = x0x1 ? 0xF9015C01 : 0xF9015C43; // STR X(1/3), [X(0/2), #0x4B8] (ThreadContext::tpidrEl0)
 
                 /* Restore Scratch Registers and Return */
                 *patch++ = x0x1 ? 0xA8C107E0 : 0xA8C10FE2; // LDP X(0/2), X(1/3), [SP], #16
