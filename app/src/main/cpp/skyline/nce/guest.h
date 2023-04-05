@@ -98,13 +98,14 @@ namespace skyline {
             u8 *hostSp; //!< Host Stack Pointer, same as above
             u8 *tpidrroEl0; //!< Emulated HOS TPIDRRO_EL0
             u8 *tpidrEl0; //!< Emulated HOS TPIDR_EL0
+            u32 nzcv;
             const DeviceState *state;
             u64 magic{constant::SkyTlsMagic};
         };
 
         namespace guest {
-            constexpr size_t SaveCtxSize{34}; //!< The size of the SaveCtx function in 32-bit ARMv8 instructions
-            constexpr size_t LoadCtxSize{34}; //!< The size of the LoadCtx function in 32-bit ARMv8 instructions
+            constexpr size_t SaveCtxSize{38}; //!< The size of the SaveCtx function in 32-bit ARMv8 instructions
+            constexpr size_t LoadCtxSize{36}; //!< The size of the LoadCtx function in 32-bit ARMv8 instructions
 
             /**
              * @brief Saves the context from CPU registers into TLS

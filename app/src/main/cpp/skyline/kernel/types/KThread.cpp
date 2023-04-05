@@ -141,6 +141,7 @@ namespace skyline::kernel::type {
             "MOV X29, XZR\n\t"
             "MSR FPSR, XZR\n\t"
             "MSR FPCR, XZR\n\t"
+            "MSR NZCV, XZR\n\t"
             "DUP V0.16B, WZR\n\t"
             "DUP V1.16B, WZR\n\t"
             "DUP V2.16B, WZR\n\t"

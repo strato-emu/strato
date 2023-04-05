@@ -38,11 +38,16 @@ SaveCtx:
     STP Q28, Q29, [LR, #(0xA0 + 16 * 28)]
     STP Q30, Q31, [LR, #(0xA0 + 16 * 30)]
 
-    /* Store FPCR/FPSR */
+
+    /* Store System Registers */
+    STR X0, [SP, #-16]!
     MRS	X0, FPSR
     STR	W0, [LR, #0x298]
-    MRS	X1, FPCR
-    STR	W1, [LR, #0x29C]
+    MRS	X0, FPCR
+    STR	W0, [LR, #0x29C]
+    MRS	X0, NZCV
+    STR	W0, [LR, #0x2C0]
+    LDR X0, [SP], #16
 
     /* Restore Scratch Register */
     LDR LR, [SP, #8]
@@ -72,11 +77,13 @@ LoadCtx:
     LDP Q28, Q29, [LR, #(0xA0 + 16 * 28)]
     LDP Q30, Q31, [LR, #(0xA0 + 16 * 30)]
 
-    /* Store FPCR/FPSR */
-    MRS	X0, FPSR
-    STR	W0, [LR, #0x298]
-    MRS	X1, FPCR
-    STR	W1, [LR, #0x29C]
+    /* Load System Registers */
+    LDR	W0, [LR, #0x298]
+    MSR	FPSR, X0
+    LDR	W0, [LR, #0x29C]
+    MSR	FPCR, X0
+    LDR	W0, [LR, #0x2C0]
+    MSR	NZCV, X0
 
     /* Load GP Registers */
     LDP X0, X1, [LR, #(8 * 0)]
