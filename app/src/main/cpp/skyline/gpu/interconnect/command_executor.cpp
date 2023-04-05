@@ -289,8 +289,10 @@ namespace skyline::gpu::interconnect {
     }
 
     void ExecutionWaiterThread::Queue(std::shared_ptr<FenceCycle> cycle, std::function<void()> &&callback) {
-        std::unique_lock lock{mutex};
-        pendingSignalQueue.push({std::move(cycle), std::move(callback)});
+        {
+            std::unique_lock lock{mutex};
+            pendingSignalQueue.push({std::move(cycle), std::move(callback)});
+        }
         condition.notify_all();
     }
 
