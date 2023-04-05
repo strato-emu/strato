@@ -62,7 +62,7 @@ namespace skyline::soc::gm20b::engine {
 
                 inlineCopy(tempBuffer.data());
 
-                interconnect.Upload(u64{state.offsetOut}, span{tempBuffer});
+                channelCtx.asCtx->gmmu.Write(state.offsetOut, span(tempBuffer));
             } else {
                 inlineCopy(dstMappings.front().data());
             }

@@ -134,11 +134,12 @@ namespace skyline::soc::gm20b::engine {
             });
         } else [[likely]] {
             // Both Linear, copy as is.
-            if ((*registers.pitchIn == *registers.pitchOut) && (*registers.pitchIn == *registers.lineLengthIn))
-                interconnect.Copy(dstMappings.front(), srcMappings.front());
-            else
+            if ((*registers.pitchIn == *registers.pitchOut) && (*registers.pitchIn == *registers.lineLengthIn)) {
+                std::memcpy(dstMappings.front().data(), srcMappings.front().data(), *registers.lineLengthIn * *registers.lineCount);
+            } else {
                 for (size_t linesToCopy{*registers.lineCount}, srcCopyOffset{}, dstCopyOffset{}; linesToCopy; --linesToCopy, srcCopyOffset += *registers.pitchIn, dstCopyOffset += *registers.pitchOut)
-                    interconnect.Copy(dstMappings.front().subspan(dstCopyOffset, u64{*registers.lineLengthIn}), srcMappings.front().subspan(srcCopyOffset, u64{*registers.lineLengthIn}));
+                    std::memcpy(dstMappings.front().subspan(dstCopyOffset).data(), srcMappings.front().subspan(srcCopyOffset).data(), *registers.lineLengthIn);
+            }
         }
     }
 
