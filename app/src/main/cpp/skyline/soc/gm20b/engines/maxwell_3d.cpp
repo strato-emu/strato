@@ -419,7 +419,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                                 break;
 
                             default:
-                                Logger::Warn("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
+                                Logger::Debug("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
                                 break;
                         }
                         break;

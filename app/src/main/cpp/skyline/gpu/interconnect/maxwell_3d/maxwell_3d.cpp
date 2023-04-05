@@ -429,7 +429,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void Maxwell3D::ResetCounter(engine::ClearReportValue::Type type) {
         if (type != engine::ClearReportValue::Type::ZPassPixelCount) {
-            Logger::Error("Unsupported query type: {}", static_cast<u32>(type));
+            Logger::Debug("Unsupported query type: {}", static_cast<u32>(type));
             return;
         }
 
