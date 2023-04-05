@@ -33,7 +33,7 @@ namespace skyline::gpu::interconnect {
         soc::gm20b::ChannelContext &channelCtx;
         gpu::interconnect::CommandExecutor &executor;
 
-        gpu::GuestTexture GetGuestTexture(const Surface &surface);
+        std::pair<gpu::GuestTexture, bool> GetGuestTexture(const Surface &surface, u32 oobReadStart = 0, u32 oobReadWidth = 0);
 
       public:
         Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx);

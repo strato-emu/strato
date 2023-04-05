@@ -13,7 +13,7 @@ namespace skyline::gpu::interconnect {
     using IOVA = soc::gm20b::IOVA;
     using MemoryLayout = skyline::soc::gm20b::engine::fermi2d::type::MemoryLayout;
 
-    gpu::GuestTexture Fermi2D::GetGuestTexture(const Surface &surface) {
+    std::pair<gpu::GuestTexture, bool> Fermi2D::GetGuestTexture(const Surface &surface, u32 oobReadStart, u32 oobReadWidth) {
         auto determineFormat = [&](Surface::SurfaceFormat format) -> skyline::gpu::texture::Format {
             #define FORMAT_CASE(fermiFmt, skFmt, fmtType) \
                 case Surface::SurfaceFormat::fermiFmt ## fmtType: \
@@ -84,8 +84,15 @@ namespace skyline::gpu::interconnect {
         texture.layerCount = 1;
         texture.viewType = vk::ImageViewType::e2D;
 
+
+        u64 addressOffset{};
         if (surface.memoryLayout == MemoryLayout::Pitch) {
             texture.dimensions = gpu::texture::Dimensions{surface.stride / texture.format->bpb, surface.height, 1};
+
+            // OpenGL games rely on reads wrapping around to the next line when reading out of bounds, emulate this behaviour by offsetting the address
+            if (oobReadStart && surface.width == (oobReadWidth + oobReadStart) && (oobReadWidth + oobReadStart) > texture.dimensions.width)
+                addressOffset += oobReadStart * texture.format->bpb;
+
             texture.tileConfig = gpu::texture::TileConfig{
                 .mode = gpu::texture::TileMode::Pitch,
                 .pitch = surface.stride
@@ -99,11 +106,11 @@ namespace skyline::gpu::interconnect {
             };
         }
 
-        IOVA iova{surface.address};
+        u64 iova{u64{surface.address} + addressOffset};
         auto mappings{channelCtx.asCtx->gmmu.TranslateRange(iova, texture.GetSize())};
         texture.mappings.assign(mappings.begin(), mappings.end());
 
-        return texture;
+        return {texture, addressOffset != 0};
     }
 
     Fermi2D::Fermi2D(GPU &gpu, soc::gm20b::ChannelContext &channelCtx)
@@ -114,10 +121,19 @@ namespace skyline::gpu::interconnect {
     void Fermi2D::Blit(const Surface &srcSurface, const Surface &dstSurface, float srcRectX, float srcRectY, u32 dstRectWidth, u32 dstRectHeight, u32 dstRectX, u32 dstRectY, float duDx, float dvDy, SampleModeOrigin sampleOrigin, bool resolve, SampleModeFilter filter) {
         TRACE_EVENT("gpu", "Fermi2D::Blit");
 
-        // TODO: When we support MSAA perform a resolve operation rather than blit when the `resolve` flag is set.
-        auto srcGuestTexture{GetGuestTexture(srcSurface)};
-        auto dstGuestTexture{GetGuestTexture(dstSurface)};
+        // Blit shader always samples from centre so adjust if necessary
+        float centredSrcRectX{sampleOrigin == SampleModeOrigin::Corner ? srcRectX - 0.5f : srcRectX};
+        float centredSrcRectY{sampleOrigin == SampleModeOrigin::Corner ? srcRectY - 0.5f : srcRectY};
 
+        u32 oobReadStart{static_cast<u32>(centredSrcRectX)};
+        u32 oobReadWidth{static_cast<u32>(duDx * static_cast<float>(dstRectWidth))};
+
+        // TODO: When we support MSAA perform a resolve operation rather than blit when the `resolve` flag is set.
+        auto [srcGuestTexture, srcWentOob]{GetGuestTexture(srcSurface, oobReadStart, oobReadWidth)};
+        if (srcWentOob)
+            centredSrcRectX = 0.0f;
+
+        auto [dstGuestTexture, dstWentOob]{GetGuestTexture(dstSurface)};
         auto srcTextureView{gpu.texture.FindOrCreate(srcGuestTexture, executor.tag)};
         executor.AttachDependency(srcTextureView);
         executor.AttachTexture(srcTextureView.get());
@@ -126,10 +142,6 @@ namespace skyline::gpu::interconnect {
         executor.AttachDependency(dstTextureView);
         executor.AttachTexture(dstTextureView.get());
         dstTextureView->texture->MarkGpuDirty(executor.usageTracker);
-
-        // Blit shader always samples from centre so adjust if necessary
-        float centredSrcRectX{sampleOrigin == SampleModeOrigin::Corner ? srcRectX - 0.5f : srcRectX};
-        float centredSrcRectY{sampleOrigin == SampleModeOrigin::Corner ? srcRectY - 0.5f : srcRectY};
 
         executor.AddCheckpoint("Before blit");
         gpu.helperShaders.blitHelperShader.Blit(

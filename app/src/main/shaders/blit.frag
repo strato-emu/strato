@@ -8,14 +8,10 @@ layout (push_constant) uniform constants {
     layout (offset = 16)
     vec2 srcOriginUV;
     vec2 dstSrcScaleFactor;
-    float srcHeightRecip;
 } PC;
 
 void main()
 {
     vec2 srcUV = dstUV * PC.dstSrcScaleFactor + PC.srcOriginUV;
-    // Account for out of bounds blits by moving to the next line of the source texture for the copy
-    srcUV.y += floor(srcUV.x) * PC.srcHeightRecip;
-    srcUV.x = srcUV.x - floor(srcUV.x);
     colour.rgba = texture(src, srcUV);
 }
