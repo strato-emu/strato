@@ -23,6 +23,7 @@
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
+        android:appCategory="game"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
         <profileable android:shell="true" />
