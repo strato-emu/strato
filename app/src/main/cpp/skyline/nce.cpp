@@ -256,7 +256,7 @@ namespace skyline::nce {
         staticNce = nullptr;
     }
 
-    constexpr size_t TrampolineSize{17}; // Size of the main SVC trampoline function in u32 units
+    constexpr size_t TrampolineSize{18}; // Size of the main SVC trampoline function in u32 units
 
     /**
      * @brief Writes a trampoline to the given target address that saves the current context and calls the given function
@@ -280,9 +280,12 @@ namespace skyline::nce {
         *code++ = 0xA9BF0BE1; // STP X1, X2, [SP, #-16]!
 
         /* Jump to SvcHandler */
-        for (const auto &mov : instructions::MoveRegister(registers::X2, target))
+        for (const auto &mov : instructions::MoveRegister(registers::X2, target)) {
             if (mov)
                 *code++ = mov;
+            else
+                *code++ = 0xD503201F; // NOP
+        }
         *code++ = 0xD63F0040; // BLR X2
 
         /* Restore Skyline TLS + guest SP */
@@ -297,7 +300,7 @@ namespace skyline::nce {
         return code;
     }
 
-    constexpr size_t RescaleClockSize{17}; //!< The size of the RescaleClock function in 32-bit ARMv8 instructions
+    constexpr size_t RescaleClockSize{19}; //!< The size of the RescaleClock function in 32-bit ARMv8 instructions
 
     /**
      * @brief Writes instructions to rescale the host clock to Tegra X1 levels
@@ -316,9 +319,12 @@ namespace skyline::nce {
         *code++ = 0xF2E14F80; // MOVK X0, #2684, LSL #48
 
         /* Load clock frequency value */
-        for (const auto &mov : instructions::MoveRegister(registers::X1, util::ClockFrequency))
+        for (const auto &mov : instructions::MoveRegister(registers::X1, util::ClockFrequency)) {
             if (mov)
                 *code++ = mov;
+            else
+                *code++ = 0xD503201F; // NOP
+        }
 
         /* Multiply clock frequency by magic constant */
         *code++ = 0xD345FC21; // LSR X1, X1, #5
