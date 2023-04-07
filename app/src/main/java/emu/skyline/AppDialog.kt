@@ -11,10 +11,13 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.documentfile.provider.DocumentFile
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.snackbar.Snackbar
@@ -22,8 +25,14 @@ import emu.skyline.data.AppItem
 import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.AppDialogBinding
 import emu.skyline.loader.LoaderResult
+import emu.skyline.provider.DocumentsProvider
 import emu.skyline.settings.SettingsActivity
 import emu.skyline.utils.serializable
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
@@ -46,6 +55,23 @@ class AppDialog : BottomSheetDialogFragment() {
     private lateinit var binding : AppDialogBinding
 
     private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
+
+    private val savesFolderRoot by lazy { "${requireContext().getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/" }
+    private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+        it?.let { uri ->
+            if (uri.toString().contains(item.titleId as CharSequence)) {
+                val saveFolder = File(savesFolderRoot + item.titleId)
+                val inputZip = requireContext().contentResolver.openInputStream(uri)
+                if (inputZip != null) {
+                    emu.skyline.utils.ZipUtils.Companion.unzip(inputZip, saveFolder)
+                    binding.deleteSave.isEnabled = true
+                    binding.exportSave.isEnabled = true
+                }
+            } else {
+                Snackbar.make(binding.root, "Zip file must have as name the TitleID of the game", Snackbar.LENGTH_LONG).show()
+            }
+        }
+    }
 
     /**
      * This inflates the layout of the dialog after initial view creation
@@ -99,6 +125,48 @@ class AppDialog : BottomSheetDialogFragment() {
             info.setIntent(intent)
 
             shortcutManager.requestPinShortcut(info.build(), null)
+        }
+
+        val saveFolderPath = savesFolderRoot + item.titleId
+        val saveExists = File(saveFolderPath).exists()
+
+        binding.deleteSave.isEnabled = saveExists
+        binding.deleteSave.setOnClickListener {
+            File(saveFolderPath).deleteRecursively()
+            binding.deleteSave.isEnabled = false
+            binding.exportSave.isEnabled = false
+        }
+
+        binding.importSave.setOnClickListener {
+            documentPicker.launch(arrayOf("application/zip"))
+        }
+
+        binding.exportSave.isEnabled = saveExists
+        binding.exportSave.setOnClickListener {
+            val saveFolder = File(saveFolderPath)
+            //val outputZipFile = File.createTempFile("out", ".zip")
+            val outputZipFile = File("$saveFolderPath.zip")
+            if (outputZipFile.exists()) outputZipFile.delete()
+            outputZipFile.createNewFile()
+            ZipOutputStream(BufferedOutputStream(FileOutputStream(outputZipFile))).use { zos ->
+                saveFolder.walkTopDown().forEach { file ->
+                    val zipFileName = file.absolutePath.removePrefix(saveFolder.absolutePath).removePrefix("/")
+                    if (zipFileName == "") return@forEach
+                    val entry = ZipEntry("$zipFileName${(if (file.isDirectory) "/" else "")}")
+                    zos.putNextEntry(entry)
+                    if (file.isFile) {
+                        file.inputStream().use { fis -> fis.copyTo(zos) }
+                    }
+                }
+            }
+
+            val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${item.titleId}.zip"))!!
+            val intent = Intent(Intent.ACTION_SEND)
+                .setDataAndType(file.uri, "application/zip")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                .putExtra(Intent.EXTRA_STREAM, file.uri)
+            startActivity(Intent.createChooser(intent, "Share save file"))
+            //outputZipFile.deleteOnExit()
         }
 
         binding.gameTitleId.setOnLongClickListener {
