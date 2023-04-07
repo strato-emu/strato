@@ -17,6 +17,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.documentfile.provider.DocumentFile
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -132,9 +133,17 @@ class AppDialog : BottomSheetDialogFragment() {
 
         binding.deleteSave.isEnabled = saveExists
         binding.deleteSave.setOnClickListener {
-            File(saveFolderPath).deleteRecursively()
-            binding.deleteSave.isEnabled = false
-            binding.exportSave.isEnabled = false
+            AlertDialog.Builder(requireContext())
+                .setTitle("Are you sure you want to delete this save?")
+                .setMessage("This action is irreversible.")
+                .setPositiveButton("Yes") { dialogInterface, _ ->
+                    File(saveFolderPath).deleteRecursively()
+                    binding.deleteSave.isEnabled = false
+                    binding.exportSave.isEnabled = false
+                    dialogInterface.dismiss()
+                }.setNegativeButton("No") { dialogInterface, _ ->
+                    dialogInterface.cancel()
+                }.show()
         }
 
         binding.importSave.setOnClickListener {
