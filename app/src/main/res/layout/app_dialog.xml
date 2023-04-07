@@ -84,7 +84,7 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <com.google.android.flexbox.FlexboxLayout
-            android:id="@+id/flexboxLayout1"
+            android:id="@+id/flexboxGeneral"
             style="@style/ThemeOverlay.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -130,28 +130,48 @@
 
         </com.google.android.flexbox.FlexboxLayout>
 
+        <TextView
+            android:id="@+id/save_management"
+            style="?attr/textAppearanceLabelLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/save_management"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/flexboxGeneral" />
+
         <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/flexboxSaves"
             style="@style/ThemeOverlay.Material3.Button.IconButton.Filled.Tonal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             app:alignItems="center"
-
             app:flexWrap="nowrap"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/flexboxLayout1"
+            app:layout_constraintTop_toBottomOf="@+id/save_management"
             app:layout_constraintVertical_bias="1">
 
-            <TextView
-                android:id="@+id/textView"
-                style="?attr/textAppearanceBodyMedium"
-                android:layout_width="match_parent"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/import_save"
+                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/save_management"
-                android:textAlignment="center"
-                app:layout_maxWidth="140dp" />
+                android:contentDescription="@string/import_save"
+                android:text="@string/import_save"
+                app:icon="@drawable/ic_add" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/export_save"
+                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/export_save"
+                android:text="@string/export_save"
+                app:icon="@drawable/ic_share" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/delete_save"
@@ -162,28 +182,6 @@
                 android:contentDescription="@string/delete_save"
                 android:tooltipText="@string/delete_save"
                 app:icon="@drawable/ic_delete"
-                app:iconGravity="textStart" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/import_save"
-                style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                android:layout_width="48dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:contentDescription="@string/import_save"
-                android:tooltipText="@string/import_save"
-                app:icon="@drawable/ic_add"
-                app:iconGravity="textStart" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/export_save"
-                style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                android:layout_width="48dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:contentDescription="@string/export_save"
-                android:tooltipText="@string/export_save"
-                app:icon="@drawable/ic_share"
                 app:iconGravity="textStart" />
 
         </com.google.android.flexbox.FlexboxLayout>
