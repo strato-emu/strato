@@ -59,7 +59,7 @@ class AppDialog : BottomSheetDialogFragment() {
     private val savesFolderRoot by lazy { "${requireContext().getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/" }
     private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
-            if (uri.toString().contains(item.titleId as CharSequence)) {
+            if (uri.toString().takeLast(20).removeSuffix(".zip") == item.titleId) {
                 val saveFolder = File(savesFolderRoot + item.titleId)
                 val inputZip = requireContext().contentResolver.openInputStream(uri)
                 if (inputZip != null) {
