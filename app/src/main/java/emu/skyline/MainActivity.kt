@@ -16,9 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
 import androidx.core.content.res.use
-import androidx.core.graphics.drawable.toBitmap
 import androidx.core.view.WindowCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -32,7 +30,6 @@ import emu.skyline.adapter.*
 import emu.skyline.data.AppItem
 import emu.skyline.data.AppItemTag
 import emu.skyline.data.DataItem
-import emu.skyline.data.HeaderItem
 import emu.skyline.databinding.MainActivityBinding
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
@@ -117,12 +114,6 @@ class MainActivity : AppCompatActivity() {
         PreferenceManager.setDefaultValues(this, R.xml.emulation_preferences, false)
 
         adapter.apply {
-            setHeaderItems(listOf(HeaderRomFilterItem(formatOrder, if (appSettings.romFormatFilter == 0) null else formatOrder[appSettings.romFormatFilter - 1]) { romFormat ->
-                appSettings.romFormatFilter = romFormat?.let { formatOrder.indexOf(romFormat) + 1 } ?: 0
-                formatFilter = romFormat
-                populateAdapter()
-            }))
-
             setOnFilterPublishedListener {
                 binding.appList.post { binding.appList.smoothScrollToPosition(0) }
             }
@@ -230,7 +221,6 @@ class MainActivity : AppCompatActivity() {
                 val formats = formatFilter?.let { listOf(it) } ?: formatOrder
                 for (format in formats) {
                     entries[format]?.let {
-                        add(HeaderItem(format.name))
                         for (entry in sortGameList(it)) {
                             add(AppItem(entry))
                         }
@@ -304,14 +294,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun populateAdapter() {
+        binding.textTitle.text = null
+        binding.textTitle.visibility = View.GONE
         val items = getDataItems()
         adapter.setItems(items.map {
             when (it) {
-                is HeaderItem -> HeaderViewItem(it.title)
                 is AppItem -> it.toViewItem()
             }
         })
-        if (items.isEmpty()) adapter.setItems(listOf(HeaderViewItem(getString(R.string.no_rom))))
+        if (items.isEmpty()) {
+            binding.textTitle.visibility = View.VISIBLE
+            binding.textTitle.text = getString(R.string.no_rom)
+        }
     }
 
     override fun onStart() {

@@ -7,13 +7,11 @@ package emu.skyline.input
 
 import android.content.Intent
 import android.graphics.Canvas
-import android.graphics.Color
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.content.res.use
 import androidx.core.view.WindowCompat
 import androidx.core.view.marginTop
 import androidx.recyclerview.widget.DividerItemDecoration
