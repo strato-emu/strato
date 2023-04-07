@@ -78,7 +78,7 @@ class AppDialog : BottomSheetDialogFragment() {
                     }
                 }
             } else {
-                Snackbar.make(binding.root, "Zip file must have as name the TitleID of the game", Snackbar.LENGTH_LONG).show()
+                Snackbar.make(binding.root, getString(R.string.zip_with_save_must_have_name_equal_titleid), Snackbar.LENGTH_LONG).show()
             }
         }
     }
@@ -143,14 +143,14 @@ class AppDialog : BottomSheetDialogFragment() {
         binding.deleteSave.isEnabled = saveExists
         binding.deleteSave.setOnClickListener {
             AlertDialog.Builder(requireContext())
-                .setTitle("Are you sure you want to delete this save?")
-                .setMessage("This action is irreversible.")
-                .setPositiveButton("Yes") { dialogInterface, _ ->
+                .setTitle(getString(R.string.delete_save_confirmation_message))
+                .setMessage(getString(R.string.action_irreversible))
+                .setPositiveButton(getString(R.string.yes)) { dialogInterface, _ ->
                     File(saveFolderPath).deleteRecursively()
                     binding.deleteSave.isEnabled = false
                     binding.exportSave.isEnabled = false
                     dialogInterface.dismiss()
-                }.setNegativeButton("No") { dialogInterface, _ ->
+                }.setNegativeButton(getString(R.string.no)) { dialogInterface, _ ->
                     dialogInterface.cancel()
                 }.show()
         }
