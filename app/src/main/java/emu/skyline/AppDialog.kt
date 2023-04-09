@@ -34,10 +34,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 /**
@@ -65,20 +67,31 @@ class AppDialog : BottomSheetDialogFragment() {
     private val savesFolderRoot by lazy { "${requireContext().getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/" }
     private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
-            if (uri.toString().takeLast(20).removeSuffix(".zip") == item.titleId) {
-                val saveFolder = File(savesFolderRoot + item.titleId)
-                val inputZip = requireContext().contentResolver.openInputStream(uri)
+            try {
+                val savesFolder = File(savesFolderRoot)
+                var inputZip = requireContext().contentResolver.openInputStream(uri)
+                var validZip = false
+                // A TitleID must be the first folder name inside the zip in order to be considered valid.
                 if (inputZip != null) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        ZipUtils.unzip(inputZip, saveFolder)
-                        withContext(Dispatchers.Main){
-                            binding.deleteSave.isEnabled = true
-                            binding.exportSave.isEnabled = true
-                        }
+                    ZipInputStream(BufferedInputStream(inputZip)).use { zis ->
+                        validZip = Regex("^0100[0-9A-Fa-f]{12}/\$").matches(zis.nextEntry.name)
                     }
                 }
-            } else {
-                Snackbar.make(binding.root, getString(R.string.zip_with_save_must_have_name_equal_titleid), Snackbar.LENGTH_LONG).show()
+                inputZip = requireContext().contentResolver.openInputStream(uri)
+                if (inputZip != null && validZip){
+                    CoroutineScope(Dispatchers.IO).launch {
+                        ZipUtils.unzip(inputZip, savesFolder)
+                        withContext(Dispatchers.Main){
+                            val isSaveFileOfThisGame = File("$savesFolderRoot${item.titleId}").exists()
+                            binding.deleteSave.isEnabled = isSaveFileOfThisGame
+                            binding.exportSave.isEnabled = isSaveFileOfThisGame
+                        }
+                    }
+                } else {
+                    Snackbar.make(binding.root, getString(R.string.save_file_invalid_zip_structure), Snackbar.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Snackbar.make(binding.root, getString(R.string.error), Snackbar.LENGTH_LONG).show()
             }
         }
     }
@@ -162,24 +175,31 @@ class AppDialog : BottomSheetDialogFragment() {
         binding.exportSave.isEnabled = saveExists
         binding.exportSave.setOnClickListener {
             CoroutineScope(Dispatchers.IO).launch {
-                val saveFolder = File(saveFolderPath)
-                //val outputZipFile = File.createTempFile("out", ".zip")
-                val outputZipFile = File("$saveFolderPath.zip")
-                if (outputZipFile.exists()) outputZipFile.delete()
-                outputZipFile.createNewFile()
-                ZipOutputStream(BufferedOutputStream(FileOutputStream(outputZipFile))).use { zos ->
-                    saveFolder.walkTopDown().forEach { file ->
-                        val zipFileName = file.absolutePath.removePrefix(saveFolder.absolutePath).removePrefix("/")
-                        if (zipFileName == "") return@forEach
-                        val entry = ZipEntry("$zipFileName${(if (file.isDirectory) "/" else "")}")
-                        zos.putNextEntry(entry)
-                        if (file.isFile) {
-                            file.inputStream().use { fis -> fis.copyTo(zos) }
+                try {
+                    val saveFolder = File(saveFolderPath)
+                    val outputZipFile = File("$savesFolderRoot${item.title}.zip")
+                    outputZipFile.delete()
+                    outputZipFile.createNewFile()
+                    ZipOutputStream(BufferedOutputStream(FileOutputStream(outputZipFile))).use { zos ->
+                        saveFolder.walkTopDown().forEach { file ->
+                            val zipFileName = file.absolutePath.removePrefix(savesFolderRoot).removePrefix("/")
+                            if (zipFileName == "") return@forEach
+                            val entry = ZipEntry("$zipFileName${(if (file.isDirectory) "/" else "")}")
+                            zos.putNextEntry(entry)
+                            if (file.isFile) {
+                                file.inputStream().use { fis -> fis.copyTo(zos) }
+                            }
                         }
                     }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main){
+                        Snackbar.make(binding.root, e.message as CharSequence, Snackbar.LENGTH_LONG).show()
+                    }
+                    return@launch
                 }
+
                 withContext(Dispatchers.Main) {
-                    val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${item.titleId}.zip"))!!
+                    val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${item.title}.zip"))!!
                     val intent = Intent(Intent.ACTION_SEND)
                         .setDataAndType(file.uri, "application/zip")
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -208,6 +228,6 @@ class AppDialog : BottomSheetDialogFragment() {
 
     override fun onDestroyView(){
         super.onDestroyView()
-        File("$savesFolderRoot${item.titleId}.zip").delete()
+        File("$savesFolderRoot${item.title}.zip").delete()
     }
 }

@@ -283,5 +283,5 @@
     <string name="action_irreversible">This action is irreversible</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    <string name="zip_with_save_must_have_name_equal_titleid">Zip file must have as name the TitleID of the game</string>
+    <string name="save_file_invalid_zip_structure">Failed to unzip the provided save file</string>
 </resources>
