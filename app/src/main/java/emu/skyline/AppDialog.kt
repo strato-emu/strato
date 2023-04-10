@@ -74,7 +74,7 @@ class AppDialog : BottomSheetDialogFragment() {
                 // A TitleID must be the first folder name inside the zip in order to be considered valid.
                 if (inputZip != null) {
                     ZipInputStream(BufferedInputStream(inputZip)).use { zis ->
-                        validZip = Regex("^0100[0-9A-Fa-f]{12}/\$").matches(zis.nextEntry.name)
+                        validZip = Regex("^0100[0-9A-Fa-f]{12}/").containsMatchIn(zis.nextEntry.name)
                     }
                 }
                 inputZip = requireContext().contentResolver.openInputStream(uri)
@@ -85,6 +85,7 @@ class AppDialog : BottomSheetDialogFragment() {
                             val isSaveFileOfThisGame = File("$savesFolderRoot${item.titleId}").exists()
                             binding.deleteSave.isEnabled = isSaveFileOfThisGame
                             binding.exportSave.isEnabled = isSaveFileOfThisGame
+                            Snackbar.make(binding.root, "The save file was imported successfully", Snackbar.LENGTH_LONG).show()
                         }
                     }
                 } else {
