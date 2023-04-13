@@ -59,7 +59,7 @@ namespace skyline::service::pl {
         request.outputBuf.at(1).copy_from(fontOffsets);
         request.outputBuf.at(2).copy_from(fontSizes);
 
-        response.Push<u8>(1); // Fonts are loaded
+        response.Push(static_cast<u32>(core.fonts.size()));
         response.Push(static_cast<u32>(fontCodes.size()));
 
         return {};
