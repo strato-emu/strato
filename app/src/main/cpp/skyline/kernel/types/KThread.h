@@ -9,7 +9,6 @@
 #include <common/signal.h>
 #include <common/spin_lock.h>
 #include "KSyncObject.h"
-#include "KPrivateMemory.h"
 #include "KSharedMemory.h"
 
 namespace skyline {

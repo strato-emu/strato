@@ -89,20 +89,24 @@ namespace skyline::loader {
             hookSize = util::AlignUp(state.nce->GetHookSectionSize(executableSymbols), PAGE_SIZE);
         }
 
-        auto patchType{process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit ? memory::states::Heap : memory::states::Reserved};
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false}, patchType); // ---
+        if (process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit) {
+            process->memory.MapHeapMemory(span<u8>{base, patch.size + hookSize}); // ---
+            process->memory.SetChunkPermission(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false});
+        } else {
+            process->memory.Reserve(span<u8>{base, patch.size + hookSize}); // ---
+        }
         Logger::Debug("Successfully mapped section .patch @ 0x{:X}, Size = 0x{:X}", base, patch.size);
         if (hookSize > 0)
             Logger::Debug("Successfully mapped section .hook @ 0x{:X}, Size = 0x{:X}", base + patch.size, hookSize);
 
         u8 *executableBase{base + patch.size + hookSize};
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.text.offset, textSize}, memory::Permission{true, false, true}, memory::states::CodeStatic); // R-X
+        process->memory.MapCodeMemory(span<u8>{executableBase + executable.text.offset, textSize}, memory::Permission{true, false, true}); // R-X
         Logger::Debug("Successfully mapped section .text @ 0x{:X}, Size = 0x{:X}", executableBase, textSize);
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.ro.offset, roSize}, memory::Permission{true, false, false}, memory::states::CodeStatic); // R--
+        process->memory.MapCodeMemory(span<u8>{executableBase + executable.ro.offset, roSize}, memory::Permission{true, false, false}); // R--
         Logger::Debug("Successfully mapped section .rodata @ 0x{:X}, Size = 0x{:X}", executableBase + executable.ro.offset, roSize);
 
-        process->NewHandle<kernel::type::KPrivateMemory>(span<u8>{executableBase + executable.data.offset, dataSize}, memory::Permission{true, true, false}, memory::states::CodeMutable); // RW-
+        process->memory.MapMutableCodeMemory(span<u8>{executableBase + executable.data.offset, dataSize}); // RW-
         Logger::Debug("Successfully mapped section .data + .bss @ 0x{:X}, Size = 0x{:X}", executableBase + executable.data.offset, dataSize);
 
         size_t size{patch.size + hookSize + textSize + roSize + dataSize};

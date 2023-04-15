@@ -11,37 +11,56 @@
 
 namespace skyline::kernel::svc {
     void SetHeapSize(const DeviceState &state) {
-        u32 size{state.ctx->gpr.w1};
+        u64 size{state.ctx->gpr.w1};
 
-        if (!util::IsAligned(size, 0x200000)) {
+        if (!util::IsAligned(size, 0x200000)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
             state.ctx->gpr.x1 = 0;
 
-            Logger::Warn("'size' not divisible by 2MB: {}", size);
+            Logger::Warn("'size' not divisible by 2MB: 0x{:X}", size);
+            return;
+        } else if (state.process->memory.heap.size() < size) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidSize;
+            state.ctx->gpr.x1 = 0;
+
+            Logger::Warn("'size' exceeded size of heap region: 0x{:X}", size);
             return;
         }
 
-        auto &heap{state.process->heap};
-        heap->Resize(size);
+        size_t heapCurrSize{state.process->memory.setHeapSize};
+        u8 *heapBaseAddr{state.process->memory.heap.data()};
+
+        if (heapCurrSize < size)
+            state.process->memory.MapHeapMemory(span<u8>{heapBaseAddr + heapCurrSize, size - heapCurrSize});
+        else if (size < heapCurrSize)
+            state.process->memory.UnmapMemory(span<u8>{heapBaseAddr + size, heapCurrSize - size});
+
+        state.process->memory.setHeapSize = size;
 
         state.ctx->gpr.w0 = Result{};
-        state.ctx->gpr.x1 = reinterpret_cast<u64>(heap->guest.data());
+        state.ctx->gpr.x1 = reinterpret_cast<u64>(heapBaseAddr);
 
-        Logger::Debug("Allocated at 0x{:X} - 0x{:X} (0x{:X} bytes)", heap->guest.data(), heap->guest.end().base(), heap->guest.size());
+        Logger::Debug("Heap size changed to 0x{:X} bytes (0x{:X} - 0x{:X})", size, heapBaseAddr, heapBaseAddr + size);
     }
 
     void SetMemoryAttribute(const DeviceState &state) {
-        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
-        if (!util::IsPageAligned(pointer)) {
+        u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        if (!util::IsPageAligned(address)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("'pointer' not page aligned: 0x{:X}", pointer);
+            Logger::Warn("'address' not page aligned: 0x{:X}", address);
             return;
         }
 
-        size_t size{state.ctx->gpr.x1};
-        if (!util::IsPageAligned(size)) {
+        u64 size{state.ctx->gpr.x1};
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
-            Logger::Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
+            return;
+        }
+
+        if (address >= (address + size) || !state.process->memory.AddressSpaceContains(span<u8>{address, size})) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+            Logger::Warn("Invalid address and size combination: 'address': 0x{:X}, 'size': 0x{:X} ", address, size);
             return;
         }
 
@@ -49,171 +68,152 @@ namespace skyline::kernel::svc {
         memory::MemoryAttribute value{.value = state.ctx->gpr.w3};
 
         auto maskedValue{mask.value | value.value};
-        if (maskedValue != mask.value || !mask.isUncached || mask.isDeviceShared || mask.isBorrowed || mask.isIpcLocked) {
+        if (maskedValue != mask.value || !mask.isUncached || mask.isDeviceShared || mask.isBorrowed || mask.isIpcLocked) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidCombination;
             Logger::Warn("'mask' invalid: 0x{:X}, 0x{:X}", mask.value, value.value);
             return;
         }
 
-        auto chunk{state.process->memory.Get(pointer)};
-        if (!chunk) {
-            state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("Cannot find memory region: 0x{:X}", pointer);
-            return;
-        }
+        auto chunk{state.process->memory.GetChunk(address)};
 
-        if (!chunk->state.attributeChangeAllowed) {
+        // We only check the first found chunk for whatever reason.
+        if (!chunk->second.state.attributeChangeAllowed) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidState;
-            Logger::Warn("Attribute change not allowed for chunk: 0x{:X}", pointer);
+            Logger::Warn("Attribute change not allowed for chunk: 0x{:X}", chunk->first);
             return;
         }
 
-        auto newChunk{*chunk};
-        newChunk.ptr = pointer;
-        newChunk.size = size;
-        newChunk.attributes.isUncached = value.isUncached;
-        state.process->memory.InsertChunk(newChunk);
+        state.process->memory.SetCPUCachingOnChunks(span<u8>{address, size}, value.isUncached);
 
-        Logger::Debug("Set CPU caching to {} at 0x{:X} - 0x{:X} (0x{:X} bytes)", !static_cast<bool>(value.isUncached), pointer, pointer + size, size);
+        Logger::Debug("Set CPU caching to {} at 0x{:X} - 0x{:X} (0x{:X} bytes)", static_cast<bool>(value.isUncached), address, address + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 
     void MapMemory(const DeviceState &state) {
-        auto destination{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
-        auto source{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+        u8 *destination{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        u8 *source{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
         size_t size{state.ctx->gpr.x2};
 
-        if (!util::IsPageAligned(destination) || !util::IsPageAligned(source)) {
+        if (!util::IsPageAligned(destination) || !util::IsPageAligned(source)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            Logger::Warn("Addresses not page aligned: 'source': 0x{:X}, 'destination': 0x{:X}, 'size': 0x{:X} bytes", source, destination, size);
             return;
         }
 
-        if (!util::IsPageAligned(size)) {
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
-            Logger::Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
             return;
         }
 
-        auto stack{state.process->memory.stack};
-        if (!stack.contains(span<u8>{destination, size})) {
+        if (destination >= (destination + size) || !state.process->memory.AddressSpaceContains(span<u8>{destination, size})) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+            Logger::Warn("Invalid address and size combination: 'destination': 0x{:X}, 'size': 0x{:X} bytes", destination, size);
+            return;
+        }
+
+        if (source >= (source + size) || !state.process->memory.AddressSpaceContains(span<u8>{source, size})) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+            Logger::Warn("Invalid address and size combination: 'source': 0x{:X}, 'size': 0x{:X} bytes", source, size);
+            return;
+        }
+
+        if (!state.process->memory.stack.contains(span<u8>{destination, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
-            Logger::Warn("Destination not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            Logger::Warn("Destination not within stack region: 'source': 0x{:X}, 'destination': 0x{:X}, 'size': 0x{:X} bytes", source, destination, size);
             return;
         }
 
-        auto chunk{state.process->memory.Get(source)};
-        if (!chunk) {
-            state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("Source has no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
-            return;
-        }
-        if (!chunk->state.mapAllowed) {
+        auto chunk{state.process->memory.GetChunk(source)};
+        if (!chunk->second.state.mapAllowed) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidState;
-            Logger::Warn("Source doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X}, Size: 0x{:X}, MemoryState: 0x{:X}", source, destination, size, chunk->state.value);
+            Logger::Warn("Source doesn't allow usage of svcMapMemory: 'source': 0x{:X}, 'size': 0x{:X}, MemoryState: 0x{:X}", source, size, chunk->second.state.value);
             return;
         }
 
-        state.process->NewHandle<type::KPrivateMemory>(span<u8>{destination, size}, chunk->permission, memory::states::Stack);
+        state.process->memory.MapStackMemory(span<u8>{destination, size});
         std::memcpy(destination, source, size);
 
-        auto object{state.process->GetMemoryObject(source)};
-        if (!object)
-            throw exception("svcMapMemory: Cannot find memory object in handle table for address 0x{:X}", source);
-        object->item->UpdatePermission(span<u8>{source, size}, {false, false, false});
+        state.process->memory.SetChunkPermission(span<u8>{source, size}, {false, false, false});
+        state.process->memory.SetLockOnChunks(span<u8>{source, size}, true);
 
         Logger::Debug("Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 
     void UnmapMemory(const DeviceState &state) {
-        auto source{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
-        auto destination{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+        u8 *destination{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        u8 *source{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
         size_t size{state.ctx->gpr.x2};
 
-        if (!util::IsPageAligned(destination) || !util::IsPageAligned(source)) {
+        if (!util::IsPageAligned(destination) || !util::IsPageAligned(source)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("Addresses not page aligned: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            Logger::Warn("Addresses not page aligned: 'source': 0x{:X}, 'destination': 0x{:X}, 'size': {} bytes", source, destination, size);
             return;
         }
 
-        if (!util::IsPageAligned(size)) {
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
-            Logger::Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
             return;
         }
 
-        auto stack{state.process->memory.stack};
-        if (!stack.contains(span<u8>{source, size})) {
+        if (!state.process->memory.stack.contains(span<u8>{destination, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
-            Logger::Warn("Source not within stack region: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
+            Logger::Warn("Source not within stack region: 'source': 0x{:X}, 'destination': 0x{:X}, 'size': 0x{:X} bytes", source, destination, size);
             return;
         }
 
-        auto sourceChunk{state.process->memory.Get(source)};
-        auto destChunk{state.process->memory.Get(destination)};
-        if (!sourceChunk || !destChunk) {
-            state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("Addresses have no descriptor: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes)", source, destination, size);
-            return;
+        auto dstChunk{state.process->memory.GetChunk(destination)};
+        while (dstChunk->second.state.value == memory::states::Unmapped)
+            dstChunk = state.process->memory.GetChunk(dstChunk->first + dstChunk->second.size);
+
+        if ((destination + size) > dstChunk->first) [[likely]] {
+            state.process->memory.SetChunkPermission(span<u8>{source + (dstChunk->first - destination), dstChunk->second.size}, dstChunk->second.permission);
+            state.process->memory.SetLockOnChunks(span<u8>{source + (dstChunk->first - destination), dstChunk->second.size}, false);
+
+            std::memcpy(source + (dstChunk->first - destination), dstChunk->first, dstChunk->second.size);
+
+            state.process->memory.UnmapMemory(span<u8>{destination, size});
         }
 
-        if (!destChunk->state.mapAllowed) {
-            state.ctx->gpr.w0 = result::InvalidState;
-            Logger::Warn("Destination doesn't allow usage of svcMapMemory: Source: 0x{:X}, Destination: 0x{:X} (Size: 0x{:X} bytes) 0x{:X}", source, destination, size, destChunk->state.value);
-            return;
-        }
-
-        auto destObject{state.process->GetMemoryObject(destination)};
-        if (!destObject)
-            throw exception("svcUnmapMemory: Cannot find destination memory object in handle table for address 0x{:X}", destination);
-
-        destObject->item->UpdatePermission(span<u8>{destination, size}, sourceChunk->permission);
-
-        std::memcpy(source, destination, size);
-
-        auto sourceObject{state.process->GetMemoryObject(source)};
-        if (!sourceObject)
-            throw exception("svcUnmapMemory: Cannot find source memory object in handle table for address 0x{:X}", source);
-
-        state.process->memory.FreeMemory(std::span<u8>(source, size));
-        state.process->CloseHandle(sourceObject->handle);
-
-        Logger::Debug("Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
+        Logger::Debug("Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", destination, destination + size, source, source + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 
     void QueryMemory(const DeviceState &state) {
         memory::MemoryInfo memInfo{};
 
-        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x2)};
-        auto chunk{state.process->memory.Get(pointer)};
+        u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x2)};
+        auto chunk{state.process->memory.GetChunk(address)};
 
         if (chunk) {
             memInfo = {
-                .address = reinterpret_cast<u64>(chunk->ptr),
-                .size = chunk->size,
-                .type = static_cast<u32>(chunk->state.type),
-                .attributes = chunk->attributes.value,
-                .permissions = static_cast<u32>(chunk->permission.Get()),
+                .address = reinterpret_cast<u64>(chunk->first),
+                .size = chunk->second.size,
+                .type = static_cast<u32>(chunk->second.state.type),
+                .attributes = chunk->second.attributes.value,
+                .permissions = static_cast<u32>(chunk->second.permission.Get()),
                 .deviceRefCount = 0,
                 .ipcRefCount = 0,
             };
 
-            Logger::Debug("Address: 0x{:X}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Is Uncached: {}, Permissions: {}{}{}", pointer, memInfo.address, memInfo.size, memInfo.type, static_cast<bool>(chunk->attributes.isUncached), chunk->permission.r ? 'R' : '-', chunk->permission.w ? 'W' : '-', chunk->permission.x ? 'X' : '-');
+            Logger::Debug("Address: 0x{:X}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Attributes: 0x{:X}, Permissions: {}{}{}", address, memInfo.address, memInfo.size, memInfo.type, memInfo.attributes, chunk->second.permission.r ? 'R' : '-', chunk->second.permission.w ? 'W' : '-', chunk->second.permission.x ? 'X' : '-');
         } else {
-            auto addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.end().base())};
+            u64 addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.end().base())};
 
             memInfo = {
                 .address = addressSpaceEnd,
-                .size = ~addressSpaceEnd + 1,
+                .size = 0 - addressSpaceEnd,
                 .type = static_cast<u32>(memory::MemoryType::Reserved),
             };
 
-            Logger::Debug("Trying to query memory outside of the application's address space: 0x{:X}", pointer);
+            Logger::Debug("Trying to query memory outside of the application's address space: 0x{:X}", address);
         }
 
         *reinterpret_cast<memory::MemoryInfo *>(state.ctx->gpr.x0) = memInfo;
+        // The page info, which is always 0
+        state.ctx->gpr.x1 = 0;
 
         state.ctx->gpr.w0 = Result{};
     }
@@ -246,10 +246,6 @@ namespace skyline::kernel::svc {
             Logger::Warn("'priority' invalid: {}", priority);
             return;
         }
-
-        auto stack{state.process->GetMemoryObject(stackTop)};
-        if (!stack)
-            throw exception("svcCreateThread: Cannot find memory object in handle table for thread stack: 0x{:X}", stackTop);
 
         auto thread{state.process->CreateThread(entry, entryArgument, stackTop, priority, static_cast<u8>(idealCore))};
         if (thread) {
@@ -476,31 +472,38 @@ namespace skyline::kernel::svc {
         try {
             KHandle handle{state.ctx->gpr.w0};
             auto object{state.process->GetHandle<type::KSharedMemory>(handle)};
-            auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+            u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
 
-            if (!util::IsPageAligned(pointer)) {
+            if (!util::IsPageAligned(address)) [[unlikely]] {
                 state.ctx->gpr.w0 = result::InvalidAddress;
-                Logger::Warn("'pointer' not page aligned: 0x{:X}", pointer);
+                Logger::Warn("'address' not page aligned: 0x{:X}", address);
                 return;
             }
 
             size_t size{state.ctx->gpr.x2};
-            if (!util::IsPageAligned(size)) {
+            if (!size || !util::IsPageAligned(size)) [[unlikely]] {
                 state.ctx->gpr.w0 = result::InvalidSize;
-                Logger::Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+                Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
+                return;
+            }
+
+            if (address >= (address + size) || !state.process->memory.AddressSpaceContains(span<u8>{address, size})) [[unlikely]] {
+                state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+                Logger::Warn("Invalid address and size combination: 'address': 0x{:X}, 'size': 0x{:X}", address, size);
                 return;
             }
 
             memory::Permission permission(static_cast<u8>(state.ctx->gpr.w3));
-            if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
-                Logger::Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+            if ((!permission.r && !permission.w && !permission.x) || (permission.w && !permission.r) || permission.x) [[unlikely]] {
                 state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
+                Logger::Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
                 return;
             }
 
-            Logger::Debug("Mapping shared memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", handle, pointer, pointer + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+            Logger::Debug("Mapping shared memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes), with permissions: ({}{}{})", handle, address, address + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
-            object->Map(span<u8>{pointer, size}, permission);
+            object->Map(span<u8>{address, size}, permission);
+            state.process->memory.AddRef(object);
 
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
@@ -513,24 +516,31 @@ namespace skyline::kernel::svc {
         try {
             KHandle handle{state.ctx->gpr.w0};
             auto object{state.process->GetHandle<type::KSharedMemory>(handle)};
-            auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+            u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
 
-            if (!util::IsPageAligned(pointer)) {
+            if (!util::IsPageAligned(address)) [[unlikely]] {
                 state.ctx->gpr.w0 = result::InvalidAddress;
-                Logger::Warn("'pointer' not page aligned: 0x{:X}", pointer);
+                Logger::Warn("'address' not page aligned: 0x{:X}", address);
                 return;
             }
 
             size_t size{state.ctx->gpr.x2};
-            if (!util::IsPageAligned(size)) {
+            if (!size || !util::IsPageAligned(size)) [[unlikely]] {
                 state.ctx->gpr.w0 = result::InvalidSize;
-                Logger::Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+                Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
                 return;
             }
 
-            Logger::Debug("Unmapping shared memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes)", handle, pointer, pointer + size, size);
+            if (address >= (address + size) || !state.process->memory.AddressSpaceContains(span<u8>{address, size})) [[unlikely]] {
+                state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+                Logger::Warn("Invalid address and size combination: 'address': 0x{:X}, 'size': 0x{:X}", address, size);
+                return;
+            }
 
-            object->Unmap(span<u8>{pointer, size});
+            Logger::Debug("Unmapping shared memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes)", handle, address, address + size, size);
+
+            object->Unmap(span<u8>{address, size});
+            state.process->memory.RemoveRef(object);
 
             state.ctx->gpr.w0 = Result{};
         } catch (const std::out_of_range &) {
@@ -540,29 +550,37 @@ namespace skyline::kernel::svc {
     }
 
     void CreateTransferMemory(const DeviceState &state) {
-        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
-        if (!util::IsPageAligned(pointer)) {
+        u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x1)};
+        if (!util::IsPageAligned(address)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidAddress;
-            Logger::Warn("'pointer' not page aligned: 0x{:X}", pointer);
+            Logger::Warn("'address' not page aligned: 0x{:X}", address);
             return;
         }
 
         size_t size{state.ctx->gpr.x2};
-        if (!util::IsPageAligned(size)) {
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
-            Logger::Warn("'size' {}: 0x{:X}", size ? "not page aligned" : "is zero", size);
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
+            return;
+        }
+
+        if (address >= (address + size) || !state.process->memory.AddressSpaceContains(span<u8>{address, size})) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+            Logger::Warn("Invalid address and size combination: 'address': 0x{:X}, 'size': 0x{:X}", address, size);
             return;
         }
 
         memory::Permission permission(static_cast<u8>(state.ctx->gpr.w3));
-        if ((permission.w && !permission.r) || (permission.x && !permission.r)) {
+        if ((permission.w && !permission.r) || permission.x) [[unlikely]] {
             Logger::Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
             state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
             return;
         }
 
-        auto tmem{state.process->NewHandle<type::KTransferMemory>(pointer, size, permission, permission.raw ? memory::states::TransferMemory : memory::states::TransferMemoryIsolated)};
-        Logger::Debug("Creating transfer memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", tmem.handle, pointer, pointer + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+        auto tmem{state.process->NewHandle<kernel::type::KTransferMemory>(address, size, permission)};
+        state.process->memory.AddRef(tmem.item);
+
+        Logger::Debug("Creating transfer memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", tmem.handle, address, address + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
         state.ctx->gpr.w0 = Result{};
         state.ctx->gpr.w1 = tmem.handle;
@@ -896,8 +914,8 @@ namespace skyline::kernel::svc {
             IdleTickCount = 10,
             RandomEntropy = 11,
             // 2.0.0+
-            AddressSpaceBaseAddr = 12,
-            AddressSpaceSize = 13,
+            AslrRegionBaseAddr = 12,
+            AslrRegionSize = 13,
             StackRegionBaseAddr = 14,
             StackRegionSize = 15,
             // 3.0.0+
@@ -965,11 +983,11 @@ namespace skyline::kernel::svc {
                 out = util::GetTimeTicks();
                 break;
 
-            case InfoState::AddressSpaceBaseAddr:
+            case InfoState::AslrRegionBaseAddr:
                 out = reinterpret_cast<u64>(state.process->memory.base.data());
                 break;
 
-            case InfoState::AddressSpaceSize:
+            case InfoState::AslrRegionSize:
                 out = state.process->memory.base.size();
                 break;
 
@@ -1019,93 +1037,64 @@ namespace skyline::kernel::svc {
     }
 
     void MapPhysicalMemory(const DeviceState &state) {
-        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
         size_t size{state.ctx->gpr.x1};
 
-        if (!util::IsPageAligned(pointer)) {
-            Logger::Warn("Pointer 0x{:X} is not page aligned", pointer);
+        if (!util::IsPageAligned(address)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidAddress;
+            Logger::Warn("'address' not page aligned: 0x{:X}", address);
             return;
         }
 
-        if (!size || !util::IsPageAligned(size)) {
-            Logger::Warn("Size 0x{:X} is not page aligned", size);
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
             return;
         }
 
-        if (!state.process->memory.alias.contains(span<u8>{pointer, size})) {
-            Logger::Warn("Memory region 0x{:X} - 0x{:X} (0x{:X}) is invalid", pointer, pointer + size, size);
+        if (address >= (address + size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
+            Logger::Warn("Invalid address and size combination: 'address': 0x{:X}, 'size': 0x{:X}", address, size);
             return;
         }
 
-        state.process->NewHandle<type::KPrivateMemory>(span<u8>{pointer, size}, memory::Permission{true, true, false}, memory::states::Heap);
+        if (!state.process->memory.alias.contains(span<u8>{address, size})) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidMemoryRegion;
+            Logger::Warn("Tried to map physical memory outside of alias region: 0x{:X} - 0x{:X} (0x{:X} bytes)", address, address + size, size);
+            return;
+        }
 
-        Logger::Debug("Mapped physical memory at 0x{:X} - 0x{:X} (0x{:X})", pointer, pointer + size, size);
+        state.process->memory.MapHeapMemory(span<u8>{address, size});
 
+        Logger::Debug("Mapped physical memory at 0x{:X} - 0x{:X} (0x{:X} bytes)", address, address + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 
     void UnmapPhysicalMemory(const DeviceState &state) {
-        auto pointer{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
         size_t size{state.ctx->gpr.x1};
 
-        if (!util::IsPageAligned(pointer)) {
-            Logger::Warn("Pointer 0x{:X} is not page aligned", pointer);
+        if (!util::IsPageAligned(address)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidAddress;
+            Logger::Warn("'address' not page aligned: 0x{:X}", address);
             return;
         }
 
-        if (!size || !util::IsPageAligned(size)) {
-            Logger::Warn("Size 0x{:X} is not page aligned", size);
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
             return;
         }
 
-        if (!state.process->memory.alias.contains(span<u8>{pointer, size})) {
-            Logger::Warn("Memory region 0x{:X} - 0x{:X} (0x{:X}) is invalid", pointer, pointer + size, size);
+        if (!state.process->memory.alias.contains(span<u8>{address, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
+            Logger::Warn("Tried to unmap physical memory outside of alias region: 0x{:X} - 0x{:X} (0x{:X} bytes)", address, address + size, size);
             return;
         }
 
-        Logger::Debug("Unmapped physical memory at 0x{:X} - 0x{:X} (0x{:X})", pointer, pointer + size, size);
+        state.process->memory.UnmapMemory(span<u8>{address, size});
 
-        auto end{pointer + size};
-        while (pointer < end) {
-            auto chunk{state.process->memory.Get(pointer)};
-            if (chunk && chunk->memory) {
-                if (chunk->memory->objectType != type::KType::KPrivateMemory)
-                    throw exception("Trying to unmap non-private memory");
-
-                auto memory{static_cast<type::KPrivateMemory *>(chunk->memory)};
-                auto initialSize{memory->guest.size()};
-                if (memory->memoryState == memory::states::Heap) {
-                    if (memory->guest.data() >= pointer) {
-                        if (memory->guest.size() <= size) {
-                            memory->Resize(0);
-                            state.process->CloseHandle(memory->handle);
-                        } else {
-                            memory->Remap(span<u8>{pointer + size, static_cast<size_t>((pointer + memory->guest.size() - memory->guest.data())) - size});
-                        }
-                    } else if (memory->guest.data() < pointer) {
-                        memory->Resize(static_cast<size_t>(pointer - memory->guest.data()));
-
-                        if (memory->guest.data() + initialSize > end)
-                            state.process->NewHandle<type::KPrivateMemory>(span<u8>{end, static_cast<size_t>(memory->guest.data() + initialSize - end)}, memory::Permission{true, true, false}, memory::states::Heap);
-                    }
-                }
-                pointer += initialSize;
-                size -= initialSize;
-            } else {
-                auto block{*state.process->memory.Get(pointer)};
-                pointer += block.size;
-                size -= block.size;
-            }
-        }
-
-        state.process->memory.FreeMemory(std::span<u8>(pointer, size));
-
+        Logger::Debug("Unmapped physical memory at 0x{:X} - 0x{:X} (0x{:X} bytes)", address, address + size, size);
         state.ctx->gpr.w0 = Result{};
     }
 

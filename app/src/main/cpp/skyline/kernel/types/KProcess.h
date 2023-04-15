@@ -42,9 +42,9 @@ namespace skyline {
             */
             struct TlsPage {
                 u8 index{}; //!< The slots are assigned sequentially, this holds the index of the last TLS slot reserved
-                std::shared_ptr<KPrivateMemory> memory; //!< A single page sized memory allocation for this TLS page
+                u8 *memory; //!< A single page sized memory allocation for this TLS page
 
-                TlsPage(std::shared_ptr<KPrivateMemory> memory);
+                TlsPage(u8 *memory);
 
                 /**
                  * @return A non-null pointer to a TLS page slot on success, a nullptr will be returned if this page is full
@@ -57,10 +57,8 @@ namespace skyline {
             u8 *tlsExceptionContext{}; //!< A pointer to the TLS exception handling context slot
             std::mutex tlsMutex; //!< A mutex to synchronize allocation of TLS pages to prevent extra pages from being created
             std::vector<std::shared_ptr<TlsPage>> tlsPages; //!< All TLS pages allocated by this process
-            std::shared_ptr<KPrivateMemory> mainThreadStack; //!< The stack memory of the main thread stack is owned by the KProcess itself
-            std::shared_ptr<KPrivateMemory> heap;
             vfs::NPDM npdm;
-
+            span<u8> mainThreadStack;
           private:
             std::shared_mutex handleMutex;
             std::vector<std::shared_ptr<KObject>> handles;
@@ -117,7 +115,7 @@ namespace skyline {
                 std::unique_lock lock(handleMutex);
 
                 std::shared_ptr<objectClass> item;
-                if constexpr (std::is_same<objectClass, KThread>() || std::is_same<objectClass, KPrivateMemory>())
+                if constexpr (std::is_same<objectClass, KThread>())
                     item = std::make_shared<objectClass>(state, constant::BaseHandleIndex + handles.size(), args...);
                 else
                     item = std::make_shared<objectClass>(state, args...);
@@ -156,8 +154,6 @@ namespace skyline {
                     objectType = KType::KSharedMemory;
                 } else if constexpr(std::is_same<objectClass, KTransferMemory>()) {
                     objectType = KType::KTransferMemory;
-                } else if constexpr(std::is_same<objectClass, KPrivateMemory>()) {
-                    objectType = KType::KPrivateMemory;
                 } else if constexpr(std::is_same<objectClass, KSession>()) {
                     objectType = KType::KSession;
                 } else if constexpr(std::is_same<objectClass, KEvent>()) {
@@ -187,13 +183,6 @@ namespace skyline {
                 else
                     throw std::out_of_range(fmt::format("GetHandle was called with a deleted handle: 0x{:X}", handle));
             }
-
-            /**
-             * @brief Retrieves a kernel memory object that owns the specified address
-             * @param address The address to look for
-             * @return A shared pointer to the corresponding KMemory object
-             */
-            std::optional<HandleOut<KMemory>> GetMemoryObject(u8 *ptr);
 
             /**
              * @brief Closes a handle in the handle table

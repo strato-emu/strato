@@ -14,7 +14,6 @@ namespace skyline::kernel::type {
         KProcess,
         KSharedMemory,
         KTransferMemory,
-        KPrivateMemory,
         KSession,
         KEvent,
     };

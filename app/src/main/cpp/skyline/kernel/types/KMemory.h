@@ -17,15 +17,7 @@ namespace skyline::kernel::type {
         /**
          * @return A span representing the memory object on the guest
          */
-        span <u8> guest;
-
-        /**
-         * @brief Updates the permissions of a block of mapped memory
-         * @param ptr The starting address to change the permissions at
-         * @param size The size of the partition to change the permissions of
-         * @param permission The new permissions to be set for the memory
-         */
-        virtual void UpdatePermission(span <u8> map, memory::Permission permission) = 0;
+        span<u8> guest;
 
         virtual ~KMemory() = default;
     };
