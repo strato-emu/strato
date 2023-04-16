@@ -577,8 +577,11 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto tmem{state.process->NewHandle<kernel::type::KTransferMemory>(address, size, permission)};
-        state.process->memory.AddRef(tmem.item);
+        auto tmem{state.process->NewHandle<kernel::type::KTransferMemory>(size)};
+        if (!tmem.item->Map(span<u8>{address, size}, permission)) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidState;
+            return;
+        }
 
         Logger::Debug("Creating transfer memory (0x{:X}) at 0x{:X} - 0x{:X} (0x{:X} bytes) ({}{}{})", tmem.handle, address, address + size, size, permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
 
