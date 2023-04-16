@@ -24,7 +24,7 @@ interface OnScreenConfiguration {
 
         const val MinScale = 0.5f
         const val MaxScale = 2.5f
-        const val DefaultScale = 1.15f
+        const val DefaultScale = 1f
 
         val DefaultTextColor = SwitchColors.BLACK.color
         val DefaultBackgroundColor = SwitchColors.WHITE.color
