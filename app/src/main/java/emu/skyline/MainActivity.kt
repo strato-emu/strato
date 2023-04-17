@@ -215,14 +215,14 @@ class MainActivity : AppCompatActivity() {
         if (appSettings.searchLocation.isEmpty()) documentPicker.launch(null)
     }
 
-    private fun getDataItems() = mutableListOf<DataItem>().apply {
+    private fun getDataItems() = mutableListOf<AppViewItem>().apply {
         if (appSettings.groupByFormat) {
             appEntries?.let { entries ->
                 val formats = formatFilter?.let { listOf(it) } ?: formatOrder
                 for (format in formats) {
                     entries[format]?.let {
-                        for (entry in sortGameList(it)) {
-                            add(AppItem(entry))
+                        sortGameList(it).forEach { entry ->
+                            add(AppItem(entry).toViewItem())
                         }
                     }
                 }
@@ -237,8 +237,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-            for (entry in sortGameList(gameList.toList())) {
-                add(AppItem(entry))
+            sortGameList(gameList.toList()).forEach { entry ->
+                add(AppItem(entry).toViewItem())
             }
         }
     }
@@ -297,11 +297,7 @@ class MainActivity : AppCompatActivity() {
         binding.textTitle.text = null
         binding.textTitle.visibility = View.GONE
         val items = getDataItems()
-        adapter.setItems(items.map {
-            when (it) {
-                is AppItem -> it.toViewItem()
-            }
-        })
+        adapter.setItems(items)
         if (items.isEmpty()) {
             binding.textTitle.visibility = View.VISIBLE
             binding.textTitle.text = getString(R.string.no_rom)

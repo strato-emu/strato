@@ -31,7 +31,6 @@ open class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>
     }
 
     private val asyncListDiffer = AsyncListDiffer(this, DIFFER)
-    private val headerItems = mutableListOf<GenericListItem<out ViewBinding>>()
     val allItems = mutableListOf<GenericListItem<out ViewBinding>>()
     val currentItems : List<GenericListItem<in ViewBinding>> get() = asyncListDiffer.currentList
 
@@ -55,12 +54,6 @@ open class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>
     fun getFactoryViewType(factory : ViewBindingFactory) = viewTypesMapping.get(factory)
 
     override fun getItemViewType(position : Int) = viewTypesMapping.getOrPut(currentItems[position].getViewBindingFactory()) { viewTypesMapping.size }
-
-    fun setHeaderItems(items : List<GenericListItem<*>>) {
-        headerItems.clear()
-        headerItems.addAll(items)
-        filter.filter(currentSearchTerm)
-    }
 
     fun setItems(items : List<GenericListItem<*>>) {
         allItems.clear()
@@ -128,8 +121,8 @@ open class GenericAdapter : RecyclerView.Adapter<GenericViewHolder<ViewBinding>>
                 filterData
             }) {
                 FilterResults().apply {
-                    values = headerItems + this@with
-                    count = headerItems.size + size
+                    values = this@with
+                    count = size
                 }
             }
         }
