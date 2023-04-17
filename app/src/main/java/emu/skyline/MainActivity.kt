@@ -294,14 +294,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun populateAdapter() {
-        binding.textTitle.text = null
-        binding.textTitle.visibility = View.GONE
         val items = getDataItems()
+        binding.emptyPlaceholder.isVisible = items.isEmpty()
         adapter.setItems(items)
-        if (items.isEmpty()) {
-            binding.textTitle.visibility = View.VISIBLE
-            binding.textTitle.text = getString(R.string.no_rom)
-        }
     }
 
     override fun onStart() {

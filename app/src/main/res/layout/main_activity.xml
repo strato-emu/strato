@@ -109,18 +109,19 @@
                     android:layout_width="match_parent"
                     android:layout_height="72dp"
                     android:layout_marginHorizontal="8dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginVertical="8dp"
                     app:cardUseCompatPadding="true"
                     app:layout_constraintTop_toBottomOf="@id/sub_text"
                     app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.ExtraLarge" />
 
                 <TextView
-                    android:id="@+id/text_title"
+                    android:id="@+id/empty_placeholder"
                     style="?attr/textAppearanceTitleLarge"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="16dp"
                     android:layout_marginVertical="8dp"
+                    android:text="@string/no_rom"
                     android:textAlignment="viewStart"
                     app:layout_constraintTop_toBottomOf="@id/search_bar"/>
             </androidx.constraintlayout.widget.ConstraintLayout>
