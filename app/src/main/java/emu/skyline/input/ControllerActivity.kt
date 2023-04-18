@@ -100,6 +100,10 @@ class ControllerActivity : AppCompatActivity() {
                     appSettings.onScreenControlRecenterSticks = item.checked
                 })
 
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_use_stick_regions), getString(R.string.osc_use_stick_regions_desc), appSettings.onScreenControlUseStickRegions) { item, position ->
+                    appSettings.onScreenControlUseStickRegions = item.checked
+                })
+
                 items.add(ControllerViewItem(content = getString(R.string.osc_edit), onClick = {
                     startActivity(Intent(this, OnScreenEditActivity::class.java))
                 }))

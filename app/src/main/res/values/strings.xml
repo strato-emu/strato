@@ -176,6 +176,8 @@
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="osc_recenter_sticks">Recenter Sticks On Touch</string>
+    <string name="osc_use_stick_regions">Use Stick Regions</string>
+    <string name="osc_use_stick_regions_desc">When enabled, the stick activaation radius is extended to the corresponding half of the screen.</string>
     <string name="controller">Controller</string>
     <string name="config_controller">Configure Controller</string>
     <string name="controller_type">Controller Type</string>

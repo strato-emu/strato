@@ -337,6 +337,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             setOnStickStateChangedListener(::onStickStateChanged)
             hapticFeedback = appSettings.onScreenControl && appSettings.onScreenControlFeedback
             recenterSticks = appSettings.onScreenControlRecenterSticks
+            stickRegions = appSettings.onScreenControlUseStickRegions
         }
 
         binding.onScreenControllerToggle.apply {

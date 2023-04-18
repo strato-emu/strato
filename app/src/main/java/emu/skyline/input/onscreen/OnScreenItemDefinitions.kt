@@ -6,7 +6,11 @@
 package emu.skyline.input.onscreen
 
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.PointF
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.os.SystemClock
 import androidx.core.graphics.minus
 import emu.skyline.R
@@ -15,6 +19,7 @@ import emu.skyline.input.ButtonId.*
 import emu.skyline.input.StickId
 import emu.skyline.input.StickId.Left
 import emu.skyline.input.StickId.Right
+import emu.skyline.utils.SwitchColors
 import emu.skyline.utils.add
 import emu.skyline.utils.multiply
 import kotlin.math.roundToInt
@@ -45,7 +50,7 @@ open class CircularButton(
     override fun isTouched(x : Float, y : Float) : Boolean = (PointF(currentX, currentY) - (PointF(x, y))).length() <= radius
 }
 
-class JoystickButton(
+open class JoystickButton(
     onScreenControllerView : OnScreenControllerView,
     val stickId : StickId,
     defaultRelativeX : Float,
@@ -61,7 +66,7 @@ class JoystickButton(
 ) {
     private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
-    var recenterSticks = false
+    open var recenterSticks = false
     private var initialTapPosition = PointF()
     private var fingerDownTime = 0L
     private var fingerUpTime = 0L
@@ -157,6 +162,85 @@ class JoystickButton(
     }
 }
 
+class JoystickRegion(
+    onScreenControllerView : OnScreenControllerView,
+    stickId : StickId,
+    defaultRelativeX : Float,
+    defaultRelativeY : Float,
+    defaultRelativeRadiusToX : Float,
+    private val relativeRegionPosition : RectF,
+    regionColor : Int
+) : JoystickButton(
+    onScreenControllerView,
+    stickId,
+    defaultRelativeX,
+    defaultRelativeY,
+    defaultRelativeRadiusToX
+) {
+    /**
+     * A stick region always re-centers the stick, it always positions the stick at the initial touch position
+     */
+    override var recenterSticks = true
+        set(_) = Unit
+
+    private val left get() = relativeRegionPosition.left * width
+    private val top get() = relativeRegionPosition.top * height
+    private val pixelWidth get() = relativeRegionPosition.width() * width
+    private val pixelHeight get() = relativeRegionPosition.height() * height
+
+    private val regionBounds get() = Rect(left.toInt(), top.toInt(), (left + pixelWidth).toInt(), (top + pixelHeight).toInt())
+
+    override fun isTouched(x : Float, y : Float) = regionBounds.contains(x.roundToInt(), y.roundToInt())
+
+    private val regionPaint = Paint().apply {
+        this.color = regionColor
+        alpha = 40
+        style = Paint.Style.FILL
+    }
+    private val buttonSymbolPaint = Paint().apply {
+        this.color = SwitchColors.WHITE.color
+        this.alpha = 40
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        textAlign = Paint.Align.LEFT
+    }
+
+    /**
+     * Tracks whether the finger is currently down on the stick region.
+     * The Stick is only rendered when the finger is down.
+     */
+    private var isFingerDown = false
+
+    override fun render(canvas : Canvas) {
+        if (isFingerDown || editInfo.isEditing)
+            super.render(canvas)
+
+        // Only draw the stick region area when in edit mode
+        if (!editInfo.isEditing)
+            return
+
+        canvas.drawRect(regionBounds, regionPaint)
+
+        val text = stickId.button.short!!
+        val x = left + pixelWidth / 2f
+        val y = top + pixelHeight / 2f
+        buttonSymbolPaint.apply {
+            textSize = pixelWidth.coerceAtMost(pixelHeight) * 0.4f
+            getTextBounds(text, 0, text.length, textBoundsRect)
+        }
+        canvas.drawText(text, x - textBoundsRect.width() / 2f - textBoundsRect.left, y + textBoundsRect.height() / 2f - textBoundsRect.bottom, buttonSymbolPaint)
+    }
+
+    override fun onFingerDown(x : Float, y : Float) : Boolean {
+        isFingerDown = true
+        return super.onFingerDown(x, y)
+    }
+
+    override fun onFingerUp(x : Float, y : Float) : Boolean {
+        isFingerDown = false
+        return super.onFingerUp(x, y)
+    }
+}
+
 open class RectangularButton(
     onScreenControllerView : OnScreenControllerView,
     buttonId : ButtonId,
@@ -236,14 +320,41 @@ class Controls(onScreenControllerView : OnScreenControllerView) {
         CircularButton(onScreenControllerView, Menu, 0.5f, 0.85f, 0.029f)
     )
 
-    val joysticks = listOf(
+    private val joystickRegions = listOf<JoystickButton>(
+        JoystickRegion(
+            onScreenControllerView, Left, 0.24f, 0.75f, 0.06f,
+            RectF(0f, 0f, 0.5f, 1f), SwitchColors.NEON_BLUE.color
+        ),
+        JoystickRegion(
+            onScreenControllerView, Right, 0.9f, 0.53f, 0.06f,
+            RectF(0.5f, 0f, 1f, 1f), SwitchColors.NEON_RED.color
+        ),
     )
 
+    private val joystickButtons = listOf(
         JoystickButton(onScreenControllerView, Left, 0.24f, 0.75f, 0.06f),
         JoystickButton(onScreenControllerView, Right, 0.9f, 0.53f, 0.06f)
+    )
+
+    var joysticks = joystickButtons
+        private set
+
     val rectangularButtons = listOf(buttonL, buttonR)
 
     val triggerButtons = listOf(buttonZL, buttonZR)
 
-    val allButtons = circularButtons + joysticks + rectangularButtons + triggerButtons
+    /**
+     * All buttons except the joysticks
+     */
+    val buttons = circularButtons + rectangularButtons + triggerButtons
+
+    var allButtons = getCurrentButtons()
+        private set
+
+    fun setStickRegions(enabled : Boolean) {
+        joysticks = if (enabled) joystickRegions else joystickButtons
+        allButtons = getCurrentButtons()
+    }
+
+    private fun getCurrentButtons() = buttons + joysticks
 }

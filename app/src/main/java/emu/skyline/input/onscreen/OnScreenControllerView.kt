@@ -65,10 +65,16 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             field = value
             controls.joysticks.forEach { it.recenterSticks = recenterSticks }
         }
+    var stickRegions = false
+        set(value) {
+            field = value
+            controls.setStickRegions(value)
+            invalidate()
+        }
     var hapticFeedback = false
         set(value) {
             field = value
-            (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons).forEach { it.hapticFeedback = hapticFeedback }
+            controls.buttons.forEach { it.hapticFeedback = hapticFeedback }
         }
 
     internal val editInfo = OnScreenEditInfo()
@@ -116,7 +122,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         val x by lazy { event.getX(actionIndex) }
         val y by lazy { event.getY(actionIndex) }
 
-        (controls.circularButtons + controls.rectangularButtons + controls.triggerButtons).forEach { button ->
+        controls.buttons.forEach { button ->
             when (event.action and event.actionMasked) {
                 MotionEvent.ACTION_UP,
                 MotionEvent.ACTION_POINTER_UP -> {
@@ -174,7 +180,12 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
             }
         }
 
-        for (joystick in controls.joysticks) {
+        if (handled) {
+            invalidate()
+            return@OnTouchListener true
+        }
+
+        controls.joysticks.forEach { joystick ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_UP,
                 MotionEvent.ACTION_POINTER_UP,

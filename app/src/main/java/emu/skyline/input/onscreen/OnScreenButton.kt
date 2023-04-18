@@ -60,7 +60,7 @@ abstract class OnScreenButton(
         }
     }
 
-    final override val config = OnScreenConfigurationImpl(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY, defaultEnabled)
+    final override val config : OnScreenConfiguration = OnScreenConfigurationImpl(onScreenControllerView.context, buttonId, defaultRelativeX, defaultRelativeY, defaultEnabled)
 
     protected val drawable = ContextCompat.getDrawable(onScreenControllerView.context, drawableId)!!
 
@@ -69,7 +69,7 @@ abstract class OnScreenButton(
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         isAntiAlias = true
     }
-    private val textBoundsRect = Rect()
+    protected val textBoundsRect = Rect()
 
     var relativeX = config.relativeX
     var relativeY = config.relativeY

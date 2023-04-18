@@ -100,6 +100,7 @@ class OnScreenEditActivity : AppCompatActivity() {
             getSystemService(VIBRATOR_SERVICE) as Vibrator
 
         binding.onScreenControllerView.recenterSticks = appSettings.onScreenControlRecenterSticks
+        binding.onScreenControllerView.stickRegions = appSettings.onScreenControlUseStickRegions
 
         val snapToGrid = appSettings.onScreenControlSnapToGrid
         binding.onScreenControllerView.setSnapToGrid(snapToGrid)
