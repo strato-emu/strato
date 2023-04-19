@@ -162,6 +162,15 @@
                 app:layout_constraintStart_toStartOf="@id/scale_slider"
                 app:layout_constraintTop_toBottomOf="@id/scale_slider" />
 
+            <include
+                android:id="@+id/activation_slider"
+                layout="@layout/osc_slider"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                app:layout_constraintStart_toStartOf="@id/scale_slider"
+                app:layout_constraintTop_toBottomOf="@id/opacity_slider" />
+
             <androidx.constraintlayout.widget.Barrier
                 android:id="@+id/sliders_barrier"
                 android:layout_width="wrap_content"

@@ -355,6 +355,16 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
         invalidate()
     }
 
+    fun setStickActivationRadius(@IntRange(from = 0, to = 100) radius : Int) {
+        fun toRadiusRange(value : Int) : Float = (value / 100f) * (OnScreenConfiguration.MaxActivationRadius - OnScreenConfiguration.MinActivationRadius) + OnScreenConfiguration.MinActivationRadius
+
+        (editInfo.editButton as? JoystickButton)?.let { joystick ->
+            joystick.config.activationRadius = toRadiusRange(radius)
+            joystick.loadActivationRadius()
+        }
+        invalidate()
+    }
+
     fun moveButtonUp() {
         editInfo.editButton.moveUp()
         invalidate()
@@ -462,6 +472,7 @@ class OnScreenControllerView @JvmOverloads constructor(context : Context, attrs 
 
             override var relativeX = 0f
             override var relativeY = 0f
+            override var activationRadius = 0f
         }
 
         override fun startMove(x : Float, y : Float) {}

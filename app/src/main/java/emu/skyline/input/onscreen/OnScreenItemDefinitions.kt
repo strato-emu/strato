@@ -6,6 +6,7 @@
 package emu.skyline.input.onscreen
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PointF
 import android.graphics.Rect
@@ -67,15 +68,34 @@ open class JoystickButton(
     private val innerButton = CircularButton(onScreenControllerView, buttonId, config.relativeX, config.relativeY, defaultRelativeRadiusToX * 0.75f, R.drawable.ic_stick)
 
     open var recenterSticks = false
+        set(value) {
+            field = value
+            radiusModifier = getRadiusModifier()
+        }
+
+    private var radiusModifier = getRadiusModifier()
+    private fun getRadiusModifier() = if (recenterSticks) config.activationRadius else OnScreenConfiguration.DefaultActivationRadius
+
+    fun loadActivationRadius() {
+        radiusModifier = getRadiusModifier()
+    }
+
     private var initialTapPosition = PointF()
     private var fingerDownTime = 0L
     private var fingerUpTime = 0L
     var shortDoubleTapped = false
         private set
 
+    override fun isTouched(x : Float, y : Float) = (PointF(currentX, currentY) - (PointF(x, y))).length() <= radius * radiusModifier
+
     override fun supportsToggleMode() : Boolean = false
 
     override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) = Unit
+
+    private val activationRadiusPaint = Paint().apply {
+        color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.RED) }
+        alpha = 64
+    }
 
     override fun render(canvas : Canvas) {
         super.render(canvas)
@@ -83,6 +103,10 @@ open class JoystickButton(
         innerButton.width = width
         innerButton.height = height
         innerButton.render(canvas)
+
+        if (editInfo.isEditing && editInfo.editButton == this) {
+            canvas.drawCircle(currentX, currentY, radius * config.activationRadius, activationRadiusPaint)
+        }
     }
 
     override fun onFingerDown(x : Float, y : Float) : Boolean {
@@ -156,6 +180,7 @@ open class JoystickButton(
 
     override fun resetConfig() {
         super.resetConfig()
+        config.activationRadius = OnScreenConfiguration.DefaultActivationRadius
 
         innerButton.relativeX = relativeX
         innerButton.relativeY = relativeY

@@ -26,6 +26,10 @@ interface OnScreenConfiguration {
         const val MaxScale = 2.5f
         const val DefaultScale = 1f
 
+        const val MinActivationRadius = 1.0f
+        const val DefaultActivationRadius = 1.0f
+        const val MaxActivationRadius = 8.0f
+
         val DefaultTextColor = SwitchColors.BLACK.color
         val DefaultBackgroundColor = SwitchColors.WHITE.color
     }
@@ -51,6 +55,11 @@ interface OnScreenConfiguration {
     var scale : Float
     var relativeX : Float
     var relativeY : Float
+
+    /**
+     * A modifier applied to the radius of the stick, applied when determining when the stick has been touched
+     */
+    var activationRadius : Float
 }
 
 class OnScreenConfigurationImpl(private val context : Context, private val buttonId : ButtonId, defaultRelativeX : Float, defaultRelativeY : Float, defaultEnabled : Boolean) : OnScreenConfiguration {
@@ -66,4 +75,6 @@ class OnScreenConfigurationImpl(private val context : Context, private val butto
     override var scale by config(OnScreenConfiguration.DefaultScale)
     override var relativeX by config(defaultRelativeX)
     override var relativeY by config(defaultRelativeY)
+
+    override var activationRadius by config(OnScreenConfiguration.DefaultActivationRadius)
 }

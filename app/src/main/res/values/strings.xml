@@ -168,6 +168,7 @@
     <string name="select_all">Select All</string>
     <string name="osc_scale">Scale</string>
     <string name="osc_opacity">Opacity</string>
+    <string name="osc_activation_radius">Activation Radius</string>
     <string name="button_color">Button color</string>
     <string name="toggle_grid">Toggle grid</string>
     <string name="setup_guide">Setup Guide</string>
@@ -177,7 +178,7 @@
     <string name="cancel">Cancel</string>
     <string name="osc_recenter_sticks">Recenter Sticks On Touch</string>
     <string name="osc_use_stick_regions">Use Stick Regions</string>
-    <string name="osc_use_stick_regions_desc">When enabled, the stick activaation radius is extended to the corresponding half of the screen.</string>
+    <string name="osc_use_stick_regions_desc">Extend the activation area of the sticks to rectangles covering the corresponding half of the screen</string>
     <string name="controller">Controller</string>
     <string name="config_controller">Configure Controller</string>
     <string name="controller_type">Controller Type</string>

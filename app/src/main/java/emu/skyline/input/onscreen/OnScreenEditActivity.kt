@@ -120,6 +120,9 @@ class OnScreenEditActivity : AppCompatActivity() {
         populateSlider(binding.opacitySlider, getString(R.string.osc_opacity)) {
             binding.onScreenControllerView.setButtonOpacity(it)
         }
+        populateSlider(binding.activationSlider, getString(R.string.osc_activation_radius)) {
+            binding.onScreenControllerView.setStickActivationRadius(it)
+        }
 
         binding.enabledCheckbox.setOnClickListener { _ ->
             binding.onScreenControllerView.setButtonEnabled(binding.enabledCheckbox.isChecked)
@@ -190,6 +193,8 @@ class OnScreenEditActivity : AppCompatActivity() {
                 if (fromUser)
                     valueListener?.invoke(value.roundToInt())
             }
+            // Update the value label with the initial value to avoid it being blank
+            slider.valueLabel.text = "${value.roundToInt()}%"
         }
     }
 
@@ -197,13 +202,23 @@ class OnScreenEditActivity : AppCompatActivity() {
      * Updates the control panel UI elements to reflect the currently selected button
      */
     private fun updateActiveButtonDisplayInfo(button : ConfigurableButton) {
+        fun Float.toSliderRange(min : Float, max : Float) : Float = ((this - min) / (max - min) * 100f).coerceIn(0f, 100f)
+        fun Int.toSliderRange(min : Int, max : Int) : Float = ((this - min) / (max - min).toFloat() * 100f).coerceIn(0f, 100f)
+
         binding.enabledCheckbox.checkedState = button.config.groupEnabled
-        binding.toggleModeCheckbox.isEnabled = button.supportsToggleMode()
-        binding.toggleModeCheckbox.checkedState = button.config.groupToggleMode
         currentButtonName = button.buttonId.short ?: ""
         binding.currentButton.text = getString(R.string.osc_current_button, currentButtonName)
-        binding.scaleSlider.slider.value = (button.config.scale - OnScreenConfiguration.MinScale) / (OnScreenConfiguration.MaxScale - OnScreenConfiguration.MinScale) * 100f
-        binding.opacitySlider.slider.value = (button.config.alpha - OnScreenConfiguration.MinAlpha) / (OnScreenConfiguration.MaxAlpha - OnScreenConfiguration.MinAlpha).toFloat() * 100f
+        binding.scaleSlider.slider.value = button.config.scale.toSliderRange(OnScreenConfiguration.MinScale, OnScreenConfiguration.MaxScale)
+        binding.opacitySlider.slider.value = button.config.alpha.toSliderRange(OnScreenConfiguration.MinAlpha, OnScreenConfiguration.MaxAlpha)
+        if (button is JoystickButton) {
+            binding.toggleModeCheckbox.isGone = true
+            binding.activationSlider.all.isGone = false
+            binding.activationSlider.slider.value = button.config.activationRadius.toSliderRange(OnScreenConfiguration.MinActivationRadius, OnScreenConfiguration.MaxActivationRadius)
+        } else {
+            binding.toggleModeCheckbox.isGone = false
+            binding.toggleModeCheckbox.checkedState = button.config.groupToggleMode
+            binding.activationSlider.all.isGone = true
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
