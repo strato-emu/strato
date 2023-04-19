@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 sealed class MainState {
     object Loading : MainState()
-    class Loaded(val items : HashMap<RomFormat, ArrayList<AppEntry>>) : MainState()
+    class Loaded(val items : ArrayList<AppEntry>) : MainState()
     class Error(val ex : Exception) : MainState()
 }
 
@@ -59,7 +59,7 @@ class MainViewModel @Inject constructor(@ApplicationContext context : Context, p
 
             state = if (searchLocation.toString().isEmpty()) {
                 @Suppress("ReplaceWithEnumMap")
-                MainState.Loaded(HashMap())
+                MainState.Loaded(ArrayList())
             } else {
                 try {
                     KeyReader.importFromLocation(context, searchLocation)

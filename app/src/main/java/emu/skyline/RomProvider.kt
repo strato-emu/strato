@@ -18,20 +18,20 @@ class RomProvider @Inject constructor(@ApplicationContext private val context : 
      * This adds all files in [directory] with [extension] as an entry using [RomFile] to load metadata
      */
     @SuppressLint("DefaultLocale")
-    private fun addEntries(fileFormats : Map<String, RomFormat>, directory : DocumentFile, entries : HashMap<RomFormat, ArrayList<AppEntry>>, systemLanguage : Int) {
+    private fun addEntries(fileFormats : Map<String, RomFormat>, directory : DocumentFile, entries : ArrayList<AppEntry>, systemLanguage : Int) {
         directory.listFiles().forEach { file ->
             if (file.isDirectory) {
                 addEntries(fileFormats, file, entries, systemLanguage)
             } else {
                 fileFormats[file.name?.substringAfterLast(".")?.lowercase()]?.let { romFormat->
-                    entries.getOrPut(romFormat, { arrayListOf() }).add(RomFile(context, romFormat, file.uri, systemLanguage).appEntry)
+                    entries.add(RomFile(context, romFormat, file.uri, systemLanguage).appEntry)
                 }
             }
         }
     }
 
     fun loadRoms(searchLocation : Uri, systemLanguage : Int) = DocumentFile.fromTreeUri(context, searchLocation)!!.let { documentFile ->
-        hashMapOf<RomFormat, ArrayList<AppEntry>>().apply {
+        arrayListOf<AppEntry>().apply {
             addEntries(mapOf("nro" to NRO, "nso" to NSO, "nca" to NCA, "nsp" to NSP, "xci" to XCI), documentFile, this, systemLanguage)
         }
     }
