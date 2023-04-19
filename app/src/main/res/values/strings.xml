@@ -283,5 +283,6 @@
     <string name="action_irreversible">This action is irreversible</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    <string name="save_file_invalid_zip_structure">Failed to unzip the provided save file</string>
+    <string name="save_file_imported_ok">The save file was imported successfully</string>
+    <string name="save_file_invalid_zip_structure">Failed to unzip. First subfolder must be named after the TitleId of the game.</string>
 </resources>

@@ -38,6 +38,8 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -65,6 +67,7 @@ class AppDialog : BottomSheetDialogFragment() {
     private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
 
     private val savesFolderRoot by lazy { "${requireContext().getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/" }
+    private var lastZipCreated : File? = null
     private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
             try {
@@ -85,7 +88,7 @@ class AppDialog : BottomSheetDialogFragment() {
                             val isSaveFileOfThisGame = File("$savesFolderRoot${item.titleId}").exists()
                             binding.deleteSave.isEnabled = isSaveFileOfThisGame
                             binding.exportSave.isEnabled = isSaveFileOfThisGame
-                            Snackbar.make(binding.root, "The save file was imported successfully", Snackbar.LENGTH_LONG).show()
+                            Snackbar.make(binding.root, R.string.save_file_imported_ok, Snackbar.LENGTH_LONG).show()
                         }
                     }
                 } else {
@@ -178,8 +181,8 @@ class AppDialog : BottomSheetDialogFragment() {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     val saveFolder = File(saveFolderPath)
-                    val outputZipFile = File("$savesFolderRoot${item.title}.zip")
-                    outputZipFile.delete()
+                    val outputZipFile = File("$savesFolderRoot${item.title} (v${binding.gameVersion.text}) [${item.titleId}] - ${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}.zip")
+                    lastZipCreated?.delete()
                     outputZipFile.createNewFile()
                     ZipOutputStream(BufferedOutputStream(FileOutputStream(outputZipFile))).use { zos ->
                         saveFolder.walkTopDown().forEach { file ->
@@ -192,6 +195,7 @@ class AppDialog : BottomSheetDialogFragment() {
                             }
                         }
                     }
+                    lastZipCreated = outputZipFile
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main){
                         Snackbar.make(binding.root, e.message as CharSequence, Snackbar.LENGTH_LONG).show()
@@ -200,7 +204,7 @@ class AppDialog : BottomSheetDialogFragment() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${item.title}.zip"))!!
+                    val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${lastZipCreated!!.name}"))!!
                     val intent = Intent(Intent.ACTION_SEND)
                         .setDataAndType(file.uri, "application/zip")
                         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -229,6 +233,6 @@ class AppDialog : BottomSheetDialogFragment() {
 
     override fun onDestroyView(){
         super.onDestroyView()
-        File("$savesFolderRoot${item.title}.zip").delete()
+        lastZipCreated?.delete()
     }
 }
