@@ -43,6 +43,47 @@ namespace skyline::kernel::svc {
         Logger::Debug("Heap size changed to 0x{:X} bytes (0x{:X} - 0x{:X})", size, heapBaseAddr, heapBaseAddr + size);
     }
 
+    void SetMemoryPermission(const DeviceState &state) {
+        u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
+        if (!util::IsPageAligned(address)) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidAddress;
+            Logger::Warn("'address' not page aligned: 0x{:X}", address);
+            return;
+        }
+
+        u64 size{state.ctx->gpr.x1};
+        if (!size || !util::IsPageAligned(size)) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidSize;
+            Logger::Warn("'size' {}: 0x{:X}", size ? "is not page aligned" : "is zero", size);
+            return;
+        }
+
+        if (address >= (address + size) || !state.process->memory.AddressSpaceContains(span<u8>{address, size})) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidCurrentMemory;
+            Logger::Warn("Invalid address and size combination: 'address': 0x{:X}, 'size': 0x{:X} ", address, size);
+            return;
+        }
+
+        memory::Permission newPermission(static_cast<u8>(state.ctx->gpr.w2));
+        if ((!newPermission.r && newPermission.w) || newPermission.x) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
+            Logger::Warn("'permission' invalid: {}{}{}", newPermission.r ? 'R' : '-', newPermission.w ? 'W' : '-', newPermission.x ? 'X' : '-');
+            return;
+        }
+
+        auto chunk{state.process->memory.GetChunk(address).value()};
+        if (!chunk.second.state.permissionChangeAllowed) [[unlikely]] {
+            state.ctx->gpr.w0 = result::InvalidState;
+            Logger::Warn("Permission change not allowed for chunk at: 0x{:X}, state: 0x{:X}", chunk.first, chunk.second.state.value);
+            return;
+        }
+
+        state.process->memory.SetChunkPermission(span<u8>(address, size), newPermission);
+
+        Logger::Debug("Set permission to {}{}{} at 0x{:X} - 0x{:X} (0x{:X} bytes)", newPermission.r ? 'R' : '-', newPermission.w ? 'W' : '-', newPermission.x ? 'X' : '-', address, address + size, size);
+        state.ctx->gpr.w0 = Result{};
+    }
+
     void SetMemoryAttribute(const DeviceState &state) {
         u8 *address{reinterpret_cast<u8 *>(state.ctx->gpr.x0)};
         if (!util::IsPageAligned(address)) [[unlikely]] {
@@ -74,12 +115,12 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto chunk{state.process->memory.GetChunk(address)};
+        auto chunk{state.process->memory.GetChunk(address).value()};
 
         // We only check the first found chunk for whatever reason.
-        if (!chunk->second.state.attributeChangeAllowed) [[unlikely]] {
+        if (!chunk.second.state.attributeChangeAllowed) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidState;
-            Logger::Warn("Attribute change not allowed for chunk: 0x{:X}", chunk->first);
+            Logger::Warn("Attribute change not allowed for chunk: 0x{:X}", chunk.first);
             return;
         }
 
@@ -164,15 +205,15 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto dstChunk{state.process->memory.GetChunk(destination)};
-        while (dstChunk->second.state.value == memory::states::Unmapped)
-            dstChunk = state.process->memory.GetChunk(dstChunk->first + dstChunk->second.size);
+        auto dstChunk{state.process->memory.GetChunk(destination).value()};
+        while (dstChunk.second.state.value == memory::states::Unmapped)
+            dstChunk = state.process->memory.GetChunk(dstChunk.first + dstChunk.second.size).value();
 
-        if ((destination + size) > dstChunk->first) [[likely]] {
-            state.process->memory.SetChunkPermission(span<u8>{source + (dstChunk->first - destination), dstChunk->second.size}, dstChunk->second.permission);
-            state.process->memory.SetLockOnChunks(span<u8>{source + (dstChunk->first - destination), dstChunk->second.size}, false);
+        if ((destination + size) > dstChunk.first) [[likely]] {
+            state.process->memory.SetChunkPermission(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, dstChunk.second.permission);
+            state.process->memory.SetLockOnChunks(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, false);
 
-            std::memcpy(source + (dstChunk->first - destination), dstChunk->first, dstChunk->second.size);
+            std::memcpy(source + (dstChunk.first - destination), dstChunk.first, dstChunk.second.size);
 
             state.process->memory.UnmapMemory(span<u8>{destination, size});
         }

@@ -45,7 +45,7 @@ namespace skyline::kernel::type {
 
     KTransferMemory::~KTransferMemory() {
         if (state.process && guest.valid()) {
-            if (mmap(guest.data(), guest.size(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) == MAP_FAILED) [[unlikely]]
+            if (mmap(guest.data(), guest.size(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS | MAP_POPULATE, -1, 0) == MAP_FAILED) [[unlikely]]
                 Logger::Warn("An error occurred while unmapping transfer memory in guest: {}", strerror(errno));
 
             switch (originalMapping.state.type) {

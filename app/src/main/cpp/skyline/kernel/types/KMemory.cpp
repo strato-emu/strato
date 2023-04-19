@@ -28,7 +28,7 @@ namespace skyline::kernel::type {
         if (guest.valid()) [[unlikely]]
             throw exception("Mapping KMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
 
-        if (mmap(map.data(), map.size(), permission.Get() ? PROT_READ | PROT_WRITE | PROT_EXEC : PROT_NONE, MAP_SHARED | (map.data() ? MAP_FIXED : 0), fd, 0) == MAP_FAILED) [[unlikely]]
+        if (mmap(map.data(), map.size(), permission.Get() ? PROT_READ | PROT_WRITE : PROT_NONE, MAP_SHARED | (map.data() ? MAP_FIXED : 0), fd, 0) == MAP_FAILED) [[unlikely]]
             throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
         guest = map;
 

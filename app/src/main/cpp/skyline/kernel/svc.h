@@ -13,6 +13,12 @@ namespace skyline::kernel::svc {
     void SetHeapSize(const DeviceState &state);
 
     /**
+     * @brief Reprotects a page-aligned memory region.
+     * @url https://switchbrew.org/wiki/SVC#SetMemoryPermission
+     */
+    void SetMemoryPermission(const DeviceState &state);
+
+    /**
      * @brief Change attribute of page-aligned memory region, this is used to turn on/off caching for a given memory area
      * @url https://switchbrew.org/wiki/SVC#SetMemoryAttribute
      */
@@ -20,7 +26,7 @@ namespace skyline::kernel::svc {
 
     /**
      * @brief Maps a memory range into a different range, mainly used for adding guard pages around stack
-     * @url https://switchbrew.org/wiki/SVC#SetMemoryAttribute
+     * @url https://switchbrew.org/wiki/SVC#MapMemory
      */
     void MapMemory(const DeviceState &state);
 
@@ -115,7 +121,7 @@ namespace skyline::kernel::svc {
     void UnmapSharedMemory(const DeviceState &state);
 
     /**
-     * @brief Returns a handle to a KSharedMemory object
+     * @brief Returns a handle to a KTransferMemory object
      * @url https://switchbrew.org/wiki/SVC#CreateTransferMemory
      */
     void CreateTransferMemory(const DeviceState &state);
@@ -269,7 +275,7 @@ namespace skyline::kernel::svc {
     static constexpr std::array<SvcDescriptor, 0x80> SvcTable{
         SVC_NONE, // 0x00 (Does not exist)
         SVC_ENTRY(SetHeapSize), // 0x01
-        SVC_NONE, // 0x02
+        SVC_ENTRY(SetMemoryPermission), // 0x02
         SVC_ENTRY(SetMemoryAttribute), // 0x03
         SVC_ENTRY(MapMemory), // 0x04
         SVC_ENTRY(UnmapMemory), // 0x05

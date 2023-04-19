@@ -551,9 +551,13 @@ namespace skyline::kernel {
         std::shared_lock lock(mutex);
         size_t size{};
 
-        for (auto &chunk : chunks) {
-            if (chunk.second.state == memory::states::Heap)
-                size += chunk.second.size;
+        auto currChunk = upper_bound(heap.data());
+        if (heap.data() < currChunk->first) [[likely]]
+            --currChunk;
+        while (currChunk->first < heap.end().base()) {
+            if (currChunk->second.state == memory::states::Heap)
+                size += currChunk->second.size;
+            ++currChunk;
         }
 
         return size + code.size() + state.process->mainThreadStack.size();
