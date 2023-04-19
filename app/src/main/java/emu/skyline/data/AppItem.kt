@@ -26,6 +26,7 @@ private val missingIcon by lazy { ContextCompat.getDrawable(SkylineApplication.i
 /**
  * This class is a wrapper around [AppEntry], it is used for passing around game metadata
  */
+@Suppress("SERIAL")
 data class AppItem(private val meta : AppEntry) : Serializable {
     /**
      * The icon of the application
