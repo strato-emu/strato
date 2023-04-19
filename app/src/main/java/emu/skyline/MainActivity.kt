@@ -216,30 +216,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getDataItems() = mutableListOf<AppViewItem>().apply {
-        if (appSettings.groupByFormat) {
-            appEntries?.let { entries ->
-                val formats = formatFilter?.let { listOf(it) } ?: formatOrder
-                for (format in formats) {
-                    entries[format]?.let {
-                        sortGameList(it).forEach { entry ->
-                            add(AppItem(entry).toViewItem())
-                        }
-                    }
+        val gameList = mutableListOf<AppEntry>()
+        appEntries?.let { entries ->
+            val formats = formatFilter?.let { listOf(it) } ?: formatOrder
+            for (format in formats) {
+                entries[format]?.let {
+                    it.forEach { entry -> gameList.add(entry) }
                 }
             }
-        } else {
-            val gameList = mutableListOf<AppEntry>()
-            appEntries?.let { entries ->
-                val formats = formatFilter?.let { listOf(it) } ?: formatOrder
-                for (format in formats) {
-                    entries[format]?.let {
-                        it.forEach { entry -> gameList.add(entry) }
-                    }
-                }
-            }
-            sortGameList(gameList.toList()).forEach { entry ->
-                add(AppItem(entry).toViewItem())
-            }
+        }
+        sortGameList(gameList.toList()).forEach { entry ->
+            add(AppItem(entry).toViewItem())
         }
     }
 

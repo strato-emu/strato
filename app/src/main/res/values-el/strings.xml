@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Δεν βρέθηκε εξωτερικός διαχειριστής αρχείων για να ανοίξει το ευρετήριο της Skyline</string>
     <string name="theme">Θέμα</string>
     <string name="layout_type">Οθόνη διάταξης παιχνιδιών</string>
-    <string name="group_by_format">Ομαδοποίηση παιχνιδιών ανά μορφή</string>
-    <string name="group_by_format_desc_off">Τα παιχνίδια θα εμφανίζονται ως ενιαία λίστα</string>
-    <string name="group_by_format_desc_on">Τα παιχνίδια θα εμφανίζονται ομαδοποιημένα κατά μορφή</string>
     <string name="sort_apps_by">Σειρά ταξινόμησης παιχνιδιών</string>
     <string name="select_action">Πάντα εμφάνισε τις πληροφορίες παιχνιδιού</string>
     <string name="select_action_desc_on">Οι πληροφορίες του παιχνιδιού θα εμφανιστούν όταν πατηθεί το παιχνίδι</string>

@@ -24,7 +24,6 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
     var useMaterialYou by sharedPreferences(context, false)
     var layoutType by sharedPreferences(context, 1)
     var sortAppsBy by sharedPreferences(context, 0)
-    var groupByFormat by sharedPreferences(context, true)
     var selectAction by sharedPreferences(context, false)
 
     // Input
@@ -34,7 +33,6 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
     var onScreenControlSnapToGrid by sharedPreferences(context, false)
 
     // Other
-    var romFormatFilter by sharedPreferences(context, 0)
     var refreshRequired by sharedPreferences(context, false)
     var logLevel by sharedPreferences(context, 3)
 }

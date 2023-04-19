@@ -44,9 +44,6 @@
     <string name="app_language_default">Usar Padrão do Sistema</string>
     <string name="layout_type">Modo de Exibição dos Jogos</string>
     <string name="sort_apps_by">Ordem de Classificação dos Jogos</string>
-    <string name="group_by_format">Agrupar Jogos por Formato</string>
-    <string name="group_by_format_desc_off">Jogos serão exibidos em lista única</string>
-    <string name="group_by_format_desc_on">Jogos serão exibidos agrupados por formato</string>
     <string name="select_action">Sempre Mostrar Informação dos Jogos</string>
     <string name="select_action_desc_on">Informação do jogo será mostrada ao clicar em um jogo</string>
     <string name="select_action_desc_off">Informação do jogo será mostrada somente em um clique longo sobre um jogo</string>

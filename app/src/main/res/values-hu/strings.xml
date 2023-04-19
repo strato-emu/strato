@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Nem található külső fájlkezelő a Skyline belső mappájának megnyitásához</string>
     <string name="theme">Téma</string>
     <string name="layout_type">Játékkönyvtár elrendezés</string>
-    <string name="group_by_format">Játékok csoportosítása formátum szerint</string>
-    <string name="group_by_format_desc_off">Játékok megjelenítése listában</string>
-    <string name="group_by_format_desc_on">Játékok csoportosítása formátum szerint</string>
     <string name="sort_apps_by">Játékok rendezési szempontja</string>
     <string name="select_action">A játékinformációk állandó mutatása</string>
     <string name="select_action_desc_on">A játékinformációk mutatása játékra kattintáskor</string>

@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Non è stato trovato nessun gestore file in grado di aprire la cartella interna dell\'emulatore</string>
     <string name="theme">Tema</string>
     <string name="layout_type">Disposizione dei giochi</string>
-    <string name="group_by_format">Raggruppa Giochi Per Formato</string>
-    <string name="group_by_format_desc_off">I giochi verranno mostrati in un\'unica lista</string>
-    <string name="group_by_format_desc_on">I giochi verranno mostrati raggruppati per formato</string>
     <string name="sort_apps_by">Ordine Dei Giochi</string>
     <string name="select_action">Mostra sempre le informazioni sui giochi</string>
     <string name="select_action_desc_on">Le informazioni sul gioco verranno mostrate quando il gioco viene cliccato</string>

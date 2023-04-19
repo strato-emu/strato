@@ -44,9 +44,6 @@
     <string name="app_language_default">Utiliser Langue Système</string>
     <string name="layout_type">Mode d\'affichage des jeux</string>
     <string name="sort_apps_by">Ordre de tri des jeux</string>
-    <string name="group_by_format">Grouper les jeux par format</string>
-    <string name="group_by_format_desc_off">Les jeux seront affichés sous forme de liste unique</string>
-    <string name="group_by_format_desc_on">Les jeux seront groupés par format</string>
     <string name="select_action">Toujours afficher les informations du jeu</string>
     <string name="select_action_desc_on">Les informations du jeu seront affichées en cliquant sur un jeu</string>
     <string name="select_action_desc_off">Les informations du jeu seront uniquement affichées en cliquant longtemps sur un jeu</string>

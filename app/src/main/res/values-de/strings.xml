@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Es wurde kein Dateimanager zum Anzeigen des internen Ordners von Skyline gefunden</string>
     <string name="theme">Theme</string>
     <string name="layout_type">Spieldarstellung</string>
-    <string name="group_by_format">Gruppiere Spiele nach Format</string>
-    <string name="group_by_format_desc_off">Spiele werden in einer einzigen Liste angezeigt</string>
-    <string name="group_by_format_desc_on">Spiele werden nach ihrem Dateiformat gruppiert</string>
     <string name="sort_apps_by">Spielesortierung</string>
     <string name="select_action">Spielinformationen immer anzeigen</string>
     <string name="select_action_desc_on">Spielinformationen werden beim Antippen eines Spiels angezeigt </string>

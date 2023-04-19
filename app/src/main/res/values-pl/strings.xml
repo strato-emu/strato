@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Nie udało się znaleźć zewnętrznego menedżera plików, aby otworzyć wewnętrzny katalog Skyline\'a</string>
     <string name="theme">Motyw</string>
     <string name="layout_type">Układ wyświetlanych gier</string>
-    <string name="group_by_format">Grupuj gry według formatu</string>
-    <string name="group_by_format_desc_off">Gry będą wyświetlane w pojedyńczej liście</string>
-    <string name="group_by_format_desc_on">Gry będą wyświetlane jako pogrupowane według formatu</string>
     <string name="sort_apps_by">Kolejność sortowania gier</string>
     <string name="select_action">Zawsze pokazuj informacje gier</string>
     <string name="select_action_desc_on">Informacje gry będą pokazane po jej naciśnięciu</string>

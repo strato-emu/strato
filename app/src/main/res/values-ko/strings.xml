@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Skyline의 내부 디렉토리를 여는 외부 파일 관리자를 찾을 수 없습니다</string>
     <string name="theme">테마</string>
     <string name="layout_type">게임 디스플레이 레이아웃</string>
-    <string name="group_by_format">형식별로 게임 그룹화</string>
-    <string name="group_by_format_desc_off">게임은 단일 목록으로 표시됩니다</string>
-    <string name="group_by_format_desc_on">게임은 형식별로 그룹화되어 표시됩니다</string>
     <string name="sort_apps_by">게임 정렬 순서</string>
     <string name="select_action">항상 게임 정보 표시</string>
     <string name="select_action_desc_on">클릭하면 게임 정보가 나타납니다</string>

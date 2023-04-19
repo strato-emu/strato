@@ -44,9 +44,6 @@
     <string name="app_language_default">使用系统默认值</string>
     <string name="layout_type">游戏显示布局</string>
     <string name="sort_apps_by">游戏排序顺序</string>
-    <string name="group_by_format">按格式分组游戏</string>
-    <string name="group_by_format_desc_off">游戏将显示为单个列表</string>
-    <string name="group_by_format_desc_on">游戏将按格式分组显示</string>
     <string name="select_action">始终显示游戏信息</string>
     <string name="select_action_desc_on">游戏信息将在点击游戏时显示</string>
     <string name="select_action_desc_off">游戏信息只会在长按游戏时显示</string>

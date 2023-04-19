@@ -29,9 +29,6 @@
     <string name="failed_open_directory">No se pudo encontrar un explorador de archivos externo para abrir el directorio interno de skyline </string>
     <string name="theme">Tema</string>
     <string name="layout_type">Tipo de vista de juegos</string>
-    <string name="group_by_format">Agrupar Juegos por Formato</string>
-    <string name="group_by_format_desc_off">Los juegos se mostrarán como una sola lista</string>
-    <string name="group_by_format_desc_on">Los juegos se agruparán por formato</string>
     <string name="sort_apps_by">Ordenar juegos por</string>
     <string name="select_action">Siempre Mostrar Información Del Juego</string>
     <string name="select_action_desc_on">La información del juego se mostrará al hacer clic en un juego</string>

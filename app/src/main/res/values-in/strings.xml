@@ -29,9 +29,6 @@
     <string name="failed_open_directory">Tidak dapat mencari aplikasi manajemen berkas untuk membuka direktori Skyline</string>
     <string name="theme">Tema</string>
     <string name="layout_type">Letak Tampilan Game</string>
-    <string name="group_by_format">Kelompokan Game Sesuai Format</string>
-    <string name="group_by_format_desc_off">Game akan ditampilkan dalam satu daftar. </string>
-    <string name="group_by_format_desc_on">Game akan ditampilkan dalam format berkelompok </string>
     <string name="sort_apps_by">Sortir Urutan Game</string>
     <string name="select_action">Selalu Perlihatkan Informasi Game</string>
     <string name="select_action_desc_on">Informasi game akan muncul ketika di klik</string>
