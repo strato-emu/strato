@@ -177,6 +177,7 @@
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="osc_recenter_sticks">Recenter Sticks On Touch</string>
+    <string name="osc_recenter_sticks_desc">Reposition the sticks at the pressed location when they are touched</string>
     <string name="osc_use_stick_regions">Use Stick Regions</string>
     <string name="osc_use_stick_regions_desc">Extend the activation area of the sticks to rectangles covering the corresponding half of the screen</string>
     <string name="controller">Controller</string>

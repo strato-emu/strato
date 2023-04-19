@@ -96,7 +96,7 @@ class ControllerActivity : AppCompatActivity() {
                     appSettings.onScreenControlFeedback = item.checked
                 })
 
-                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), "", appSettings.onScreenControlRecenterSticks) { item, position ->
+                items.add(ControllerCheckBoxViewItem(getString(R.string.osc_recenter_sticks), getString(R.string.osc_recenter_sticks_desc), appSettings.onScreenControlRecenterSticks) { item, position ->
                     appSettings.onScreenControlRecenterSticks = item.checked
                 })
 
