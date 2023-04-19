@@ -23,12 +23,10 @@ const val AppItemTag = BuildConfig.APPLICATION_ID + ".APP_ITEM"
 
 private val missingIcon by lazy { ContextCompat.getDrawable(SkylineApplication.instance, R.drawable.default_icon)!!.toBitmap(256, 256) }
 
-sealed class DataItem : Serializable
-
 /**
  * This class is a wrapper around [AppEntry], it is used for passing around game metadata
  */
-data class AppItem(private val meta : AppEntry) : DataItem() {
+data class AppItem(private val meta : AppEntry) : Serializable {
     /**
      * The icon of the application
      */

@@ -32,7 +32,6 @@ import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.MainActivityBinding
 import emu.skyline.loader.AppEntry
 import emu.skyline.loader.LoaderResult
-import emu.skyline.loader.RomFormat
 import emu.skyline.provider.DocumentsProvider
 import emu.skyline.settings.AppSettings
 import emu.skyline.settings.EmulationSettings
@@ -210,7 +209,7 @@ class MainActivity : AppCompatActivity() {
         if (appSettings.searchLocation.isEmpty()) documentPicker.launch(null)
     }
 
-    private fun getDataItems() = mutableListOf<AppViewItem>().apply {
+    private fun getAppItems() = mutableListOf<AppViewItem>().apply {
         appEntries?.let { entries ->
             sortGameList(entries.toList()).forEach { entry ->
                 add(AppItem(entry).toViewItem())
@@ -269,7 +268,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun populateAdapter() {
-        val items = getDataItems()
+        val items = getAppItems()
         binding.emptyPlaceholder.isVisible = items.isEmpty()
         adapter.setItems(items)
     }
