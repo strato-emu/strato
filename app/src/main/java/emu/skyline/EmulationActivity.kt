@@ -370,10 +370,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     @SuppressWarnings("WeakerAccess")
     fun resumeEmulator() {
-        if (!isEmulatorPaused) return
         gameSurface?.let { setSurface(it) }
-        if (!emulationSettings.isAudioOutputDisabled)
-            changeAudioStatus(true)
+        changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
         isEmulatorPaused = false
     }
 
@@ -400,6 +398,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         super.onResume()
 
         resumeEmulator()
+
+        GpuDriverHelper.forceMaxGpuClocks(emulationSettings.forceMaxGpuClocks)
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             @Suppress("DEPRECATION")
