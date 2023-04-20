@@ -38,8 +38,6 @@ namespace skyline::service::socket {
 
         std::vector<u8> SerializeAddrInfo(const addrinfo* addrinfo, i32 result_code, std::string_view host);
 
-        NetDbError AddrInfoErrorToNetDbError(i32 result);
-
         SERVICE_DECL(
             SFUNC(0x6, IResolver, GetAddrInfoRequest),
             SFUNC(0xA, IResolver, GetHostByNameRequestWithOptions),

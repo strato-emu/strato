@@ -6,6 +6,19 @@
 #include <common/settings.h>
 
 namespace skyline::service::socket {
+    static NetDbError AddrInfoErrorToNetDbError(i32 result) {
+        switch (result) {
+            case 0:
+                return NetDbError::Success;
+            case EAI_AGAIN:
+                return NetDbError::TryAgain;
+            case EAI_NODATA:
+                return NetDbError::NoData;
+            default:
+                return NetDbError::HostNotFound;
+        }
+    }
+
     IResolver::IResolver(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IResolver::GetAddrInfoRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
@@ -42,12 +55,12 @@ namespace skyline::service::socket {
             return {0, -1};
         }
 
-        addrinfo* result;
+        addrinfo *result;
         i32 resultCode = getaddrinfo(hostname.data(), service.data(), nullptr, &result);
 
         u32 dataSize{0};
         if (resultCode == 0 && result != nullptr) {
-            const std::vector<u8>& data = SerializeAddrInfo(result, resultCode, hostname);
+            const std::vector<u8> data = SerializeAddrInfo(result, resultCode, hostname);
             dataSize = static_cast<u32>(data.size());
             request.outputBuf.at(0).copy_from(data);
             freeaddrinfo(result);
@@ -160,18 +173,5 @@ namespace skyline::service::socket {
         data.push_back(0);
 
         return data;
-    }
-
-    NetDbError IResolver::AddrInfoErrorToNetDbError(i32 result) {
-        switch (result) {
-            case 0:
-                return NetDbError::Success;
-            case EAI_AGAIN:
-                return NetDbError::TryAgain;
-            case EAI_NODATA:
-                return NetDbError::NoData;
-            default:
-                return NetDbError::HostNotFound;
-        }
     }
 }

@@ -3,6 +3,7 @@
 
 #include <kernel/types/KProcess.h>
 #include "IRequest.h"
+#include <common/settings.h>
 
 namespace skyline::service::nifm {
     namespace result {
@@ -15,8 +16,10 @@ namespace skyline::service::nifm {
           BaseService(state, manager) {}
 
     Result IRequest::GetRequestState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        constexpr u32 Unsubmitted{1}; //!< The request has not been submitted
-        response.Push<u32>(Unsubmitted);
+        if (*state.settings->isInternetEnabled)
+            response.Push(RequestState::Accepted);
+        else
+            response.Push(RequestState::Invalid);
         return {};
     }
 
@@ -33,6 +36,10 @@ namespace skyline::service::nifm {
         Logger::Debug("Request Event 1 Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 
+        return {};
+    }
+
+    Result IRequest::Cancel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
 
