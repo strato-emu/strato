@@ -13,6 +13,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.SystemClock
+import androidx.core.content.res.use
 import androidx.core.graphics.minus
 import emu.skyline.R
 import emu.skyline.input.ButtonId

@@ -16,6 +16,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.util.TypedValue
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.use
 import emu.skyline.R
 import emu.skyline.input.ButtonId
 import kotlin.math.roundToInt

@@ -21,6 +21,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnTouchListener
 import androidx.annotation.IntRange
+import androidx.core.content.res.use
 import emu.skyline.R
 import emu.skyline.input.ButtonId
 import emu.skyline.input.ButtonState
