@@ -57,6 +57,7 @@
 #include "ro/IRoInterface.h"
 #include "mii/IStaticService.h"
 #include "olsc/IOlscServiceForApplication.h"
+#include "ntc/IEnsureNetworkClockAvailabilityService.h"
 #include "serviceman.h"
 
 #define SERVICE_CASE(class, name, ...) \
@@ -124,6 +125,7 @@ namespace skyline::service {
             SERVICE_CASE(nfp::IUserManager, "nfp:user")
             SERVICE_CASE(nifm::IStaticService, "nifm:u")
             SERVICE_CASE(socket::IClient, "bsd:u")
+            SERVICE_CASE(socket::IClient, "bsd:s")
             SERVICE_CASE(socket::IManager, "nsd:u")
             SERVICE_CASE(socket::IManager, "nsd:a")
             SERVICE_CASE(socket::IResolver, "sfdnsres")
@@ -144,6 +146,7 @@ namespace skyline::service {
             SERVICE_CASE(mii::IStaticService, "mii:e")
             SERVICE_CASE(mii::IStaticService, "mii:u")
             SERVICE_CASE(olsc::IOlscServiceForApplication, "olsc:u")
+            SERVICE_CASE(ntc::IEnsureNetworkClockAvailabilityService, "ntc")
             default:
                 std::string_view nameString(span(reinterpret_cast<char *>(&name), sizeof(name)).as_string(true));
                 throw std::out_of_range(fmt::format("CreateService called with an unknown service name: {}", nameString));
