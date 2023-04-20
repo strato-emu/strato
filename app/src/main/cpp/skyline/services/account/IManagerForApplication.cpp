@@ -4,6 +4,7 @@
 #include "IManagerForApplication.h"
 #include "IAccountServiceForApplication.h"
 #include "IAsyncContext.h"
+#include "IAuthorizationRequest.h"
 
 namespace skyline::service::account {
     IManagerForApplication::IManagerForApplication(const DeviceState &state, ServiceManager &manager, std::vector<UserId> &openedUsers) : BaseService(state, manager) {
@@ -26,6 +27,11 @@ namespace skyline::service::account {
     }
 
     Result IManagerForApplication::LoadIdTokenCache(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IManagerForApplication::CreateAuthorizationRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(IAuthorizationRequest), session, response);
         return {};
     }
 

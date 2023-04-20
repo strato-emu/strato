@@ -32,6 +32,8 @@ namespace skyline::service::account {
 
         Result LoadIdTokenCache(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result CreateAuthorizationRequest(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         Result StoreOpenContext(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         SERVICE_DECL(
@@ -39,6 +41,7 @@ namespace skyline::service::account {
             SFUNC(0x1, IManagerForApplication, GetAccountId),
             SFUNC(0x2, IManagerForApplication, EnsureIdTokenCacheAsync),
             SFUNC(0x3, IManagerForApplication, LoadIdTokenCache),
+            SFUNC(0x96, IManagerForApplication, CreateAuthorizationRequest),
             SFUNC(0xA0, IManagerForApplication, StoreOpenContext)
         )
     };
