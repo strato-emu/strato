@@ -64,6 +64,7 @@ namespace skyline {
         Setting<std::string> profilePictureValue; //!< The profile picture path to be supplied to the guest
         Setting<language::SystemLanguage> systemLanguage; //!< The system language
         Setting<region::RegionCode> systemRegion; //!< The system region
+        Setting<bool> isInternetEnabled; //!< If emulator uses internet
 
         // Display
         Setting<bool> forceTripleBuffering; //!< If the presentation engine should always triple buffer even if the swapchain supports double buffering

@@ -80,6 +80,7 @@
     <string name="profile_picture">Profile Picture</string>
     <string name="system_language">System Language</string>
     <string name="system_region">System Region</string>
+    <string name="internet">The system will be able to use internet</string>
     <!-- Settings - Display -->
     <string name="display">Display</string>
     <string name="perf_stats">Show Performance Statistics</string>

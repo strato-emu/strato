@@ -22,6 +22,7 @@ data class NativeSettings(
     var profilePictureValue : String,
     var systemLanguage : Int,
     var systemRegion : Int,
+    var isInternetEnabled : Boolean,
 
     // Audio
     var isAudioOutputDisabled : Boolean,
@@ -52,6 +53,7 @@ data class NativeSettings(
         pref.profilePictureValue,
         pref.systemLanguage,
         pref.systemRegion,
+        pref.isInternetEnabled,
         pref.isAudioOutputDisabled,
         if (pref.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) "" else pref.gpuDriver,
         if (pref.gpuDriver == EmulationSettings.SYSTEM_GPU_DRIVER) "" else GpuDriverHelper.getLibraryName(context, pref.gpuDriver),

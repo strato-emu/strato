@@ -32,6 +32,11 @@
             app:key="system_region"
             app:title="@string/system_region"
             app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summary="@string/internet"
+            app:key="is_internet_enabled"
+            app:title="Enable Internet" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_presentation"

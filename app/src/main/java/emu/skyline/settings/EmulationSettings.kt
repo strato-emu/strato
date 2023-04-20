@@ -29,6 +29,7 @@ class EmulationSettings private constructor(context : Context, prefName : String
     var profilePictureValue by sharedPreferences(context, "", prefName = prefName)
     var systemLanguage by sharedPreferences(context, 1, prefName = prefName)
     var systemRegion by sharedPreferences(context, -1, prefName = prefName)
+    var isInternetEnabled by sharedPreferences(context, false, prefName = prefName)
 
     // Audio
     var isAudioOutputDisabled by sharedPreferences(context, false, prefName = prefName)
