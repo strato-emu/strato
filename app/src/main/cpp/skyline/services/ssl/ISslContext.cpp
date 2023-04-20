@@ -17,4 +17,8 @@ namespace skyline::service::ssl {
         response.Push<u64>(0);
         return {};
     }
+
+    Result ISslContext::RegisterInternalPki(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
 }

@@ -12,5 +12,11 @@ namespace skyline::service::socket {
     class IManager : public BaseService {
       public:
         IManager(const DeviceState &state, ServiceManager &manager);
+
+        Result ResolveEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x15, IManager, ResolveEx),
+        )
     };
 }

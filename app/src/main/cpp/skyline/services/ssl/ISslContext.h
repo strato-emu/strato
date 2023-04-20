@@ -19,8 +19,14 @@ namespace skyline::service::ssl {
          */
         Result ImportServerPki(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/SSL_services#RegisterInternalPki
+         */
+        Result RegisterInternalPki(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x4, ISslContext, ImportServerPki)
+            SFUNC(0x4, ISslContext, ImportServerPki),
+            SFUNC(0x8, ISslContext, RegisterInternalPki)
         )
     };
 }
