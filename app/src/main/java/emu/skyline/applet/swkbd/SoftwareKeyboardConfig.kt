@@ -25,6 +25,7 @@ val OutsideOfMiiNicknameCodepoints = getCodepointArray('@', '%', '\\', 'ō', 'Ō
 data class KeyboardMode(
     var mode : u32 = 0u
 ) : ByteBufferSerializable {
+    @Suppress("unused")
     companion object {
         val Full = KeyboardMode(0u)
         val Numeric = KeyboardMode(1u)
@@ -118,6 +119,7 @@ data class PasswordMode(
 data class InputFormMode(
     var mode : u32 = 0u
 ) : ByteBufferSerializable {
+    @Suppress("unused")
     companion object {
         val OneLine = InputFormMode(0u)
         val MultiLine = InputFormMode(1u)
@@ -144,6 +146,7 @@ data class DictionaryInfo(
 /**
  * This data class matches KeyboardConfigVB in skyline/applet/swkbd/software_keyboard_config.h
  */
+@Suppress("ArrayInDataClass")
 data class SoftwareKeyboardConfig(
     var keyboardMode : KeyboardMode = KeyboardMode(),
     @param:ByteBufferSerializable.ByteBufferSerializableArray(0x9) val okText : CharArray = CharArray(0x9),

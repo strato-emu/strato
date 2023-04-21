@@ -75,7 +75,7 @@ interface WindowInsetsHelper {
             }
         }
 
-        fun addPadding(view : View, consume : Boolean = true, left : Boolean = false, top : Boolean = false, right : Boolean = false, bottom : Boolean = false) {
+        private fun addPadding(view : View, consume : Boolean = true, left : Boolean = false, top : Boolean = false, right : Boolean = false, bottom : Boolean = false) {
             // Save initial padding values to avoid adding to the initial padding multiple times
             val basePadding = object {
                 val left = view.paddingLeft

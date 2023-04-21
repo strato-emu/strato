@@ -5,6 +5,7 @@
 
 package emu.skyline.adapter
 
+import android.annotation.SuppressLint
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import emu.skyline.data.GpuDriverMetadata
@@ -24,6 +25,7 @@ open class GpuDriverViewItem(
 
     override fun getViewBindingFactory() = GpuDriverBindingFactory
 
+    @SuppressLint("SetTextI18n")
     override fun bind(holder : GenericViewHolder<GpuDriverItemBinding>, position : Int) {
         this.holder = holder
         val binding = holder.binding

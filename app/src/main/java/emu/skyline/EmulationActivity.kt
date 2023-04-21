@@ -78,7 +78,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     /**
      * The built-in [Vibrator] of the device
      */
-    lateinit var builtinVibrator : Vibrator
+    private lateinit var builtinVibrator : Vibrator
 
     /**
      * A map of [Vibrator]s that correspond to [InputManager.controllers]
@@ -108,7 +108,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     @Inject
     lateinit var appSettings : AppSettings
 
-    lateinit var emulationSettings : EmulationSettings
+    private lateinit var emulationSettings : EmulationSettings
 
     @Inject
     lateinit var inputManager : InputManager

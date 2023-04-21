@@ -15,13 +15,11 @@ inline fun <reified T : Parcelable> Bundle.parcelable(key: String): T? = when {
     else -> @Suppress("DEPRECATION") getParcelable(key) as? T
 }
 
-@Suppress("unused")
 inline fun <reified T : Parcelable> Intent.parcelable(key: String): T? = when {
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableExtra(key, T::class.java)
     else -> @Suppress("DEPRECATION") getParcelableExtra(key) as? T
 }
 
-@Suppress("unused")
 inline fun <reified T : Parcelable> Intent.parcelableArrayList(key: String): ArrayList<T>? = when {
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableArrayListExtra(key, T::class.java)
     else -> @Suppress("DEPRECATION") getParcelableArrayListExtra(key)

@@ -7,7 +7,6 @@ package emu.skyline.adapter
 
 import android.app.Dialog
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.View

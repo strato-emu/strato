@@ -4,6 +4,7 @@
  */
 
 @file:OptIn(ExperimentalUnsignedTypes::class)
+@file:Suppress("SERIAL")
 
 package emu.skyline.utils
 
@@ -111,6 +112,7 @@ interface ByteBufferSerializable : Parcelable {
     /**
      * Holds information about the constructor of the classes and the properties for serialization
      */
+    @Suppress("ArrayInDataClass")
     private data class ByteBufferSerializationData(val bytes : Int, val classesAndSizes : Array<ClassAndSize>, val properties : Array<KProperty1<*, *>>) {
         companion object {
             fun getSerializationData(kClass : KClass<*>) : ByteBufferSerializationData {
@@ -233,7 +235,7 @@ interface ByteBufferSerializable : Parcelable {
     }
 
     companion object {
-        @JvmField
+        @JvmField @Suppress("unused")
         val CREATOR : ParcelableCreator = ParcelableCreator()
 
         /**

@@ -18,7 +18,7 @@ import emu.skyline.settings.SettingsActivity
 import emu.skyline.provider.DocumentsProvider
 
 class DocumentsProviderPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
-    fun launchOpenIntent(action : String) : Boolean {
+    private fun launchOpenIntent(action : String) : Boolean {
         return try {
             val intent = Intent(action)
             intent.addCategory(Intent.CATEGORY_DEFAULT)
