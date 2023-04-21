@@ -9,11 +9,17 @@
     tools:context=".EmulationActivity"
     tools:ignore="RtlHardcoded">
 
-    <emu.skyline.views.FixedRatioSurfaceView
-        android:id="@+id/game_view"
+    <FrameLayout
+        android:id="@+id/on_screen_game_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center" />
+        android:layout_height="wrap_content">
+
+        <emu.skyline.views.FixedRatioSurfaceView
+            android:id="@+id/game_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+    </FrameLayout>
 
     <emu.skyline.input.onscreen.OnScreenControllerView
         android:id="@+id/on_screen_controller_view"
