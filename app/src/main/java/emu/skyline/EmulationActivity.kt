@@ -13,6 +13,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ActivityInfo
 import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.graphics.PointF
@@ -21,6 +22,7 @@ import android.hardware.display.DisplayManager
 import android.net.DhcpInfo
 import android.net.wifi.WifiManager
 import android.os.*
+import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Rational
 import android.view.*
@@ -32,6 +34,12 @@ import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.updateMargins
 import androidx.fragment.app.FragmentTransaction
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowInfoTracker
+import androidx.window.layout.WindowLayoutInfo
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import emu.skyline.applet.swkbd.SoftwareKeyboardConfig
@@ -49,11 +57,14 @@ import emu.skyline.settings.NativeSettings
 import emu.skyline.utils.ByteBufferSerializable
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.serializable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.FutureTask
 import javax.inject.Inject
 import kotlin.math.abs
+
 
 private const val ActionPause = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_PAUSE"
 private const val ActionMute = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_MUTE"
@@ -265,7 +276,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         populateAppItem()
         emulationSettings = EmulationSettings.forEmulation(item.titleId ?: item.key())
 
-        requestedOrientation = emulationSettings.orientation
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         inputHandler = InputHandler(inputManager, emulationSettings)
         setContentView(binding.root)
@@ -306,6 +316,16 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 else -> null
             }
         )
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                WindowInfoTracker.getOrCreate(this@EmulationActivity)
+                    .windowLayoutInfo(this@EmulationActivity)
+                    .collect { newLayoutInfo ->
+                        updateCurrentLayout(newLayoutInfo)
+                    }
+            }
+        }
 
         if (emulationSettings.perfStats) {
             if (emulationSettings.disableFrameThrottling)
@@ -480,6 +500,28 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             }
             binding.onScreenPauseToggle.apply {
                 isGone = binding.onScreenControllerView.isGone
+            }
+        }
+    }
+
+    /**
+    * Updating the layout depending on type and state of device
+    */
+    private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        binding.onScreenGameView.minimumHeight = displayMetrics.heightPixels
+        requestedOrientation = emulationSettings.orientation
+        for (displayFeature in newLayoutInfo.displayFeatures) {
+            val foldFeature = displayFeature as? FoldingFeature
+            foldFeature?.let {
+                if (it.isSeparating) {
+                    //Folding feature separates the display area into two distinct sections
+                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    if (foldFeature.orientation == FoldingFeature.Orientation.HORIZONTAL) {
+                        binding.onScreenGameView.minimumHeight = displayFeature.bounds.top
+                    }
+                }
             }
         }
     }
