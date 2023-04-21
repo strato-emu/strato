@@ -14,13 +14,14 @@ import android.view.ViewGroup
 import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.DialogFragment
 import emu.skyline.databinding.KeyboardDialogBinding
+import emu.skyline.utils.parcelable
 import emu.skyline.utils.stringFromChars
 import java.util.concurrent.FutureTask
 
 data class SoftwareKeyboardResult(val cancelled : Boolean, val text : String)
 
 class SoftwareKeyboardDialog : DialogFragment() {
-    private val config by lazy { requireArguments().getParcelable<SoftwareKeyboardConfig>("config")!! }
+    private val config by lazy { requireArguments().parcelable<SoftwareKeyboardConfig>("config")!! }
     private val initialText by lazy { requireArguments().getString("initialText")!! }
     private var stopped = false
 
