@@ -511,14 +511,21 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
         binding.onScreenGameView.minimumHeight = displayMetrics.heightPixels
-        requestedOrientation = emulationSettings.orientation
+        requestedOrientation =
+            if (emulationSettings.orientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
+                emulationSettings.orientation
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            }
         for (displayFeature in newLayoutInfo.displayFeatures) {
             val foldFeature = displayFeature as? FoldingFeature
             foldFeature?.let {
+                //Folding feature separates the display area into two distinct sections
                 if (it.isSeparating) {
-                    //Folding feature separates the display area into two distinct sections
-                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                    if (foldFeature.orientation == FoldingFeature.Orientation.HORIZONTAL) {
+                    if (emulationSettings.orientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED){
+                        requestedOrientation = emulationSettings.orientation
+                    }
+                    if (it.orientation == FoldingFeature.Orientation.HORIZONTAL) {
                         binding.onScreenGameView.minimumHeight = displayFeature.bounds.top
                     }
                 }
