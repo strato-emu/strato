@@ -130,6 +130,19 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     private var gameSurface : Surface? = null
 
+    private val displayHeight by lazy {
+        with (windowManager) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                maximumWindowMetrics.bounds.height()
+            } else {
+                val displayMetrics = DisplayMetrics()
+                @Suppress("DEPRECATION")
+                defaultDisplay.getMetrics(displayMetrics)
+                displayMetrics.heightPixels
+            }
+        }
+    }
+
     /**
      * This is the entry point into the emulation code for libskyline
      *
@@ -321,9 +334,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 WindowInfoTracker.getOrCreate(this@EmulationActivity)
                     .windowLayoutInfo(this@EmulationActivity)
-                    .collect { newLayoutInfo ->
-                        updateCurrentLayout(newLayoutInfo)
-                    }
+                    .collect { updateCurrentLayout(it) }
             }
         }
 
@@ -509,19 +520,10 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     */
     private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
         if (!emulationSettings.supportFoldableScreen) return
-        binding.onScreenGameView.minimumHeight = with (windowManager) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                maximumWindowMetrics.bounds.height()
-            } else {
-                val displayMetrics = DisplayMetrics()
-                @Suppress("DEPRECATION")
-                defaultDisplay.getMetrics(displayMetrics)
-                displayMetrics.heightPixels
-            }
-        }
-        requestedOrientation = emulationSettings.orientation
         val foldingFeature = newLayoutInfo.displayFeatures.find { it is FoldingFeature }
         (foldingFeature as? FoldingFeature)?.let {
+            binding.onScreenGameView.minimumHeight = displayHeight
+            requestedOrientation = emulationSettings.orientation
             if (it.isSeparating) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 if (it.orientation == FoldingFeature.Orientation.HORIZONTAL)
