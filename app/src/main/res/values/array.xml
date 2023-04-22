@@ -85,14 +85,12 @@
         <item>Device Aspect Ratio (Stretch to fit)</item>
     </string-array>
     <string-array name="orientation_entries">
-        <item>Landscape (auto)</item>
         <item>Auto</item>
         <item>Landscape</item>
         <item>Landscape (reverse)</item>
     </string-array>
     <integer-array name="orientation_values">
         <item>6</item>
-        <item>-1</item>
         <item>0</item>
         <item>8</item>
     </integer-array>
