@@ -40,6 +40,7 @@ class EmulationSettings private constructor(context : Context, prefName : String
     var orientation by sharedPreferences(context, ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE, prefName = prefName)
     var aspectRatio by sharedPreferences(context, 0, prefName = prefName)
     var respectDisplayCutout by sharedPreferences(context, false, prefName = prefName)
+    var supportFoldableScreen by sharedPreferences(context, false, prefName = prefName)
 
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER, prefName = prefName)
