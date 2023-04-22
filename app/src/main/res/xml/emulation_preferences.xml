@@ -72,6 +72,12 @@
             android:summaryOn="@string/respect_display_cutout_enabled"
             app:key="respect_display_cutout"
             app:title="@string/respect_display_cutout" />
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:summaryOff="@string/support_foldable_screen_disabled"
+            android:summaryOn="@string/support_foldable_screen_enabled"
+            app:key="support_foldable_screen"
+            app:title="@string/support_foldable_screen" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_audio"

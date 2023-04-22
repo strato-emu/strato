@@ -508,27 +508,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     * Updating the layout depending on type and state of device
     */
     private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
-        val displayMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(displayMetrics)
-        binding.onScreenGameView.minimumHeight = displayMetrics.heightPixels
-        requestedOrientation =
-            if (emulationSettings.orientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
-                emulationSettings.orientation
+        if (!emulationSettings.supportFoldableScreen) return
+        binding.onScreenGameView.minimumHeight = with (windowManager) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                maximumWindowMetrics.bounds.height()
             } else {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                val displayMetrics = DisplayMetrics()
+                @Suppress("DEPRECATION")
+                defaultDisplay.getMetrics(displayMetrics)
+                displayMetrics.heightPixels
             }
-        for (displayFeature in newLayoutInfo.displayFeatures) {
-            val foldFeature = displayFeature as? FoldingFeature
-            foldFeature?.let {
-                //Folding feature separates the display area into two distinct sections
-                if (it.isSeparating) {
-                    if (emulationSettings.orientation == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED){
-                        requestedOrientation = emulationSettings.orientation
-                    }
-                    if (it.orientation == FoldingFeature.Orientation.HORIZONTAL) {
-                        binding.onScreenGameView.minimumHeight = displayFeature.bounds.top
-                    }
-                }
+        }
+        requestedOrientation = emulationSettings.orientation
+        val foldingFeature = newLayoutInfo.displayFeatures.find { it is FoldingFeature }
+        (foldingFeature as? FoldingFeature)?.let {
+            if (it.isSeparating) {
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                if (it.orientation == FoldingFeature.Orientation.HORIZONTAL)
+                    binding.onScreenGameView.minimumHeight = it.bounds.top
+                else
+                    requestedOrientation = emulationSettings.orientation
             }
         }
     }
