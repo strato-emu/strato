@@ -115,13 +115,12 @@
                     app:shapeAppearance="@style/ShapeAppearance.Material3.Corner.ExtraLarge" />
 
                 <TextView
-                    android:id="@+id/empty_placeholder"
+                    android:id="@+id/rom_placeholder"
                     style="?attr/textAppearanceTitleLarge"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="16dp"
-                    android:layout_marginVertical="8dp"
-                    android:text="@string/no_rom"
+                    android:text="@string/searching_roms"
                     android:textAlignment="viewStart"
                     app:layout_constraintTop_toBottomOf="@id/search_bar"/>
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -132,7 +131,6 @@
         android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="-8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <androidx.recyclerview.widget.RecyclerView

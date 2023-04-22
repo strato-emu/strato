@@ -263,13 +263,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadRoms(loadFromFile : Boolean) {
+        if (!loadFromFile) {
+            binding.romPlaceholder.isVisible = true
+            binding.romPlaceholder.text = getString(R.string.searching_roms)
+        }
         viewModel.loadRoms(this, loadFromFile, Uri.parse(appSettings.searchLocation), EmulationSettings.global.systemLanguage)
         appSettings.refreshRequired = false
     }
 
     private fun populateAdapter() {
         val items = getAppItems()
-        binding.emptyPlaceholder.isVisible = items.isEmpty()
+        if (items.isEmpty())
+            binding.romPlaceholder.text = getString(R.string.no_rom)
+        else
+            binding.romPlaceholder.isVisible = false
         adapter.setItems(items)
     }
 
