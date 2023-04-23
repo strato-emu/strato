@@ -289,6 +289,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         populateAppItem()
         emulationSettings = EmulationSettings.forEmulation(item.titleId ?: item.key())
 
+        requestedOrientation = emulationSettings.orientation
         window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         inputHandler = InputHandler(inputManager, emulationSettings)
         setContentView(binding.root)
@@ -519,9 +520,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     * Updating the layout depending on type and state of device
     */
     private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
-        requestedOrientation = emulationSettings.orientation
         binding.onScreenGameView.minimumHeight = displayHeight
         if (!emulationSettings.supportFoldableScreen) return
+        requestedOrientation = emulationSettings.orientation
         val foldingFeature = newLayoutInfo.displayFeatures.find { it is FoldingFeature }
         (foldingFeature as? FoldingFeature)?.let {
             if (it.isSeparating) {
