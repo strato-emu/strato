@@ -519,17 +519,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     * Updating the layout depending on type and state of device
     */
     private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
+        requestedOrientation = emulationSettings.orientation
+        binding.onScreenGameView.minimumHeight = displayHeight
         if (!emulationSettings.supportFoldableScreen) return
         val foldingFeature = newLayoutInfo.displayFeatures.find { it is FoldingFeature }
         (foldingFeature as? FoldingFeature)?.let {
-            binding.onScreenGameView.minimumHeight = displayHeight
-            requestedOrientation = emulationSettings.orientation
             if (it.isSeparating) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 if (it.orientation == FoldingFeature.Orientation.HORIZONTAL)
                     binding.onScreenGameView.minimumHeight = it.bounds.top
-                else
-                    requestedOrientation = emulationSettings.orientation
             }
         }
     }
