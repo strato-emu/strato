@@ -414,6 +414,6 @@ namespace skyline::gpu {
         if (!*state.settings->disableShaderCache)
             graphicsPipelineCacheManager.emplace(state,
                                                  state.os->publicAppFilesPath + "graphics_pipeline_cache/" + titleId);
-        graphicsPipelineManager.emplace(*this);
+        graphicsPipelineManager.emplace(*this, *state.jvm);
     }
 }

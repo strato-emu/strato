@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <functional>
 #include <future>
 #include <BS_thread_pool.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -59,6 +60,7 @@ namespace skyline::gpu {
         vk::raii::PipelineCache vkPipelineCache; //!< A Vulkan Pipeline Cache which stores all unique graphics pipelines
         BS::thread_pool pool;
         std::string pipelineCacheDir;
+        std::function<void()> compilationCallback;
 
         /**
          * @brief All unique metadata in a single attachment for a compatible render pass according to Render Pass Compatibility clause in the Vulkan specification
@@ -158,5 +160,15 @@ namespace skyline::gpu {
          * @brief Saves the current Vulkan pipeline cache to the filesystem
          */
         void SavePipelineCache();
+
+        /**
+         * @brief Registers a callback that is called whenever a pipeline is compiled
+         */
+        void RegisterCompilationCallback(std::function<void()> callback);
+
+        /**
+         * @brief Unregisters the compilation callback
+         */
+        void UnregisterCompilationCallback();
     };
 }

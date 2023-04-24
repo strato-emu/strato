@@ -34,7 +34,11 @@ namespace skyline::gpu {
          */
         void QueueWrite(std::unique_ptr<interconnect::PipelineStateBundle> bundle);
 
-        std::ifstream OpenReadStream();
+        /**
+         * @brief Opens the main pipeline cache file for reading
+         * @return A pair containing the stream and the total pipeline count
+         */
+        std::pair<std::ifstream, u32> OpenReadStream();
 
         /**
          * @brief Shrinks the pipeline cache file to `offset` bytes, removing any (potentially invalid) data after that point

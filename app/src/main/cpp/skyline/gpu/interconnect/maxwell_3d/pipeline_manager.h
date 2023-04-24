@@ -272,7 +272,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #endif
 
       public:
-        PipelineManager(GPU &gpu);
+        PipelineManager(GPU &gpu, JvmManager &jvm);
 
         Pipeline *FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries);
     };

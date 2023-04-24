@@ -8,19 +8,26 @@
 namespace skyline::gpu {
     struct PipelineCacheFileHeader {
         static constexpr u32 Magic{util::MakeMagic<u32>("PCHE")}; //!< The magic value used to identify a pipeline cache file
-        static constexpr u32 Version{2}; //!< The version of the pipeline cache file format, MUST be incremented for any format changes
+        static constexpr u32 Version{3}; //!< The version of the pipeline cache file format, MUST be incremented for any format changes
 
         u32 magic{Magic};
         u32 version{Version};
+        u32 count{0}; //!< The total number of pipeline cache bundles in the file
 
         auto operator<=>(const PipelineCacheFileHeader &) const = default;
-    };
 
-    static constexpr PipelineCacheFileHeader ValidPipelineCacheFileHeader{};
+        /**
+         * @brief Checks if the header is valid
+         */
+        bool IsValid() {
+            return magic == Magic && version == Version;
+        }
+    };
 
     void PipelineCacheManager::Run() {
         std::ofstream stream{stagingPath, std::ios::binary | std::ios::trunc};
-        stream.write(reinterpret_cast<const char *>(&ValidPipelineCacheFileHeader), sizeof(PipelineCacheFileHeader));
+        PipelineCacheFileHeader header{};
+        stream.write(reinterpret_cast<const char *>(&header), sizeof(PipelineCacheFileHeader));
 
         while (true) {
             std::unique_lock lock(writeMutex);
@@ -31,7 +38,15 @@ namespace skyline::gpu {
             auto bundle{std::move(writeQueue.front())};
             writeQueue.pop();
             lock.unlock();
+
             bundle->Serialise(stream);
+
+            header.count++;
+            // Rewrite the header with the updated count
+            auto savedPosition{stream.tellp()};
+            stream.seekp(0, std::ios_base::beg);
+            stream.write(reinterpret_cast<const char *>(&header), sizeof(PipelineCacheFileHeader));
+            stream.seekp(savedPosition);
         }
     }
 
@@ -40,8 +55,8 @@ namespace skyline::gpu {
             return false;
 
         PipelineCacheFileHeader header{};
-        stream.read(reinterpret_cast<char *>(&header), sizeof(header));
-        return header == ValidPipelineCacheFileHeader;
+        stream.read(reinterpret_cast<char *>(&header), sizeof(PipelineCacheFileHeader));
+        return header.IsValid();
     }
 
     void PipelineCacheManager::MergeStaging() {
@@ -49,12 +64,24 @@ namespace skyline::gpu {
         if (stagingStream.fail())
             return; // If the staging file doesn't exist then there's nothing to merge
 
-        if (!ValidateHeader(stagingStream)) {
+        PipelineCacheFileHeader stagingHeader{};
+        stagingStream.read(reinterpret_cast<char *>(&stagingHeader), sizeof(PipelineCacheFileHeader));
+        if (!stagingHeader.IsValid()) {
             Logger::Warn("Discarding invalid pipeline cache staging file");
             return;
         }
 
-        std::ofstream mainStream{mainPath, std::ios::binary | std::ios::app};
+        std::fstream mainStream{mainPath, std::ios::binary | std::ios::in | std::ios::out};
+        PipelineCacheFileHeader mainHeader{};
+        mainStream.seekg(0, std::ios_base::beg);
+        mainStream.read(reinterpret_cast<char *>(&mainHeader), sizeof(PipelineCacheFileHeader));
+
+        // Update the main header with the new count
+        mainHeader.count += stagingHeader.count;
+        mainStream.seekp(0, std::ios_base::beg);
+        mainStream.write(reinterpret_cast<const char *>(&mainHeader), sizeof(PipelineCacheFileHeader));
+
+        mainStream.seekp(0, std::ios::end);
         mainStream << stagingStream.rdbuf();
     }
 
@@ -73,7 +100,8 @@ namespace skyline::gpu {
         if (!didExist) { // If the main file didn't exist we need to write the header
             std::filesystem::create_directories(std::filesystem::path{mainPath}.parent_path());
             std::ofstream mainStream{mainPath, std::ios::binary | std::ios::app};
-            mainStream.write(reinterpret_cast<const char *>(&ValidPipelineCacheFileHeader), sizeof(PipelineCacheFileHeader));
+            PipelineCacheFileHeader header{};
+            mainStream.write(reinterpret_cast<const char *>(&header), sizeof(PipelineCacheFileHeader));
         }
 
         // Merge any staging changes into the main file before starting the writer thread
@@ -87,12 +115,17 @@ namespace skyline::gpu {
         writeCondition.notify_one();
     }
 
-    std::ifstream PipelineCacheManager::OpenReadStream() {
+    std::pair<std::ifstream, u32> PipelineCacheManager::OpenReadStream() {
         auto mainStream{std::ifstream{mainPath, std::ios::binary}};
-        if (!ValidateHeader(mainStream))
+        if (mainStream.fail())
+            throw exception("Pipeline cache main file missing at runtime!");
+
+        PipelineCacheFileHeader header{};
+        mainStream.read(reinterpret_cast<char *>(&header), sizeof(PipelineCacheFileHeader));
+        if (!header.IsValid())
             throw exception("Pipeline cache main file corrupted at runtime!");
 
-        return mainStream;
+        return {std::move(mainStream), header.count};
     }
 
     void PipelineCacheManager::InvalidateAllAfter(u64 offset) {

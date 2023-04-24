@@ -214,6 +214,9 @@ namespace skyline::gpu {
 
         std::scoped_lock lock{mutex};
         compilePendingDescs.erase(pipelineDescIt);
+        if (compilationCallback)
+            compilationCallback();
+
         return pipeline;
     }
 
@@ -251,5 +254,16 @@ namespace skyline::gpu {
             std::vector<u8> rawData{vkPipelineCache.getData()};
             SerialisePipelineCache(gpu, pipelineCacheDir, rawData);
         });
+    }
+
+    void GraphicsPipelineAssembler::RegisterCompilationCallback(std::function<void()> callback) {
+        if (compilationCallback)
+            throw exception("A compilation callback is already registered");
+
+        compilationCallback = std::move(callback);
+    }
+
+    void GraphicsPipelineAssembler::UnregisterCompilationCallback() {
+        compilationCallback = {};
     }
 }

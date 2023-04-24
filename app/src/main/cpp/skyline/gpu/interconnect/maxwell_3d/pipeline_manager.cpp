@@ -9,6 +9,7 @@
 #include <gpu/graphics_pipeline_assembler.h>
 #include <gpu/shader_manager.h>
 #include <gpu.h>
+#include <jvm.h>
 #include <vulkan/vulkan_enums.hpp>
 #include "graphics_pipeline_state_accessor.h"
 #include "pipeline_manager.h"
@@ -942,12 +943,19 @@ namespace skyline::gpu::interconnect::maxwell3d {
         });
     }
 
-    PipelineManager::PipelineManager(GPU &gpu) {
+    PipelineManager::PipelineManager(GPU &gpu, JvmManager &jvm) {
         if (!gpu.graphicsPipelineCacheManager)
             return;
 
-        std::ifstream stream{gpu.graphicsPipelineCacheManager->OpenReadStream()};
+        std::atomic<u32> compiledCount{};
+        auto [stream, totalPipelineCount]{gpu.graphicsPipelineCacheManager->OpenReadStream()};
         i64 lastKnownGoodOffset{stream.tellg()};
+
+        jvm.ShowPipelineLoadingScreen(totalPipelineCount);
+        gpu.graphicsPipelineAssembler->RegisterCompilationCallback([&]() {
+            jvm.UpdatePipelineLoadingProgress(++compiledCount);
+        });
+
         try {
             auto startTime{util::GetTimeNs()};
             PipelineStateBundle bundle;
@@ -986,8 +994,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
         } catch (const exception &e) {
             Logger::Warn("Pipeline cache corrupted at: 0x{:X}, error: {}", lastKnownGoodOffset, e.what());
             gpu.graphicsPipelineCacheManager->InvalidateAllAfter(static_cast<u64>(lastKnownGoodOffset));
-            return;
         }
+
+        gpu.graphicsPipelineAssembler->UnregisterCompilationCallback();
+        jvm.HidePipelineLoadingScreen();
     }
 
     Pipeline *PipelineManager::FindOrCreate(InterconnectContext &ctx, Textures &textures, ConstantBufferSet &constantBuffers, const PackedPipelineState &packedState, const std::array<ShaderBinary, engine::PipelineCount> &shaderBinaries) {
