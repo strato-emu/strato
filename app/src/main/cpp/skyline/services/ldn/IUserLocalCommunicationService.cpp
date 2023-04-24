@@ -2,6 +2,7 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include "IUserLocalCommunicationService.h"
+#include <common/settings.h>
 
 namespace skyline::service::ldn {
     IUserLocalCommunicationService::IUserLocalCommunicationService(const DeviceState &state, ServiceManager &manager)
@@ -9,8 +10,39 @@ namespace skyline::service::ldn {
           event{std::make_shared<type::KEvent>(state, false)} {}
 
     Result IUserLocalCommunicationService::GetState(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        static constexpr u32 StateNone{0x0};
-        response.Push<u32>(StateNone);
+        response.Push(State::Error);
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::GetNetworkInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        if (request.outputBuf.at(0).size() != sizeof(NetworkInfo)) {
+            Logger::Error("Invalid input");
+            return result::InvalidInput;
+        }
+
+        NetworkInfo networkInfo{};
+        request.outputBuf.at(0).as<NetworkInfo>() = networkInfo;
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::GetIpv4Address(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::GetDisconnectReason(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push(DisconnectReason::None);
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::GetSecurityParameter(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        SecurityParameter securityParameter{};
+        response.Push(securityParameter);
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::GetNetworkConfig(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        NetworkConfig networkConfig{};
+        response.Push(networkConfig);
         return {};
     }
 
@@ -21,15 +53,71 @@ namespace skyline::service::ldn {
         return {};
     }
 
+    Result IUserLocalCommunicationService::GetNetworkInfoLatestUpdate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        const size_t networkBuffferSize{request.outputBuf.at(0).size()};
+        const size_t nodeBufferCount{request.outputBuf.at(1).size() / sizeof(NodeLatestUpdate)};
+
+        if (nodeBufferCount == 0 || networkBuffferSize != sizeof(NetworkInfo))
+            return result::InvalidInput;
+
+        NetworkInfo networkInfo{};
+        std::vector<NodeLatestUpdate> latestUpdate(nodeBufferCount);
+
+        request.outputBuf.at(0).as<NetworkInfo>() = networkInfo;
+        request.outputBuf.at(1).copy_from(latestUpdate);
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::Scan(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        const size_t networkInfoSize{request.outputBuf.at(0).size() / sizeof(NetworkInfo)};
+
+        if (networkInfoSize == 0)
+            return result::InvalidInput;
+
+        std::vector<NetworkInfo> networkInfos(networkInfoSize);
+        request.outputBuf.at(0).copy_from(networkInfos);
+        response.Push<u32>(0);
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::OpenAccessPoint(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::CreateNetwork(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::CreateNetworkPrivate(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::SetAdvertiseData(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
+    Result IUserLocalCommunicationService::OpenStation(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result IUserLocalCommunicationService::InitializeSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return result::DeviceDisabled;
+        if (!*state.settings->isInternetEnabled)
+            return result::AirplaneModeEnabled;
+
+        isInitialized = true;
+        return result::AirplaneModeEnabled;
     }
 
     Result IUserLocalCommunicationService::FinalizeSystem(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        isInitialized = false;
         return {};
     }
 
     Result IUserLocalCommunicationService::InitializeSystem2(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        return result::DeviceDisabled;
+        if (!*state.settings->isInternetEnabled)
+            return result::AirplaneModeEnabled;
+
+        isInitialized = true;
+        return result::AirplaneModeEnabled;
     }
 }
