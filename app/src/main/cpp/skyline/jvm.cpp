@@ -64,7 +64,8 @@ namespace skyline {
           closeKeyboardId{environ->GetMethodID(instanceClass, "closeKeyboard", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;)V")},
           showValidationResultId{environ->GetMethodID(instanceClass, "showValidationResult", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;ILjava/lang/String;)I")},
           getVersionCodeId{environ->GetMethodID(instanceClass, "getVersionCode", "()I")},
-          getIntegerValueId{environ->GetMethodID(environ->FindClass("java/lang/Integer"), "intValue", "()I")} {
+          getIntegerValueId{environ->GetMethodID(environ->FindClass("java/lang/Integer"), "intValue", "()I")},
+          getDhcpInfoId{environ->GetMethodID(instanceClass, "getDhcpInfo", "()Landroid/net/DhcpInfo;")} {
         env.Initialize(environ);
     }
 
@@ -130,6 +131,23 @@ namespace skyline {
         env->ReleaseStringChars(inputJString, stringChars);
 
         return {static_cast<KeyboardCloseResult>(env->CallIntMethod(buttonInteger, getIntegerValueId)), input};
+    }
+
+    DhcpInfo JvmManager::GetDhcpInfo() {
+        jobject dhcpInfo{env->CallObjectMethod(instance, getDhcpInfoId)};
+        jclass dhcpInfoClass{env->GetObjectClass(dhcpInfo)};
+        jfieldID ipAddressFieldId{env->GetFieldID(dhcpInfoClass, "ipAddress", "I")};
+        jfieldID subnetFieldId{env->GetFieldID(dhcpInfoClass, "netmask", "I")};
+        jfieldID gatewayFieldId{env->GetFieldID(dhcpInfoClass, "gateway", "I")};
+        jfieldID dns1FieldId{env->GetFieldID(dhcpInfoClass, "dns1", "I")};
+        jfieldID dns2FieldId{env->GetFieldID(dhcpInfoClass, "dns2", "I")};
+
+        jint ipAddress{env->GetIntField(dhcpInfo, ipAddressFieldId)};
+        jint subnet{env->GetIntField(dhcpInfo, subnetFieldId)};
+        jint gateway{env->GetIntField(dhcpInfo, gatewayFieldId)};
+        jint dns1{env->GetIntField(dhcpInfo, dns1FieldId)};
+        jint dns2{env->GetIntField(dhcpInfo, dns2FieldId)};
+        return DhcpInfo{ipAddress, subnet, gateway, dns1, dns2};
     }
 
     void JvmManager::CloseKeyboard(jobject dialog) {

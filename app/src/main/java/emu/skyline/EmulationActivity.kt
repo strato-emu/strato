@@ -18,6 +18,8 @@ import android.content.res.Configuration
 import android.graphics.PointF
 import android.graphics.drawable.Icon
 import android.hardware.display.DisplayManager
+import android.net.DhcpInfo
+import android.net.wifi.WifiManager
 import android.os.*
 import android.util.Log
 import android.util.Rational
@@ -625,6 +627,12 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     @Suppress("unused")
     fun waitForSubmitOrCancel(dialog : SoftwareKeyboardDialog) : Array<Any?> {
         return dialog.waitForSubmitOrCancel().let { arrayOf(if (it.cancelled) 1 else 0, it.text) }
+    }
+
+    @Suppress("unused")
+    fun getDhcpInfo() : DhcpInfo {
+        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        return wifiManager.dhcpInfo
     }
 
     @Suppress("unused")

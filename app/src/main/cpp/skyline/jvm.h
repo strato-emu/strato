@@ -7,6 +7,14 @@
 #include <jni.h>
 
 namespace skyline {
+    struct DhcpInfo {
+        i32 ipAddress;
+        i32 subnet;
+        i32 gateway;
+        i32 dns1;
+        i32 dns2;
+    };
+
     /**
      * @brief A wrapper over std::string that supports construction using a JNI jstring
      */
@@ -182,6 +190,11 @@ namespace skyline {
          */
         i32 GetVersionCode();
 
+        /**
+         * @brief A call to EmulationActivity.getDhcpInfo in Kotlin
+         */
+        DhcpInfo GetDhcpInfo();
+
       private:
         jmethodID initializeControllersId;
         jmethodID vibrateDeviceId;
@@ -191,6 +204,7 @@ namespace skyline {
         jmethodID closeKeyboardId;
         jmethodID showValidationResultId;
         jmethodID getVersionCodeId;
+        jmethodID getDhcpInfoId;
 
         jmethodID getIntegerValueId;
     };
