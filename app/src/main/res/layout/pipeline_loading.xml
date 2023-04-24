@@ -6,7 +6,7 @@
     android:layout_height="match_parent">
 
     <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/game_icon_bg"
+        android:id="@+id/background_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription="@string/icon"
@@ -52,7 +52,7 @@
             android:layout_marginStart="16dp"
             android:maxWidth="360dp"
             android:orientation="vertical"
-            app:layout_constraintBottom_toTopOf="@+id/shader_info"
+            app:layout_constraintBottom_toTopOf="@+id/pipeline_info"
             app:layout_constraintEnd_toEndOf="@id/guidelineTextEdge"
             app:layout_constraintStart_toEndOf="@id/guidelineIconText"
             app:layout_constraintTop_toTopOf="parent">
@@ -80,7 +80,7 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/shader_info"
+            android:id="@+id/pipeline_info"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -90,11 +90,11 @@
             app:layout_constraintTop_toBottomOf="@+id/game_info">
 
             <TextView
-                android:id="@+id/shaders_compiling"
+                android:id="@+id/pipelines_compiling"
                 style="?attr/textAppearanceBodyMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/compiling_cached_shaders"
+                android:text="@string/compiling_cached_pipelines"
                 android:textColor="@android:color/white"
                 android:textSize="17sp"
                 app:layout_constraintStart_toStartOf="parent"
@@ -109,7 +109,7 @@
                 app:trackThickness="10dp" />
 
             <TextView
-                android:id="@+id/progress"
+                android:id="@+id/progress_label"
                 style="?attr/textAppearanceBodyMedium"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

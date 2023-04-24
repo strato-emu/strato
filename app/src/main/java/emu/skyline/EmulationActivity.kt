@@ -34,12 +34,12 @@ import androidx.core.view.updateMargins
 import androidx.fragment.app.FragmentTransaction
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
-import emu.skyline.BuildConfig
 import emu.skyline.applet.swkbd.SoftwareKeyboardConfig
 import emu.skyline.applet.swkbd.SoftwareKeyboardDialog
 import emu.skyline.data.AppItem
 import emu.skyline.data.AppItemTag
 import emu.skyline.databinding.EmuActivityBinding
+import emu.skyline.emulation.PipelineLoadingFragment
 import emu.skyline.input.*
 import emu.skyline.loader.RomFile
 import emu.skyline.loader.getRomFormat
@@ -449,7 +449,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
     }
 
-    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode : Boolean, newConfig : Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
 
@@ -466,10 +466,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         } else {
             try {
                 unregisterReceiver(pictureInPictureReceiver)
-            } catch (ignored : Exception) { }
+            } catch (ignored : Exception) {
+            }
 
             resumeEmulator()
-            
+
             binding.onScreenControllerView.apply {
                 controllerType = inputHandler.getFirstControllerType()
                 isGone = controllerType == ControllerType.None || !appSettings.onScreenControl
@@ -512,6 +513,44 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         stopEmulation(false)
         vibrators.forEach { (_, vibrator) -> vibrator.cancel() }
         vibrators.clear()
+    }
+
+    private lateinit var pipelineLoadingFragment : PipelineLoadingFragment
+
+    /**
+     * Called by native code to show the pipeline loading progress screen
+     */
+    @Suppress("unused")
+    fun showPipelineLoadingScreen(totalPipelineCount : Int) {
+        pipelineLoadingFragment = PipelineLoadingFragment.newInstance(item, totalPipelineCount)
+
+        supportFragmentManager
+            .beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+            .replace(R.id.emulation_fragment, pipelineLoadingFragment)
+            .commit()
+    }
+
+    /**
+     * Called by native code to update the pipeline loading progress
+     */
+    @Suppress("unused")
+    fun updatePipelineLoadingProgress(progress : Int) {
+        runOnUiThread {
+            pipelineLoadingFragment.updateProgress(progress)
+        }
+    }
+
+    /**
+     * Called by native code to hide the pipeline loading progress screen
+     */
+    @Suppress("unused")
+    fun hidePipelineLoadingScreen() {
+        supportFragmentManager
+            .beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+            .remove(pipelineLoadingFragment)
+            .commit()
     }
 
     override fun surfaceCreated(holder : SurfaceHolder) {

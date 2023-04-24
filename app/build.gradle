@@ -189,6 +189,7 @@ dependencies {
     /* Other Java */
     implementation 'info.debatty:java-string-similarity:2.0.0'
     implementation 'com.github.KikiManjaro:colorpicker:v1.1.12'
+    implementation 'com.github.android:renderscript-intrinsics-replacement-toolkit:344be3f'
 }
 
 kapt {

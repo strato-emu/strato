@@ -27,8 +27,8 @@
         android:layout_gravity="top|left"
         android:layout_marginLeft="@dimen/onScreenItemHorizontalMargin"
         android:layout_marginTop="5dp"
-        tools:text="60 FPS\n16.6±0.10ms"
-        android:textColor="@color/colorPerfStatsPrimary" />
+        android:textColor="@color/colorPerfStatsPrimary"
+        tools:text="60 FPS\n16.6±0.10ms" />
 
     <ImageButton
         android:id="@+id/on_screen_pause_toggle"
@@ -53,4 +53,9 @@
         android:src="@drawable/ic_show"
         app:tint="#40FFFFFF"
         tools:ignore="ContentDescription" />
+
+    <FrameLayout
+        android:id="@+id/emulation_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </FrameLayout>
