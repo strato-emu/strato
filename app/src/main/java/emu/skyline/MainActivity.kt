@@ -107,11 +107,7 @@ class MainActivity : AppCompatActivity() {
         PreferenceManager.setDefaultValues(this, R.xml.app_preferences, false)
         PreferenceManager.setDefaultValues(this, R.xml.emulation_preferences, false)
 
-        adapter.apply {
-            setOnFilterPublishedListener {
-                binding.appList.post { binding.appList.smoothScrollToPosition(0) }
-            }
-        }
+        binding.appList.setHasFixedSize(true)
 
         setupAppList()
 
