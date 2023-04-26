@@ -130,19 +130,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     private var gameSurface : Surface? = null
 
-    private val displayHeight by lazy {
-        with (windowManager) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                maximumWindowMetrics.bounds.height()
-            } else {
-                val displayMetrics = DisplayMetrics()
-                @Suppress("DEPRECATION")
-                defaultDisplay.getMetrics(displayMetrics)
-                displayMetrics.heightPixels
-            }
-        }
-    }
-
     /**
      * This is the entry point into the emulation code for libskyline
      *
@@ -520,15 +507,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     * Updating the layout depending on type and state of device
     */
     private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
-        binding.onScreenGameView.minimumHeight = displayHeight
         if (!emulationSettings.supportFoldableScreen) return
+        binding.onScreenGameView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
         requestedOrientation = emulationSettings.orientation
         val foldingFeature = newLayoutInfo.displayFeatures.find { it is FoldingFeature }
         (foldingFeature as? FoldingFeature)?.let {
             if (it.isSeparating) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 if (it.orientation == FoldingFeature.Orientation.HORIZONTAL)
-                    binding.onScreenGameView.minimumHeight = it.bounds.top
+                    binding.onScreenGameView.layoutParams.height = it.bounds.top
             }
         }
     }
