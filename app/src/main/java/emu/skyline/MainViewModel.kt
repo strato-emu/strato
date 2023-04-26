@@ -4,18 +4,18 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import emu.skyline.loader.AppEntry
-import emu.skyline.loader.RomFormat
 import emu.skyline.utils.fromFile
 import emu.skyline.utils.toFile
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
-import java.util.*
 import javax.inject.Inject
 
 sealed class MainState {
@@ -42,7 +42,8 @@ class MainViewModel @Inject constructor(@ApplicationContext context : Context, p
      * @param loadFromFile If this is false then trying to load cached adapter data is skipped entirely
      */
     fun loadRoms(context : Context, loadFromFile : Boolean, searchLocation : Uri, systemLanguage : Int) {
-        if (state == MainState.Loading) return
+        if (state == MainState.Loading)
+            return
         state = MainState.Loading
 
         val romsFile = File(getApplication<SkylineApplication>().filesDir.canonicalPath + "/roms.bin")
@@ -51,6 +52,7 @@ class MainViewModel @Inject constructor(@ApplicationContext context : Context, p
             if (loadFromFile && romsFile.exists()) {
                 try {
                     state = MainState.Loaded(fromFile(romsFile))
+                    checkRomHash(searchLocation, systemLanguage)
                     return@launch
                 } catch (e : Exception) {
                     Log.w(TAG, "Ran into exception while loading: ${e.message}")
@@ -58,7 +60,6 @@ class MainViewModel @Inject constructor(@ApplicationContext context : Context, p
             }
 
             state = if (searchLocation.toString().isEmpty()) {
-                @Suppress("ReplaceWithEnumMap")
                 MainState.Loaded(ArrayList())
             } else {
                 try {
@@ -75,17 +76,30 @@ class MainViewModel @Inject constructor(@ApplicationContext context : Context, p
     }
 
     /**
+     * Tracks whether an auto refresh is already in progress
+     */
+    private var isAutoRefreshingRoms = false
+
+    /**
      * This checks if the roms have changed since the last time they were loaded and if so it reloads them
      */
     fun checkRomHash(searchLocation : Uri, systemLanguage : Int) {
-        if(state !is MainState.Loaded) return
-        CoroutineScope(Dispatchers.IO).launch {
-            val currentHash = (state as MainState.Loaded).items.hashCode()
+        // Skip if an auto refresh is already in progress or if the state hasn't already loaded
+        if (isAutoRefreshingRoms || state !is MainState.Loaded)
+            return
+        isAutoRefreshingRoms = true
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentHash = when (val currentState = state) {
+                is MainState.Loaded -> currentState.items.hashCode()
+                else -> 0
+            }
             val romElements = romProvider.loadRoms(searchLocation, systemLanguage)
             val newHash = romElements.hashCode()
-            if (newHash != currentHash) {
+            if (newHash != currentHash)
                 state = MainState.Loaded(romElements)
-            }
+
+            isAutoRefreshingRoms = false
         }
     }
 }
