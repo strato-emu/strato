@@ -518,6 +518,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                     binding.onScreenGameView.layoutParams.height = it.bounds.top
             }
         }
+        binding.onScreenGameView.requestLayout()
     }
 
     /**
