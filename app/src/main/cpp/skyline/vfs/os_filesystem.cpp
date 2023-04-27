@@ -20,7 +20,7 @@ namespace skyline::vfs {
 
         // Create a directory that will hold the file
         CreateDirectory(path.substr(0, path.find_last_of('/')), true);
-        int fd{open(fullPath.c_str(), O_RDWR | O_CREAT, 0666)};
+        int fd{open(fullPath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)};
         if (fd < 0) {
             if (errno != ENOENT)
                 throw exception("Failed to create file: {}", strerror(errno));
