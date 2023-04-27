@@ -284,5 +284,5 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="save_file_imported_ok">The save file was imported successfully</string>
-    <string name="save_file_invalid_zip_structure">Failed to unzip. First subfolder must be named after the TitleId of the game.</string>
+    <string name="save_file_invalid_zip_structure">Invalid Zip directory structure: the first subfolder name must be the Title ID of the game.</string>
 </resources>
