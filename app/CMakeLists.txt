@@ -10,34 +10,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(source_DIR ${CMAKE_SOURCE_DIR}/src/main/cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing -Wno-unused-command-line-argument -fwrapv")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -flto=full -fno-stack-protector -DNDEBUG -march=armv8-a+simd")
 
 # Build all libraries with -Ofast but with default debug data (-g) for debug and reldebug builds
-set(CMAKE_CXX_FLAGS_DEBUG "-Ofast")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Ofast")
+set(CMAKE_CXX_FLAGS_DEBUG "-Ofast -march=armv8-a+simd")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Ofast -march=armv8-a+simd")
+
+# libcxxabi
+set(ANDROID_STL "none")
+set(LIBCXXABI_INCLUDE_TESTS OFF)
+set(LIBCXXABI_ENABLE_SHARED OFF)
+set(LIBCXXABI_ENABLE_ASSERTIONS OFF)
+set(LIBCXXABI_LIBCXX_INCLUDES "${LIBCXX_TARGET_INCLUDE_DIRECTORY}" CACHE STRING "" FORCE)
+add_subdirectory("libraries/llvm/libcxxabi")
 
 # libcxx
-set(ANDROID_STL "none")
 set(LIBCXX_INCLUDE_TESTS OFF)
 set(LIBCXX_INCLUDE_BENCHMARKS OFF)
 set(LIBCXX_INCLUDE_DOCS OFF)
-set(LIBCXX_ENABLE_SHARED FALSE)
-set(LIBCXX_ENABLE_ASSERTIONS FALSE)
-set(LIBCXX_STANDALONE_BUILD FALSE)
+set(LIBCXX_ENABLE_SHARED OFF)
+set(LIBCXX_ENABLE_ASSERTIONS OFF)
+set(LIBCXX_ENABLE_STATIC_ABI_LIBRARY ON)
 add_subdirectory("libraries/llvm/libcxx")
 link_libraries(cxx_static)
-get_target_property(LIBCXX_INCLUDE_COMPILE_OPTION cxx-headers INTERFACE_COMPILE_OPTIONS)
+get_target_property(LIBCXX_INCLUDE_COMPILE_OPTION cxx-headers INTERFACE_INCLUDE_DIRECTORIES)
 string(REGEX REPLACE "-I" "" LIBCXX_INCLUDE_DIRECTORY_LIST "${LIBCXX_INCLUDE_COMPILE_OPTION}")
 list(GET LIBCXX_INCLUDE_DIRECTORY_LIST 1 LIBCXX_TARGET_INCLUDE_DIRECTORY) # We just want the target include directory
 set_target_properties(cxx-headers PROPERTIES INTERFACE_COMPILE_OPTIONS -isystem${LIBCXX_TARGET_INCLUDE_DIRECTORY})
-
-# libcxxabi
-set(LIBCXXABI_INCLUDE_TESTS OFF)
-set(LIBCXXABI_ENABLE_SHARED FALSE)
-set(LIBCXXABI_STANDALONE_BUILD FALSE)
-set(LIBCXXABI_LIBCXX_INCLUDES "${LIBCXX_TARGET_INCLUDE_DIRECTORY}" CACHE STRING "" FORCE)
-add_subdirectory("libraries/llvm/libcxxabi")
-link_libraries(cxxabi_static)
 
 # Skyline's Boost fork
 set(Boost_USE_STATIC_LIBS ON)
@@ -97,6 +96,7 @@ set(USE_SANITIZERS OFF)
 set(USE_LAZY_LOAD_LIBS OFF)
 set(USE_AAUDIO OFF)
 set(BUNDLE_SPEEX ON)
+set(BUILD_TOOLS OFF)
 add_subdirectory("libraries/cubeb")
 include_directories(SYSTEM "libraries/cubeb/include")
 
@@ -124,9 +124,9 @@ include_directories("libraries/renderdoc")
 include_directories("libraries/thread-pool")
 
 # Build Skyline with full debugging data and -Og for debug builds
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer")
-# Build Skyline with full debugging data and some optimizations for reldebug builds, build speed is pioritised
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O1 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer -fno-stack-protector")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer -march=armv8-a+simd")
+# Build Skyline with full debugging data and some optimizations for reldebug builds, build speed is prioritised
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O1 -g3 -glldb -gdwarf-5 -fno-omit-frame-pointer -fno-stack-protector -march=armv8-a+simd")
 
 # Include headers from libraries as system headers to silence warnings from them
 function(target_link_libraries_system target)
@@ -410,4 +410,4 @@ target_include_directories(skyline PRIVATE ${source_DIR}/skyline)
 target_compile_options(skyline PRIVATE -Wall -Wno-unknown-attributes -Wno-c++20-extensions -Wno-c++17-extensions -Wno-c99-designator -Wno-reorder -Wno-missing-braces -Wno-unused-variable -Wno-unused-private-field -Wno-dangling-else -Wconversion -fsigned-bitfields)
 
 target_link_libraries(skyline PRIVATE shader_recompiler audio_core)
-target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode vkma mbedcrypto opus Boost::intrusive Boost::container range-v3 adrenotools tsl::robin_map)
+target_link_libraries_system(skyline android perfetto fmt lz4_static tzcode vkma mbedcrypto opus Boost::intrusive Boost::container Boost::preprocessor range-v3 adrenotools tsl::robin_map)
