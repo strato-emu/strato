@@ -134,13 +134,11 @@ class AppDialog : BottomSheetDialogFragment() {
             AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.delete_save_confirmation_message))
                 .setMessage(getString(R.string.action_irreversible))
-                .setPositiveButton(getString(R.string.yes)) { dialogInterface, _ ->
+                .setNegativeButton(getString(R.string.no), null)
+                .setPositiveButton(getString(R.string.yes)) { _, _ ->
                     File(saveFolderPath).deleteRecursively()
                     binding.deleteSave.isEnabled = false
                     binding.exportSave.isEnabled = false
-                    dialogInterface.dismiss()
-                }.setNegativeButton(getString(R.string.no)) { dialogInterface, _ ->
-                    dialogInterface.cancel()
                 }.show()
         }
 
@@ -188,9 +186,8 @@ class AppDialog : BottomSheetDialogFragment() {
                         return@forEach
                     val entry = ZipEntry("$zipFileName${(if (file.isDirectory) "/" else "")}")
                     zos.putNextEntry(entry)
-                    if (file.isFile) {
+                    if (file.isFile)
                         file.inputStream().use { fis -> fis.copyTo(zos) }
-                    }
                 }
             }
             lastZipCreated = outputZipFile
@@ -200,7 +197,7 @@ class AppDialog : BottomSheetDialogFragment() {
         return true
     }
 
-    private val startForResultExportSave = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+    private val startForResultExportSave = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         lastZipCreated?.delete()
     }
 
@@ -210,7 +207,9 @@ class AppDialog : BottomSheetDialogFragment() {
      */
     private fun exportSave(saveFolderPath : String) {
         CoroutineScope(Dispatchers.IO).launch {
-            if (!zipSave(saveFolderPath)) {
+            val wasZipCreated = zipSave(saveFolderPath)
+            val lastZipFile = lastZipCreated
+            if (!wasZipCreated || lastZipFile == null) {
                 withContext(Dispatchers.Main) {
                     Snackbar.make(binding.root, R.string.error, Snackbar.LENGTH_LONG).show()
                 }
@@ -218,7 +217,7 @@ class AppDialog : BottomSheetDialogFragment() {
             }
 
             withContext(Dispatchers.Main) {
-                val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${lastZipCreated!!.name}"))!!
+                val file = DocumentFile.fromSingleUri(requireContext(), DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001/${lastZipFile.name}"))!!
                 val intent = Intent(Intent.ACTION_SEND)
                     .setDataAndType(file.uri, "application/zip")
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -257,14 +256,14 @@ class AppDialog : BottomSheetDialogFragment() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    if (validZip) {
-                        val isSaveFileOfThisGame = File("$savesFolderRoot${item.titleId}").exists()
-                        binding.deleteSave.isEnabled = isSaveFileOfThisGame
-                        binding.exportSave.isEnabled = isSaveFileOfThisGame
-                        Snackbar.make(binding.root, R.string.save_file_imported_ok, Snackbar.LENGTH_LONG).show()
-                    } else {
+                    if (!validZip) {
                         Snackbar.make(binding.root, getString(R.string.save_file_invalid_zip_structure), Snackbar.LENGTH_LONG).show()
+                        return@withContext
                     }
+                    val isSaveFileOfThisGame = File("$savesFolderRoot${item.titleId}").exists()
+                    binding.deleteSave.isEnabled = isSaveFileOfThisGame
+                    binding.exportSave.isEnabled = isSaveFileOfThisGame
+                    Snackbar.make(binding.root, R.string.save_file_imported_ok, Snackbar.LENGTH_LONG).show()
                 }
 
                 cacheSaveDir.deleteRecursively()
