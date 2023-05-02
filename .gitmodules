@@ -34,7 +34,6 @@
 [submodule "Boost"]
 	path = app/libraries/boost
 	url = https://github.com/skyline-emu/boost.git
-	ignore = all
 [submodule "LLVM"]
 	path = app/libraries/llvm
 	url = https://github.com/llvm/llvm-project.git
