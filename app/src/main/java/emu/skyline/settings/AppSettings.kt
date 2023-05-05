@@ -25,6 +25,7 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
     var layoutType by sharedPreferences(context, 1)
     var sortAppsBy by sharedPreferences(context, 0)
     var selectAction by sharedPreferences(context, false)
+    var filterInvalidFiles by sharedPreferences(context, false)
 
     // Input
     var onScreenControl by sharedPreferences(context, true)

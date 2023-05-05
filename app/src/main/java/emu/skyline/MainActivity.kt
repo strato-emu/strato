@@ -215,7 +215,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun sortGameList(gameList : List<AppEntry>) : List<AppEntry> {
         val sortedApps : MutableList<AppEntry> = mutableListOf()
-        gameList.forEach { entry -> sortedApps.add(entry) }
+        gameList.forEach { entry ->
+            if (!appSettings.filterInvalidFiles || entry.loaderResult != LoaderResult.ParsingError)
+                sortedApps.add(entry)
+        }
         when (appSettings.sortAppsBy) {
             SortingOrder.AlphabeticalAsc.ordinal -> sortedApps.sortBy { it.name }
             SortingOrder.AlphabeticalDesc.ordinal -> sortedApps.sortByDescending { it.name }
