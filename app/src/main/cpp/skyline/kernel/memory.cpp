@@ -500,6 +500,46 @@ namespace skyline::kernel {
                 Logger::Error("Failed to free memory: {}", strerror(errno));
     }
 
+    void MemoryManager::SvcMapMemory(span<u8> source, span<u8> destination) {
+        std::unique_lock lock{mutex};
+
+        MapInternal(std::pair<u8 *, ChunkDescriptor>(
+            destination.data(),{
+                .size = destination.size(),
+                .permission = {true, true, false},
+                .state = memory::states::Stack,
+                .isSrcMergeDisallowed = true
+        }));
+
+        std::memcpy(destination.data(), source.data(), source.size());
+
+        ForeachChunkinRange(source, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+            desc.second.permission = {false, false, false};
+            desc.second.attributes.isBorrowed = true;
+            MapInternal(desc);
+        });
+    }
+
+    void MemoryManager::SvcUnmapMemory(span<u8> source, span<u8> destination) {
+        std::unique_lock lock{mutex};
+
+        auto dstChunk = chunks.lower_bound(destination.data());
+        if (destination.data() < dstChunk->first)
+            --dstChunk;
+        while (dstChunk->second.state.value == memory::states::Unmapped)
+            ++dstChunk;
+
+        if ((destination.data() + destination.size()) > dstChunk->first) [[likely]] {
+            ForeachChunkinRange(span<u8>{source.data() + (dstChunk->first - destination.data()), dstChunk->second.size}, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+                desc.second.permission = dstChunk->second.permission;
+                desc.second.attributes.isBorrowed = false;
+                MapInternal(desc);
+            });
+
+            std::memcpy(source.data() + (dstChunk->first - destination.data()), dstChunk->first, dstChunk->second.size);
+        }
+    }
+
     void MemoryManager::AddRef(std::shared_ptr<type::KMemory> ptr) {
         memRefs.push_back(std::move(ptr));
     }

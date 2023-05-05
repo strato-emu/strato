@@ -322,6 +322,10 @@ namespace skyline {
              */
             void FreeMemory(span<u8> memory);
 
+            void SvcMapMemory(span<u8> source, span<u8> destination);
+
+            void SvcUnmapMemory(span<u8> source, span<u8> destination);
+
             /**
              * @brief Adds a reference to shared memory, extending its lifetime until `RemoveRef` is called
              */
@@ -346,7 +350,7 @@ namespace skyline {
             /**
              * @return If the supplied region is contained withing the accessible guest address space
              */
-            bool AddressSpaceContains(span<u8> region) const {
+            constexpr bool AddressSpaceContains(span<u8> region) const {
                 if (addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit)
                     return codeBase36Bit.contains(region) || base.contains(region);
                 else

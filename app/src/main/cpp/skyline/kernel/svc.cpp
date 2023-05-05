@@ -172,11 +172,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        state.process->memory.MapStackMemory(span<u8>{destination, size});
-        std::memcpy(destination, source, size);
-
-        state.process->memory.SetRegionPermission(span<u8>{source, size}, {false, false, false});
-        state.process->memory.SetRegionBorrowed(span<u8>{source, size}, true);
+        state.process->memory.SvcMapMemory(span<u8>{source, size}, span<u8>{destination, size});
 
         Logger::Debug("Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->gpr.w0 = Result{};
@@ -205,18 +201,8 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        auto dstChunk{state.process->memory.GetChunk(destination).value()};
-        while (dstChunk.second.state.value == memory::states::Unmapped)
-            dstChunk = state.process->memory.GetChunk(dstChunk.first + dstChunk.second.size).value();
-
-        if ((destination + size) > dstChunk.first) [[likely]] {
-            state.process->memory.SetRegionPermission(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, dstChunk.second.permission);
-            state.process->memory.SetRegionBorrowed(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, false);
-
-            std::memcpy(source + (dstChunk.first - destination), dstChunk.first, dstChunk.second.size);
-
-            state.process->memory.UnmapMemory(span<u8>{destination, size});
-        }
+        state.process->memory.SvcUnmapMemory(span<u8>{source, size}, span<u8>{destination, size});
+        state.process->memory.UnmapMemory(span<u8>{destination, size});
 
         Logger::Debug("Unmapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", destination, destination + size, source, source + size, size);
         state.ctx->gpr.w0 = Result{};
