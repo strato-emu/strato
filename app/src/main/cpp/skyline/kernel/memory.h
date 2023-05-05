@@ -63,7 +63,9 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/SVC#MemoryAttribute
          */
         union MemoryAttribute {
-
+            /**
+             * @brief Initializes all atrributes to false
+             */
             constexpr MemoryAttribute() : value{} {}
 
             constexpr explicit MemoryAttribute(u8 value) : value{value} {}
@@ -259,7 +261,7 @@ namespace skyline {
 
             /**
              * @brief Mirrors a page-aligned mapping in the guest address space to the host address space
-             * @return A span to the host address space mirror mapped as RWX, unmapping it is the responsibility of the caller
+             * @return A span to the host address space mirror mapped as RW, unmapping it is the responsibility of the caller
              * @note The supplied mapping **must** be page-aligned and inside the guest address space
              */
             span<u8> CreateMirror(span<u8> mapping);
@@ -267,7 +269,7 @@ namespace skyline {
             /**
              * @brief Mirrors multiple page-aligned mapping in the guest address space to the host address space
              * @param totalSize The total size of all the regions to be mirrored combined
-             * @return A span to the host address space mirror mapped as RWX, unmapping it is the responsibility of the caller
+             * @return A span to the host address space mirror mapped as RW, unmapping it is the responsibility of the caller
              * @note The supplied mapping **must** be page-aligned and inside the guest address space
              * @note If a single mapping is mirrored, it is recommended to use CreateMirror instead
              */
@@ -294,7 +296,7 @@ namespace skyline {
              */
             std::optional<std::pair<u8 *, ChunkDescriptor>> GetChunk(u8 *addr);
 
-            // Various mapping functions for use by the guest
+            // Various mapping functions for use by the guest, argument validity must be checked by the caller
             void MapCodeMemory(span<u8> memory, memory::Permission permission);
 
             void MapMutableCodeMemory(span<u8> memory);
@@ -322,8 +324,16 @@ namespace skyline {
              */
             void FreeMemory(span<u8> memory);
 
+            /**
+             * Implements the memory manager side functionality of svcMapMemory
+             * @note Argument validity must be checked by the caller
+             */
             void SvcMapMemory(span<u8> source, span<u8> destination);
 
+            /**
+             * Implements the memory manager side functionality of svcUnmapMemory
+             * @note Argument validity must be checked by the caller
+             */
             void SvcUnmapMemory(span<u8> source, span<u8> destination);
 
             /**

@@ -43,7 +43,7 @@ namespace skyline::kernel {
             if ((firstChunk.state == memory::states::Unmapped) != isUnmapping)
                 needsReprotection = true;
 
-            // We edit the chunk's first half
+            // We reduce the size of the first half
             firstChunk.size = static_cast<size_t>(newDesc.first - firstChunkBase->first);
             chunks[firstChunkBase->first] = firstChunk;
 
@@ -69,12 +69,13 @@ namespace skyline::kernel {
 
             bool shouldInsert{true};
 
+            // We check if the new chunk and the first chunk is mergable
             if (firstChunk.IsCompatible(newDesc.second)) {
                 shouldInsert = false;
 
                 firstChunk.size = static_cast<size_t>((newDesc.first + newDesc.second.size) - firstChunkBase->first);
                 chunks[firstChunkBase->first] = firstChunk;
-            } else if ((firstChunkBase->first + firstChunk.size) != newDesc.first) {
+            } else if ((firstChunkBase->first + firstChunk.size) != newDesc.first) { // If it's not mergable check if it needs resizing
                 firstChunk.size = static_cast<size_t>(newDesc.first - firstChunkBase->first);
 
                 chunks[firstChunkBase->first] = firstChunk;
@@ -83,6 +84,7 @@ namespace skyline::kernel {
                     needsReprotection = true;
             }
 
+            // We check if the new chunk and the last chunk is mergable
             if (lastChunk.IsCompatible(newDesc.second)) {
                 u8 *oldBase{lastChunkBase->first};
                 chunks.erase(lastChunkBase);
@@ -97,7 +99,7 @@ namespace skyline::kernel {
                     firstChunk.size = static_cast<size_t>((lastChunk.size + oldBase) - firstChunkBase->first);
                     chunks[firstChunkBase->first] = firstChunk;
                 }
-            } else if ((newDesc.first + newDesc.second.size) != lastChunkBase->first) {
+            } else if ((newDesc.first + newDesc.second.size) != lastChunkBase->first) { // If it's not mergable check if it needs resizing
                 lastChunk.size = static_cast<size_t>((lastChunk.size + lastChunkBase->first) - (newDesc.first + newDesc.second.size));
 
                 chunks.erase(lastChunkBase);
@@ -377,7 +379,7 @@ namespace skyline::kernel {
         if (!addressSpace.contains(addr)) [[unlikely]]
             return std::nullopt;
 
-        auto chunkBase = chunks.lower_bound(addr);
+        auto chunkBase{chunks.lower_bound(addr)};
         if (addr < chunkBase->first)
             --chunkBase;
 
