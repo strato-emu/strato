@@ -8,12 +8,12 @@
 #include "KProcess.h"
 
 namespace skyline::kernel::type {
-    KMemory::KMemory(const DeviceState &state, KType objectType, size_t size) : KObject(state, objectType), guest() {
-        fd = ASharedMemory_create(objectType == KType::KSharedMemory ? "HOS-KSharedMemory" : "HOS-KTransferMemory", size);
-        if (fd < 0) [[unlikely]]
-            throw exception("An error occurred while creating shared memory: {}", fd);
+    KMemory::KMemory(const DeviceState &state, KType objectType, size_t size) : KObject{state, objectType}, guest{} {
+        fileDescriptor = ASharedMemory_create(objectType == KType::KSharedMemory ? "HOS-KSharedMemory" : "HOS-KTransferMemory", size);
+        if (fileDescriptor < 0) [[unlikely]]
+            throw exception("An error occurred while creating shared memory: {}", fileDescriptor);
 
-        u8 *hostPtr{static_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0))};
+        u8 *hostPtr{static_cast<u8 *>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, 0))};
         if (hostPtr == MAP_FAILED) [[unlikely]]
             throw exception("An occurred while mapping shared memory: {}", strerror(errno));
 
@@ -28,7 +28,7 @@ namespace skyline::kernel::type {
         if (guest.valid()) [[unlikely]]
             throw exception("Mapping KMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
 
-        if (mmap(map.data(), map.size(), permission.Get() ? PROT_READ | PROT_WRITE : PROT_NONE, MAP_SHARED | (map.data() ? MAP_FIXED : 0), fd, 0) == MAP_FAILED) [[unlikely]]
+        if (mmap(map.data(), map.size(), permission.Get() ? PROT_READ | PROT_WRITE : PROT_NONE, MAP_SHARED | (map.data() ? MAP_FIXED : 0), fileDescriptor, 0) == MAP_FAILED) [[unlikely]]
             throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
         guest = map;
 
@@ -51,6 +51,6 @@ namespace skyline::kernel::type {
         if (host.valid())
             munmap(host.data(), host.size());
 
-        close(fd);
+        close(fileDescriptor);
     }
 }

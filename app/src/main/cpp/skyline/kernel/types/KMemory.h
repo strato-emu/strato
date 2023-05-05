@@ -12,7 +12,7 @@ namespace skyline::kernel::type {
      */
     class KMemory : public KObject {
       private:
-        int fd; //!< A file descriptor to the underlying shared memory
+        int fileDescriptor; //!< A file descriptor to the underlying shared memory
 
       public:
         KMemory(const DeviceState &state, KType objectType, size_t size);

@@ -6,7 +6,7 @@
 
 namespace skyline::kernel::type {
     KTransferMemory::KTransferMemory(const DeviceState &state, size_t size)
-        : KMemory(state, KType::KTransferMemory,  size) {}
+        : KMemory{state, KType::KTransferMemory, size} {}
 
     u8 *KTransferMemory::Map(span<u8> map, memory::Permission permission) {
         std::memcpy(host.data(), map.data(), map.size());
@@ -21,7 +21,7 @@ namespace skyline::kernel::type {
             return nullptr;
         } else {
             state.process->memory.MapTransferMemory(guest, permission);
-            state.process->memory.SetLockOnChunks(guest, true);
+            state.process->memory.SetRegionBorrowed(guest, true);
             return result;
         }
     }

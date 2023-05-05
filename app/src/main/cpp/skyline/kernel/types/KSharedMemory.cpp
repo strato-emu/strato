@@ -6,7 +6,7 @@
 
 namespace skyline::kernel::type {
     KSharedMemory::KSharedMemory(const DeviceState &state, size_t size)
-        : KMemory(state, KType::KSharedMemory, size) {}
+        : KMemory{state, KType::KSharedMemory, size} {}
 
     u8 *KSharedMemory::Map(span<u8> map, memory::Permission permission) {
         u8 *result{KMemory::Map(map, permission)};

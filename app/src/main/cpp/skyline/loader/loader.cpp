@@ -91,7 +91,7 @@ namespace skyline::loader {
 
         if (process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit) {
             process->memory.MapHeapMemory(span<u8>{base, patch.size + hookSize}); // ---
-            process->memory.SetChunkPermission(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false});
+            process->memory.SetRegionPermission(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false});
         } else {
             process->memory.Reserve(span<u8>{base, patch.size + hookSize}); // ---
         }

@@ -18,19 +18,19 @@ namespace skyline {
             /**
              * @brief Initializes all permissions to false
              */
-            constexpr Permission() : raw() {}
+            constexpr Permission() : raw{} {}
 
             /**
              * @brief Initializes permissions where the first three bits correspond to RWX
              */
-            constexpr explicit Permission(u8 raw) : raw(raw) {}
+            constexpr explicit Permission(u8 raw) : raw{raw} {}
 
             /**
              * @param read If memory has read permission
              * @param write If memory has write permission
              * @param execute If memory has execute permission
              */
-            constexpr Permission(bool read, bool write, bool execute) : r(read), w(write), x(execute) {}
+            constexpr Permission(bool read, bool write, bool execute) : r{read}, w{write}, x{execute} {}
 
             inline bool operator==(const Permission &rhs) const { return r == rhs.r && w == rhs.w && x == rhs.x; }
 
@@ -63,13 +63,18 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/SVC#MemoryAttribute
          */
         union MemoryAttribute {
+
+            constexpr MemoryAttribute() : value{} {}
+
+            constexpr explicit MemoryAttribute(u8 value) : value{value} {}
+
             struct {
                 bool isBorrowed : 1; //!< This is required for async IPC user buffers
                 bool isIpcLocked : 1; //!< True when IpcRefCount > 0
                 bool isDeviceShared : 1; //!< True when DeviceRefCount > 0
                 bool isUncached : 1; //!< This is used to disable memory caching to share memory with the GPU
             };
-            u32 value{};
+            u8 value;
         };
 
         /**
@@ -122,9 +127,9 @@ namespace skyline {
          * @url https://switchbrew.org/wiki/SVC#MemoryState
          */
         union MemoryState {
-            constexpr MemoryState(const u32 value) : value(value) {}
+            constexpr MemoryState(const u32 value) : value{value} {}
 
-            constexpr MemoryState() : value(0) {}
+            constexpr MemoryState() : value{} {}
 
             constexpr bool operator==(const MemoryState &other) const {
                 return value == other.value;
@@ -156,7 +161,7 @@ namespace skyline {
                 bool codeMemoryAllowed : 1; //!< If the application can use svcCreateCodeMemory on this block
                 bool isLinearMapped : 1; //!< If this block is mapped linearly
             };
-            u32 value{};
+            u32 value;
         };
         static_assert(sizeof(MemoryState) == sizeof(u32));
 
@@ -202,10 +207,10 @@ namespace skyline {
     namespace kernel {
         struct ChunkDescriptor {
             bool isSrcMergeDisallowed;
-            size_t size;
             memory::Permission permission;
-            memory::MemoryState state;
             memory::MemoryAttribute attributes;
+            memory::MemoryState state;
+            size_t size;
 
             constexpr bool IsCompatible(const ChunkDescriptor &chunk) const noexcept {
                 return chunk.permission == permission && chunk.state.value == state.value && chunk.attributes.value == attributes.value && !isSrcMergeDisallowed;
@@ -222,10 +227,7 @@ namespace skyline {
 
             std::vector<std::shared_ptr<type::KMemory>> memRefs;
 
-            // Workaround for broken std implementation
-            std::map<u8 *, ChunkDescriptor>::iterator upper_bound(u8 *address);
-
-            void MapInternal(std::pair<u8 *, ChunkDescriptor> *newDesc);
+            void MapInternal(const std::pair<u8 *, ChunkDescriptor> &newDesc);
 
             void ForeachChunkinRange(span<u8> memory, auto editCallback);
 
@@ -240,7 +242,7 @@ namespace skyline {
             span<u8> stack{};
             span<u8> tlsIo{}; //!< TLS/IO
 
-            size_t setHeapSize; //!< For use by svcSetHeapSize
+            size_t processHeapSize; //!< For use by svcSetHeapSize
 
             std::shared_mutex mutex; //!< Synchronizes any operations done on the VMM, it's locked in shared mode by readers and exclusive mode by writers
 
@@ -272,27 +274,27 @@ namespace skyline {
             span<u8> CreateMirrors(const std::vector<span<u8>> &regions);
 
             /**
-             * @brief Sets the attributes for chunks within a certain range
+             * @brief Sets the isBorrowed attribute for chunks within a certain range
              */
-            void SetLockOnChunks(span<u8> memory, bool value);
-
-            void SetCPUCachingOnChunks(span<u8> memory, bool value);
+            void SetRegionBorrowed(span<u8> memory, bool value);
 
             /**
-             * @brief Sets the permission for chunks within a certain range
+             * @brief Sets the isUncached attribute for chunks within a certain range
+             */
+            void SetRegionCpuCaching(span<u8> memory, bool value);
+
+            /**
+             * @brief Sets the permissions for chunks within a certain range
              * @note The permissions set here are not accurate to the actual permissions set on the chunk and are only for the guest
              */
-            void SetChunkPermission(span<u8> memory, memory::Permission permission);
+            void SetRegionPermission(span<u8> memory, memory::Permission permission);
 
             /**
              * @brief Gets the highest chunk's descriptor that contains this address
              */
             std::optional<std::pair<u8 *, ChunkDescriptor>> GetChunk(u8 *addr);
 
-            /**
-             * Various mapping functions for use by the guest
-             * @note UnmapMemory frees the underlying memory as well
-             */
+            // Various mapping functions for use by the guest
             void MapCodeMemory(span<u8> memory, memory::Permission permission);
 
             void MapMutableCodeMemory(span<u8> memory);
@@ -309,6 +311,9 @@ namespace skyline {
 
             void Reserve(span<u8> memory);
 
+            /**
+             * @note `UnmapMemory` also calls `FreeMemory` on the unmapped memory range
+             */
             void UnmapMemory(span<u8> memory);
 
             /**
@@ -318,11 +323,14 @@ namespace skyline {
             void FreeMemory(span<u8> memory);
 
             /**
-             * Allows you to add/remove references to shared/transfer memory
+             * @brief Adds a reference to shared memory, extending its lifetime until `RemoveRef` is called
              */
-            void AddRef(const std::shared_ptr<type::KMemory> &ptr);
+            void AddRef(std::shared_ptr<type::KMemory> ptr);
 
-            void RemoveRef(const std::shared_ptr<type::KMemory> &ptr);
+            /**
+             * @brief Removes the reference added by `AddRef`
+             */
+            void RemoveRef(std::shared_ptr<type::KMemory> ptr);
 
             /**
              * @return The cumulative size of all heap (Physical Memory + Process Heap) memory mappings, the code region and the main thread stack in bytes
@@ -347,3 +355,16 @@ namespace skyline {
         };
     }
 }
+
+template<> struct fmt::formatter<skyline::memory::Permission> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext& ctx)
+    {
+        return ctx.begin();
+    }
+    template<typename FormatContext>
+    constexpr auto format(skyline::memory::Permission const& permission, FormatContext& ctx)
+    {
+        return fmt::format_to(ctx.out(), "{}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+    }
+};

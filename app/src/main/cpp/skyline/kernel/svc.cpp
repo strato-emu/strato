@@ -11,7 +11,7 @@
 
 namespace skyline::kernel::svc {
     void SetHeapSize(const DeviceState &state) {
-        u64 size{state.ctx->gpr.w1};
+        u32 size{state.ctx->gpr.w1};
 
         if (!util::IsAligned(size, 0x200000)) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidSize;
@@ -27,7 +27,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        size_t heapCurrSize{state.process->memory.setHeapSize};
+        size_t heapCurrSize{state.process->memory.processHeapSize};
         u8 *heapBaseAddr{state.process->memory.heap.data()};
 
         if (heapCurrSize < size)
@@ -35,7 +35,7 @@ namespace skyline::kernel::svc {
         else if (size < heapCurrSize)
             state.process->memory.UnmapMemory(span<u8>{heapBaseAddr + size, heapCurrSize - size});
 
-        state.process->memory.setHeapSize = size;
+        state.process->memory.processHeapSize = size;
 
         state.ctx->gpr.w0 = Result{};
         state.ctx->gpr.x1 = reinterpret_cast<u64>(heapBaseAddr);
@@ -67,7 +67,7 @@ namespace skyline::kernel::svc {
         memory::Permission newPermission(static_cast<u8>(state.ctx->gpr.w2));
         if ((!newPermission.r && newPermission.w) || newPermission.x) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
-            Logger::Warn("'permission' invalid: {}{}{}", newPermission.r ? 'R' : '-', newPermission.w ? 'W' : '-', newPermission.x ? 'X' : '-');
+            Logger::Warn("'permission' invalid: {}", newPermission);
             return;
         }
 
@@ -78,7 +78,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        state.process->memory.SetChunkPermission(span<u8>(address, size), newPermission);
+        state.process->memory.SetRegionPermission(span<u8>(address, size), newPermission);
 
         Logger::Debug("Set permission to {}{}{} at 0x{:X} - 0x{:X} (0x{:X} bytes)", newPermission.r ? 'R' : '-', newPermission.w ? 'W' : '-', newPermission.x ? 'X' : '-', address, address + size, size);
         state.ctx->gpr.w0 = Result{};
@@ -105,8 +105,8 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        memory::MemoryAttribute mask{.value = state.ctx->gpr.w2};
-        memory::MemoryAttribute value{.value = state.ctx->gpr.w3};
+        memory::MemoryAttribute mask{static_cast<u8>(state.ctx->gpr.w2)};
+        memory::MemoryAttribute value{static_cast<u8>(state.ctx->gpr.w3)};
 
         auto maskedValue{mask.value | value.value};
         if (maskedValue != mask.value || !mask.isUncached || mask.isDeviceShared || mask.isBorrowed || mask.isIpcLocked) [[unlikely]] {
@@ -124,7 +124,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        state.process->memory.SetCPUCachingOnChunks(span<u8>{address, size}, value.isUncached);
+        state.process->memory.SetRegionCpuCaching(span<u8>{address, size}, value.isUncached);
 
         Logger::Debug("Set CPU caching to {} at 0x{:X} - 0x{:X} (0x{:X} bytes)", static_cast<bool>(value.isUncached), address, address + size, size);
         state.ctx->gpr.w0 = Result{};
@@ -175,8 +175,8 @@ namespace skyline::kernel::svc {
         state.process->memory.MapStackMemory(span<u8>{destination, size});
         std::memcpy(destination, source, size);
 
-        state.process->memory.SetChunkPermission(span<u8>{source, size}, {false, false, false});
-        state.process->memory.SetLockOnChunks(span<u8>{source, size}, true);
+        state.process->memory.SetRegionPermission(span<u8>{source, size}, {false, false, false});
+        state.process->memory.SetRegionBorrowed(span<u8>{source, size}, true);
 
         Logger::Debug("Mapped range 0x{:X} - 0x{:X} to 0x{:X} - 0x{:X} (Size: 0x{:X} bytes)", source, source + size, destination, destination + size, size);
         state.ctx->gpr.w0 = Result{};
@@ -210,8 +210,8 @@ namespace skyline::kernel::svc {
             dstChunk = state.process->memory.GetChunk(dstChunk.first + dstChunk.second.size).value();
 
         if ((destination + size) > dstChunk.first) [[likely]] {
-            state.process->memory.SetChunkPermission(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, dstChunk.second.permission);
-            state.process->memory.SetLockOnChunks(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, false);
+            state.process->memory.SetRegionPermission(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, dstChunk.second.permission);
+            state.process->memory.SetRegionBorrowed(span<u8>{source + (dstChunk.first - destination), dstChunk.second.size}, false);
 
             std::memcpy(source + (dstChunk.first - destination), dstChunk.first, dstChunk.second.size);
 
@@ -239,7 +239,7 @@ namespace skyline::kernel::svc {
                 .ipcRefCount = 0,
             };
 
-            Logger::Debug("Address: 0x{:X}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Attributes: 0x{:X}, Permissions: {}{}{}", address, memInfo.address, memInfo.size, memInfo.type, memInfo.attributes, chunk->second.permission.r ? 'R' : '-', chunk->second.permission.w ? 'W' : '-', chunk->second.permission.x ? 'X' : '-');
+            Logger::Debug("Address: 0x{:X}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Attributes: 0x{:X}, Permissions: {}", address, memInfo.address, memInfo.size, memInfo.type, memInfo.attributes, chunk->second.permission);
         } else {
             u64 addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.end().base())};
 
@@ -254,7 +254,7 @@ namespace skyline::kernel::svc {
 
         *reinterpret_cast<memory::MemoryInfo *>(state.ctx->gpr.x0) = memInfo;
         // The page info, which is always 0
-        state.ctx->gpr.x1 = 0;
+        state.ctx->gpr.w1 = 0;
 
         state.ctx->gpr.w0 = Result{};
     }
@@ -537,7 +537,7 @@ namespace skyline::kernel::svc {
             memory::Permission permission(static_cast<u8>(state.ctx->gpr.w3));
             if ((!permission.r && !permission.w && !permission.x) || (permission.w && !permission.r) || permission.x) [[unlikely]] {
                 state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
-                Logger::Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+                Logger::Warn("'permission' invalid: {}", permission);
                 return;
             }
 
@@ -613,7 +613,7 @@ namespace skyline::kernel::svc {
 
         memory::Permission permission(static_cast<u8>(state.ctx->gpr.w3));
         if ((permission.w && !permission.r) || permission.x) [[unlikely]] {
-            Logger::Warn("'permission' invalid: {}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
+            Logger::Warn("'permission' invalid: {}", permission);
             state.ctx->gpr.w0 = result::InvalidNewMemoryPermission;
             return;
         }

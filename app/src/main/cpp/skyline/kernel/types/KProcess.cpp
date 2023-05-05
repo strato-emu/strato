@@ -50,7 +50,7 @@ namespace skyline::kernel::type {
     void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
         memory.MapHeapMemory(span<u8>{state.process->memory.heap.data(), DefaultHeapSize});
-        memory.setHeapSize = DefaultHeapSize;
+        memory.processHeapSize = DefaultHeapSize;
         tlsExceptionContext = AllocateTlsSlot();
     }
 
