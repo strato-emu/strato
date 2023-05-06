@@ -56,15 +56,14 @@ namespace skyline::kernel {
         } else {
             // If there are descriptors between first and last chunk, delete them
             if ((firstChunkBase->first + firstChunk.size) != lastChunkBase->first) {
-                auto tempChunkBase{firstChunkBase};
+                auto tempChunkBase{std::next(firstChunkBase)};
 
-                ++tempChunkBase;
                 while (tempChunkBase->first != lastChunkBase->first) {
                     auto tmp{tempChunkBase++};
                     if ((tmp->second.state == memory::states::Unmapped) != isUnmapping)
                         needsReprotection = true;
-                    chunks.erase(tmp);
                 }
+                chunks.erase(std::next(firstChunkBase), lastChunkBase);
             }
 
             bool shouldInsert{true};
@@ -119,7 +118,7 @@ namespace skyline::kernel {
                 Logger::Warn("Reprotection failed: {}", strerror(errno));
     }
 
-    void MemoryManager::ForeachChunkinRange(span<u8> memory, auto editCallback) {
+    void MemoryManager::ForeachChunkInRange(span<u8> memory, auto editCallback) {
         auto chunkBase{chunks.lower_bound(memory.data())};
         if (memory.data() < chunkBase->first)
             --chunkBase;
@@ -349,7 +348,7 @@ namespace skyline::kernel {
     void MemoryManager::SetRegionBorrowed(span<u8> memory, bool value) {
         std::unique_lock lock{mutex};
 
-        ForeachChunkinRange(memory, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+        ForeachChunkInRange(memory, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
             desc.second.attributes.isBorrowed = value;
             MapInternal(desc);
         });
@@ -358,7 +357,7 @@ namespace skyline::kernel {
     void MemoryManager::SetRegionCpuCaching(span<u8> memory, bool value) {
         std::unique_lock lock{mutex};
 
-        ForeachChunkinRange(memory, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+        ForeachChunkInRange(memory, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
             desc.second.attributes.isUncached = value;
             MapInternal(desc);
         });
@@ -367,7 +366,7 @@ namespace skyline::kernel {
     void MemoryManager::SetRegionPermission(span<u8> memory, memory::Permission permission) {
         std::unique_lock lock{mutex};
 
-        ForeachChunkinRange(memory, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+        ForeachChunkInRange(memory, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
             desc.second.permission = permission;
             MapInternal(desc);
         });
@@ -480,7 +479,7 @@ namespace skyline::kernel {
     __attribute__((always_inline)) void MemoryManager::UnmapMemory(span<u8> memory) {
         std::unique_lock lock{mutex};
 
-        ForeachChunkinRange(memory, [&](const std::pair<u8 *, ChunkDescriptor> &desc) {
+        ForeachChunkInRange(memory, [&](const std::pair<u8 *, ChunkDescriptor> &desc) {
             if (desc.second.state != memory::states::Unmapped)
                 FreeMemory(span<u8>(desc.first, desc.second.size));
         });
@@ -515,7 +514,7 @@ namespace skyline::kernel {
 
         std::memcpy(destination.data(), source.data(), source.size());
 
-        ForeachChunkinRange(source, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+        ForeachChunkInRange(source, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
             desc.second.permission = {false, false, false};
             desc.second.attributes.isBorrowed = true;
             MapInternal(desc);
@@ -532,7 +531,7 @@ namespace skyline::kernel {
             ++dstChunk;
 
         if ((destination.data() + destination.size()) > dstChunk->first) [[likely]] {
-            ForeachChunkinRange(span<u8>{source.data() + (dstChunk->first - destination.data()), dstChunk->second.size}, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
+            ForeachChunkInRange(span<u8>{source.data() + (dstChunk->first - destination.data()), dstChunk->second.size}, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
                 desc.second.permission = dstChunk->second.permission;
                 desc.second.attributes.isBorrowed = false;
                 MapInternal(desc);

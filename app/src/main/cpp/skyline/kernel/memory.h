@@ -231,7 +231,7 @@ namespace skyline {
 
             void MapInternal(const std::pair<u8 *, ChunkDescriptor> &newDesc);
 
-            void ForeachChunkinRange(span<u8> memory, auto editCallback);
+            void ForeachChunkInRange(span<u8> memory, auto editCallback);
 
           public:
             memory::AddressSpaceType addressSpaceType{};
