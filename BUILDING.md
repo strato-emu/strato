@@ -21,7 +21,7 @@
 
 Clone the repo **recursively**, either with your preferred Git GUI or with the command below:
 ```cmd
-git clone https://github.com/skyline-emu/skyline.git --recursive
+git clone https://github.com/strato-emu/strato.git --recursive
 ```
 
 Open Android Studio
@@ -30,12 +30,12 @@ Open Android Studio
 
 > If you opened Android Studio for the first time, choose the `Standard` install type and complete the setup wizard leaving all settings to their default value.
 > <p><img height="400" src="https://user-images.githubusercontent.com/37104290/162196602-4c142ed0-0c26-4628-8062-7ac9785201cc.png"></p>
-> If you get any errors on "Intel® HAXM" or "Android Emulator Hypervisor Driver for AMD Processors", you can safely ignore them as they won't be used for Skyline.
+> If you get any errors on "Intel® HAXM" or "Android Emulator Hypervisor Driver for AMD Processors", you can safely ignore them as they won't be used for Strato.
 
 </p>
 </details>
 
-Import the project by clicking on the `Open` icon, then in the file picker choose the `skyline` folder you just cloned in the steps above:
+Import the project by clicking on the `Open` icon, then in the file picker choose the `strato` folder you just cloned in the steps above:
 <p>
     <img height="400" src="https://user-images.githubusercontent.com/37104290/162200497-dddfa9f0-00c6-4a32-84c2-1f0ff743a7e2.png"> 
     <img height="400" src="https://user-images.githubusercontent.com/37104290/162196879-08d9684b-c6a2-4636-9c23-c026cb7d7494.png">
@@ -99,13 +99,13 @@ cmake.dir=<path-to-cmake-folder>
 ```
 E.g. on Windows:
 ```properties
-cmake.dir=C\:\\Users\\skyline\\AppData\\Local\\Android\\Sdk\\cmake\\3.18.1
+cmake.dir=C\:\\Users\\strato\\AppData\\Local\\Android\\Sdk\\cmake\\3.18.1
 ```
 
 * `'shader_compiler/*.h' file not found`
 
 You didn't clone the repository with symlinks enabled. Windows requires administrator privileges to create symlinks so it's likely it didn't create them.
-In an **administrator** terminal prompt navigate to the Skyline root project folder and run:
+In an **administrator** terminal prompt navigate to the Strato root project folder and run:
 ```cmd
 git submodule deinit app/libraries/shader-compiler
 git config core.symlinks true

@@ -14,9 +14,6 @@ Android Studio comes with a code formatter in-built, this can fix minor mistakes
 
 This can also be done by using `Ctrl + Alt + L` on Windows, `Ctrl + Shift + Alt + L` on Linux and `Option + Command + L` on macOS. 
 
-### Skyline Edge
-Any code that's been PR'd to the Skyline repository will only be in Edge builds for two weeks, after which it will be merged into the mainline branch. This is to ensure that any bugs that may have been introduced by the PR are caught and fixed before it's merged into the mainline branch. If you have any issues with this, you can request that we add the `CI` tag to your PRs so that CI builds are provided pre-merge.
-
 ## C++
 ### Include Order
 * STD includes
@@ -221,7 +218,7 @@ auto b{std::make_shared<Something>()}; // In this case `auto` is used to avoid t
 We generally use `in` and `un` where `n = {8, 16, 32, 64}` for our integer primitives in which `i` represents signed integers and `u` represents unsigned integers. In addition, we have some other types such as `KHandle` that are used to make certain operations more clear, use these depending on the context.
 
 ### Constants
-If a variable is constant at compile time use `constexpr`, if it's only used in a local function then place it in the function but if it's used throughout a class then in the corresponding header add the variable to the `skyline::constant` namespace. If a constant is used throughout the codebase, add it to `common.h`.
+If a variable is constant at compile time use `constexpr`, if it's only used in a local function then place it in the function but if it's used throughout a class then in the corresponding header add the variable to the `strato::constant` namespace. If a constant is used throughout the codebase, add it to `common.h`.
 
 In addition, try to `constexpr` as much as possible including constructors and functions so that they may be initialized at compile-time and have lesser runtime overhead during usage and certain values can be pre-calculated in advance.
 
