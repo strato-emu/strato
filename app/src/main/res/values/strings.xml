@@ -101,6 +101,9 @@
     <string name="enable_foldable_layout">Enable Foldable Layout</string>
     <string name="enable_foldable_layout_enabled">Folded devices will display game and controller separately</string>
     <string name="enable_foldable_layout_disabled">Display controller over games even when device is folded</string>
+    <string name="show_pause_button">Show Pause Button</string>
+    <string name="show_pause_button_disabled">The pause button won\'t be displayed</string>
+    <string name="show_pause_button_enabled">The pause button will be displayed</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Disable Audio Output</string>

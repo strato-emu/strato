@@ -79,6 +79,12 @@
             app:key="enable_foldable_layout"
             app:title="@string/enable_foldable_layout"
             app:isPreferenceVisible="false"/>
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summaryOff="@string/show_pause_button_disabled"
+            android:summaryOn="@string/show_pause_button_enabled"
+            android:key="show_pause_button"
+            android:title="@string/show_pause_button" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_audio"

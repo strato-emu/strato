@@ -41,6 +41,7 @@ class EmulationSettings private constructor(context : Context, prefName : String
     var aspectRatio by sharedPreferences(context, 0, prefName = prefName)
     var respectDisplayCutout by sharedPreferences(context, false, prefName = prefName)
     var enableFoldableLayout by sharedPreferences(context, false, prefName = prefName)
+    var showPauseButton by sharedPreferences(context, false, prefName = prefName)
 
     // GPU
     var gpuDriver by sharedPreferences(context, SYSTEM_GPU_DRIVER, prefName = prefName)
