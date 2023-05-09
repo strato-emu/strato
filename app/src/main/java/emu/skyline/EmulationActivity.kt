@@ -47,6 +47,7 @@ import emu.skyline.settings.NativeSettings
 import emu.skyline.utils.ByteBufferSerializable
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.serializable
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.FutureTask
@@ -153,6 +154,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     var fps : Int = 0
     var averageFrametime : Float = 0.0f
     var averageFrametimeDeviation : Float = 0.0f
+    var ramUsage : Long = 0
 
     /**
      * Writes the current performance statistics into [fps], [averageFrametime] and [averageFrametimeDeviation] fields
@@ -313,7 +315,9 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 postDelayed(object : Runnable {
                     override fun run() {
                         updatePerformanceStatistics()
-                        text = "$fps FPS\n${"%.1f".format(averageFrametime)}±${"%.2f".format(averageFrametimeDeviation)}ms"
+                        // We read the `VmRSS` value from the kernel
+                        ramUsage = File("/proc/self/statm").readLines()[0].split(' ')[1].toLong() * 4096 / 1000000
+                        text = "$fps FPS • $ramUsage MB"
                         postDelayed(this, 250)
                     }
                 }, 250)
@@ -346,12 +350,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
 
         binding.onScreenPauseToggle.apply {
-            isGone = binding.onScreenControllerView.isGone
-            if(!emulationSettings.showPauseButton) {
-                binding.onScreenPauseToggle.visibility = View.GONE
-            } else {
-                binding.onScreenPauseToggle.visibility = View.VISIBLE
-            }
+            isGone = !emulationSettings.showPauseButton
             setOnClickListener {
                 if (isEmulatorPaused) {
                     resumeEmulator()

@@ -27,36 +27,20 @@
         android:layout_gravity="top|left"
         android:layout_marginLeft="@dimen/onScreenItemHorizontalMargin"
         android:layout_marginTop="5dp"
-        tools:text="60 FPS\n16.6±0.10ms"
+        tools:text="60 FPS | 2000,00MB"
         android:textColor="@color/colorPerfStatsPrimary" />
 
-    <GridLayout
-        android:layout_gravity="right"
+    <ImageButton
+        android:id="@+id/on_screen_pause_toggle"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:id="@+id/ram_stats"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingRight="10dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginLeft="@dimen/onScreenItemHorizontalMargin"
-            tools:text="2000,00MB"
-            android:textColor="@color/colorRamUsage" />
-
-        <ImageButton
-            android:id="@+id/on_screen_pause_toggle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="@dimen/onScreenItemHorizontalMargin"
-            android:background="?android:attr/actionBarItemBackground"
-            android:padding="8dp"
-            android:src="@drawable/ic_pause"
-            app:tint="#40FFFFFF"
-            tools:ignore="ContentDescription" />
-
-    </GridLayout>
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|right"
+        android:layout_marginRight="@dimen/onScreenItemHorizontalMargin"
+        android:background="?android:attr/actionBarItemBackground"
+        android:padding="8dp"
+        android:src="@drawable/ic_pause"
+        app:tint="#40FFFFFF"
+        tools:ignore="ContentDescription" />
 
     <ImageButton
         android:id="@+id/on_screen_controller_toggle"
@@ -69,4 +53,5 @@
         android:src="@drawable/ic_show"
         app:tint="#40FFFFFF"
         tools:ignore="ContentDescription" />
+
 </FrameLayout>
