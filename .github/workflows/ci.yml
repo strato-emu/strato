@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JVM_OPTS: -Xmx6G
-      IS_SKYLINE_SIGNED: ${{ secrets.KEYSTORE != '' }}
+      IS_BUILD_SIGNED: ${{ secrets.KEYSTORE != '' }}
       UPLOAD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci') }}
       CMAKE_VERSION: "3.22.1"
       NDK_VERSION: "25.0.8775105"
@@ -50,7 +50,7 @@ jobs:
         run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;${{ env.CMAKE_VERSION }}" "ndk;${{ env.NDK_VERSION }}" --channel=3 | grep -v = || true
 
       - name: Decode Keystore
-        if: env.IS_SKYLINE_SIGNED == 'true'
+        if: env.IS_BUILD_SIGNED == 'true'
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
         run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
@@ -67,41 +67,41 @@ jobs:
         run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFullRelease assembleFullReldebug
 
       - name: Rename APKs (Signed)
-        if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
+        if: env.IS_BUILD_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
-          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk skyline-$GITHUB_RUN_NUMBER-reldebug.apk
-          mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-release.apk
+          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk strato-$GITHUB_RUN_NUMBER-reldebug.apk
+          mv app/build/outputs/apk/full/release/app-full-release.apk strato-$GITHUB_RUN_NUMBER-release.apk
 
       - name: Upload Signed Debug APK
-        if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
+        if: env.IS_BUILD_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: skyline-${{ github.run_number }}-reldebug.apk
-          path: skyline-${{ github.run_number }}-reldebug.apk
+          name: strato-${{ github.run_number }}-reldebug.apk
+          path: strato-${{ github.run_number }}-reldebug.apk
 
       - name: Upload Signed Release APK
-        if: env.IS_SKYLINE_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
+        if: env.IS_BUILD_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: skyline-${{ github.run_number }}-release.apk
-          path: skyline-${{ github.run_number }}-release.apk
+          name: strato-${{ github.run_number }}-release.apk
+          path: strato-${{ github.run_number }}-release.apk
 
       - name: Rename APKs (Unsigned)
-        if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
+        if: env.IS_BUILD_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
-          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk skyline-$GITHUB_RUN_NUMBER-unsigned-reldebug.apk
-          mv app/build/outputs/apk/full/release/app-full-release.apk skyline-$GITHUB_RUN_NUMBER-unsigned-release.apk
+          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk strato-$GITHUB_RUN_NUMBER-unsigned-reldebug.apk
+          mv app/build/outputs/apk/full/release/app-full-release.apk strato-$GITHUB_RUN_NUMBER-unsigned-release.apk
 
       - name: Upload Unsigned Debug APK
-        if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
+        if: env.IS_BUILD_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: skyline-${{ github.run_number }}-unsigned-reldebug.apk
-          path: skyline-${{ github.run_number }}-unsigned-reldebug.apk
+          name: strato-${{ github.run_number }}-unsigned-reldebug.apk
+          path: strato-${{ github.run_number }}-unsigned-reldebug.apk
 
       - name: Upload Unsigned Release APK
-        if: env.IS_SKYLINE_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
+        if: env.IS_BUILD_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: skyline-${{ github.run_number }}-unsigned-release.apk
-          path: skyline-${{ github.run_number }}-unsigned-release.apk
+          name: strato-${{ github.run_number }}-unsigned-release.apk
+          path: strato-${{ github.run_number }}-unsigned-release.apk
