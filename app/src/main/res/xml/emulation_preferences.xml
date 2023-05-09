@@ -67,6 +67,12 @@
             android:summaryOn="@string/respect_display_cutout_enabled"
             app:key="respect_display_cutout"
             app:title="@string/respect_display_cutout" />
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summaryOff="@string/show_pause_button_disabled"
+            android:summaryOn="@string/show_pause_button_enabled"
+            android:key="show_pause_button"
+            android:title="@string/show_pause_button" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_audio"

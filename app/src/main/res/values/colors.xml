@@ -3,6 +3,7 @@
     <color name="logoBackground">#121212</color>
 
     <color name="colorPerfStatsPrimary">#9FFFFF00</color>
+    <color name="colorRamUsage">#9F2FFF00</color>
     <color name="colorPerfStatsSecondary">#9F00FFFF</color>
 
     <color name="seed">#1973E7</color>

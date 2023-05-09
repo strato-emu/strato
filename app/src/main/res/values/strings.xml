@@ -93,6 +93,9 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
+    <string name="show_pause_button">Show Pause Button</string>
+    <string name="show_pause_button_disabled">The pause button won\'t be displayed</string>
+    <string name="show_pause_button_enabled">The pause button will be displayed</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Disable Audio Output</string>
