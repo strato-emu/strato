@@ -64,6 +64,7 @@ namespace skyline {
           closeKeyboardId{environ->GetMethodID(instanceClass, "closeKeyboard", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;)V")},
           showValidationResultId{environ->GetMethodID(instanceClass, "showValidationResult", "(Lemu/skyline/applet/swkbd/SoftwareKeyboardDialog;ILjava/lang/String;)I")},
           getIntegerValueId{environ->GetMethodID(environ->FindClass("java/lang/Integer"), "intValue", "()I")},
+          reportCrashId{environ->GetMethodID(instanceClass, "reportCrash", "()V")},
           showPipelineLoadingScreenId{environ->GetMethodID(instanceClass, "showPipelineLoadingScreen", "(I)V")},
           updatePipelineLoadingProgressId{environ->GetMethodID(instanceClass, "updatePipelineLoadingProgress", "(I)V")},
           hidePipelineLoadingScreenId{environ->GetMethodID(instanceClass, "hidePipelineLoadingScreen", "()V")},
@@ -163,6 +164,10 @@ namespace skyline {
         auto result{static_cast<KeyboardCloseResult>(env->CallIntMethod(instance, showValidationResultId, dialog, checkResult, str))};
         env->DeleteLocalRef(str);
         return result;
+    }
+
+    void JvmManager::reportCrash() {
+        env->CallVoidMethod(instance, reportCrashId);
     }
 
     void JvmManager::ShowPipelineLoadingScreen(u32 totalPipelineCount) {

@@ -3,6 +3,7 @@
 
 #include <nce.h>
 #include <os.h>
+#include <jvm.h>
 #include <common/trace.h>
 #include <kernel/results.h>
 #include "KProcess.h"
@@ -28,6 +29,7 @@ namespace skyline::kernel::type {
     void KProcess::Kill(bool join, bool all, bool disableCreation) {
         Logger::Warn("Killing {}{}KProcess{}", join ? "and joining " : "", all ? "all threads in " : "HOS-1 in ", disableCreation ? " with new thread creation disabled" : "");
         Logger::EmulationContext.Flush();
+        state.jvm->reportCrash();
 
         bool expected{false};
         if (!join && !alreadyKilled.compare_exchange_strong(expected, true))
