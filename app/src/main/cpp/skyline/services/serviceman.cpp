@@ -57,6 +57,9 @@
 #include "ro/IRoInterface.h"
 #include "mii/IStaticService.h"
 #include "olsc/IOlscServiceForApplication.h"
+#include "clkrst/IClkrstManager.h"
+#include "ts/IMeasurementServer.h"
+#include "psm/IPsmServer.h"
 #include "ntc/IEnsureNetworkClockAvailabilityService.h"
 #include "serviceman.h"
 
@@ -146,6 +149,9 @@ namespace skyline::service {
             SERVICE_CASE(mii::IStaticService, "mii:e")
             SERVICE_CASE(mii::IStaticService, "mii:u")
             SERVICE_CASE(olsc::IOlscServiceForApplication, "olsc:u")
+            SERVICE_CASE(clkrst::IClkrstManager, "clkrst")
+            SERVICE_CASE(ts::IMeasurementServer, "ts")
+            SERVICE_CASE(psm::IPsmServer, "psm")
             SERVICE_CASE(ntc::IEnsureNetworkClockAvailabilityService, "ntc")
             default:
                 std::string_view nameString(span(reinterpret_cast<char *>(&name), sizeof(name)).as_string(true));

@@ -39,8 +39,14 @@ namespace skyline::service::settings {
          */
         Result GetFirmwareVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Settings_services#GetColorSetId
+         */
+        Result GetColorSetId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
-            SFUNC(0x3, ISystemSettingsServer, GetFirmwareVersion)
+            SFUNC(0x3, ISystemSettingsServer, GetFirmwareVersion),
+            SFUNC(0x17, ISystemSettingsServer, GetColorSetId)
         )
     };
 }

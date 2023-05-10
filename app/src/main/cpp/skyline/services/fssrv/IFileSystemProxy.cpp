@@ -8,6 +8,7 @@
 #include "IStorage.h"
 #include "IMultiCommitManager.h"
 #include "IFileSystemProxy.h"
+#include "ISaveDataInfoReader.h"
 
 namespace skyline::service::fssrv {
     IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
@@ -72,6 +73,21 @@ namespace skyline::service::fssrv {
         // Forward to OpenSaveDataFileSystem for now.
         // TODO: This should wrap the underlying filesystem with nn::fs::ReadOnlyFileSystem.
         return OpenSaveDataFileSystem(session, request, response);
+    }
+
+    Result IFileSystemProxy::OpenSaveDataInfoReader(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(ISaveDataInfoReader), session, response);
+        return {};
+    }
+
+    Result IFileSystemProxy::OpenSaveDataInfoReaderBySaveDataSpaceId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(ISaveDataInfoReader), session, response);
+        return {};
+    }
+
+    Result IFileSystemProxy::OpenSaveDataInfoReaderOnlyCacheStorage(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        manager.RegisterService(SRVREG(ISaveDataInfoReader), session, response);
+        return {};
     }
 
     Result IFileSystemProxy::OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
