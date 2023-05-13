@@ -62,7 +62,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
 ) {
     skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
     skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
-    skyline::Logger::LoaderContext.Initialize(publicAppFilesPath + "logs/loader.sklog");
+    skyline::Logger::LoaderContext.Initialize(publicAppFilesPath + "logs/loader.log");
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
@@ -88,7 +88,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     std::shared_ptr<skyline::Settings> settings{std::make_shared<skyline::AndroidSettings>(env, settingsInstance)};
 
     skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
-    skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.sklog");
+    skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.log");
 
     auto start{std::chrono::steady_clock::now()};
 
