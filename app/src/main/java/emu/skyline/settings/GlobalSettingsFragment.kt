@@ -11,12 +11,19 @@ import android.view.View
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreferenceCompat
 import androidx.preference.TwoStatePreference
+import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowInfoTracker
 import emu.skyline.BuildConfig
 import emu.skyline.MainActivity
 import emu.skyline.R
 import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * This fragment is used to display the global preferences
@@ -42,6 +49,14 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             requireActivity().finishAffinity()
             startActivity(Intent(requireContext(), MainActivity::class.java))
             true
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            WindowInfoTracker.getOrCreate(requireContext()).windowLayoutInfo(requireActivity()).collect { newLayoutInfo ->
+                withContext(Dispatchers.Main) {
+                    findPreference<SwitchPreferenceCompat>("enable_foldable_layout")?.isVisible = newLayoutInfo.displayFeatures.find { it is FoldingFeature } != null
+                }
+            }
         }
 
         // Uncheck `disable_frame_throttling` if `force_triple_buffering` gets disabled

@@ -16,15 +16,16 @@ import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.res.AssetManager
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.graphics.PointF
 import android.graphics.drawable.Icon
 import android.hardware.display.DisplayManager
 import android.net.DhcpInfo
 import android.net.wifi.WifiManager
 import android.os.*
-import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Rational
+import android.util.TypedValue
 import android.view.*
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -33,6 +34,7 @@ import androidx.core.content.getSystemService
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.updateMargins
+import androidx.core.view.updatePadding
 import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -68,6 +70,8 @@ import kotlin.math.abs
 
 private const val ActionPause = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_PAUSE"
 private const val ActionMute = "${BuildConfig.APPLICATION_ID}.ACTION_EMULATOR_MUTE"
+
+private val Number.toPx get() = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, this.toFloat(), Resources.getSystem().displayMetrics).toInt()
 
 @AndroidEntryPoint
 class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTouchListener, DisplayManager.DisplayListener {
@@ -507,18 +511,26 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     * Updating the layout depending on type and state of device
     */
     private fun updateCurrentLayout(newLayoutInfo: WindowLayoutInfo) {
-        if (!emulationSettings.supportFoldableScreen) return
-        binding.onScreenGameView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-        requestedOrientation = emulationSettings.orientation
-        val foldingFeature = newLayoutInfo.displayFeatures.find { it is FoldingFeature }
-        (foldingFeature as? FoldingFeature)?.let {
+        if (!emulationSettings.enableFoldableLayout) return
+        val isFolding = (newLayoutInfo.displayFeatures.find { it is FoldingFeature } as? FoldingFeature)?.let {
             if (it.isSeparating) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                if (it.orientation == FoldingFeature.Orientation.HORIZONTAL)
+                if (it.orientation == FoldingFeature.Orientation.HORIZONTAL) {
                     binding.onScreenGameView.layoutParams.height = it.bounds.top
+                    binding.controllerViewContainer.layoutParams.height = it.bounds.bottom - 48.toPx
+                    binding.controllerViewContainer.updatePadding(0, 0, 0, 24.toPx)
+                }
             }
+            it.isSeparating
+        } ?: false
+        if (!isFolding) {
+            binding.onScreenGameView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            binding.controllerViewContainer.updatePadding(0, 0, 0, 0)
+            binding.controllerViewContainer.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            requestedOrientation = emulationSettings.orientation
         }
         binding.onScreenGameView.requestLayout()
+        binding.controllerViewContainer.requestLayout()
     }
 
     /**
