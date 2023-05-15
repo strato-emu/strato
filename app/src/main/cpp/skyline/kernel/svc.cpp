@@ -63,8 +63,8 @@ namespace skyline::kernel::svc {
         }
 
         if (!chunk->state.attributeChangeAllowed) {
-            state.ctx->gpr.w0 = result::InvalidState;
             Logger::Warn("Attribute change not allowed for chunk: 0x{:X}", pointer);
+            state.ctx->gpr.w0 = Result{};
             return;
         }
 
