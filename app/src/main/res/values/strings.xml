@@ -96,9 +96,9 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
-    <string name="support_foldable_screen">Support Foldable Screens</string>
-    <string name="support_foldable_screen_enabled">Folded devices will display game and controller separately</string>
-    <string name="support_foldable_screen_disabled">Display controller over games even when device is folded</string>
+    <string name="enable_foldable_layout">Enable Foldable Layout</string>
+    <string name="enable_foldable_layout_enabled">Folded devices will display game and controller separately</string>
+    <string name="enable_foldable_layout_disabled">Display controller over games even when device is folded</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Disable Audio Output</string>
