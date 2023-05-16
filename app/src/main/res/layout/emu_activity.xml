@@ -10,9 +10,9 @@
     tools:ignore="RtlHardcoded">
 
     <FrameLayout
-        android:id="@+id/on_screen_game_view"
+        android:id="@+id/game_view_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
         <emu.skyline.views.FixedRatioSurfaceView
             android:id="@+id/game_view"
@@ -22,7 +22,7 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/controller_view_container"
+        android:id="@+id/overlay_view_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="bottom">
