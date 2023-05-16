@@ -516,21 +516,21 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             if (it.isSeparating) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 if (it.orientation == FoldingFeature.Orientation.HORIZONTAL) {
-                    binding.onScreenGameView.layoutParams.height = it.bounds.top
-                    binding.controllerViewContainer.layoutParams.height = it.bounds.bottom - 48.toPx
-                    binding.controllerViewContainer.updatePadding(0, 0, 0, 24.toPx)
+                    binding.gameViewContainer.layoutParams.height = it.bounds.top
+                    binding.overlayViewContainer.layoutParams.height = it.bounds.bottom - 48.toPx
+                    binding.overlayViewContainer.updatePadding(0, 0, 0, 24.toPx)
                 }
             }
             it.isSeparating
         } ?: false
         if (!isFolding) {
-            binding.onScreenGameView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-            binding.controllerViewContainer.updatePadding(0, 0, 0, 0)
-            binding.controllerViewContainer.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            binding.gameViewContainer.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            binding.overlayViewContainer.updatePadding(0, 0, 0, 0)
+            binding.overlayViewContainer.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
             requestedOrientation = emulationSettings.orientation
         }
-        binding.onScreenGameView.requestLayout()
-        binding.controllerViewContainer.requestLayout()
+        binding.gameViewContainer.requestLayout()
+        binding.overlayViewContainer.requestLayout()
     }
 
     /**
