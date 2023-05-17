@@ -64,6 +64,8 @@
     <string name="use_custom_settings">Enable Custom Settings</string>
     <string name="use_custom_settings_desc_on">Custom settings are enabled for this game</string>
     <string name="use_custom_settings_desc_off">Custom settings are disabled for this game</string>
+    <string name="export_custom_settings">Export custom settings to text</string>
+    <string name="export_custom_settings_desc">Copy a text with your current settings to share online</string>
     <string name="reset_custom_settings">Reset Custom Settings</string>
     <string name="reset_custom_settings_desc">Reset custom settings to the default values</string>
     <string name="reset_settings_warning">Are you sure you want to reset all settings to the default values? <b>Current settings will be lost</b></string>
