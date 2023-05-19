@@ -22,9 +22,11 @@ interface SearchLocationHelper {
             var urisArray = arrayOf<Uri?>();
 
             locations.forEach{
-                val array = urisArray.copyOf(urisArray.size + 1)
-                array[urisArray.size] = Uri.parse(it);
-                urisArray = array;
+                if(it.isNotEmpty()) {
+                    val array = urisArray.copyOf(urisArray.size + 1)
+                    array[urisArray.size] = Uri.parse(it);
+                    urisArray = array;
+                }
             }
             return urisArray;
         }
