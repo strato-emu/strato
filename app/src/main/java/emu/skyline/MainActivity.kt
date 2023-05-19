@@ -77,8 +77,7 @@ class MainActivity : AppCompatActivity() {
     private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) {
         it?.let { uri ->
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            appSettings.searchLocation = uri.toString()
-
+            SearchLocationHelper.addLocation(this, uri)
             loadRoms(false)
         }
     }
