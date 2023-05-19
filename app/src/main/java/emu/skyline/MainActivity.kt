@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -276,21 +277,30 @@ class MainActivity : AppCompatActivity() {
         adapter.setItems(items)
     }
 
+    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            binding.searchBar.apply {
+                val inputMethodManager = context.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                if (!inputMethodManager.hideSoftInputFromWindow(windowToken, 0)) {
+                    text = ""
+                    clearFocus()
+                }
+            }
+            isEnabled = binding.searchBar.hasFocus() || binding.searchBar.text.isNotEmpty()
+        }
+    }
+
     override fun onStart() {
         super.onStart()
 
-        onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                binding.searchBar.apply {
-                    if (hasFocus() && text.isNotEmpty()) {
-                        text = ""
-                        clearFocus()
-                    } else {
-                        finish()
-                    }
-                }
+        binding.searchBar.addTextChangedListener { text ->
+            if (!onBackPressedCallback.isEnabled && !text.isNullOrEmpty()) {
+                onBackPressedCallback.isEnabled = true
             }
-        })
+        }
+
+        onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
+        onBackPressedCallback.isEnabled = binding.searchBar.hasFocus() || binding.searchBar.text.isNotEmpty()
     }
 
     override fun onResume() {
