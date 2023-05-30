@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
 
 jobs:
   build:
