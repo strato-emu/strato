@@ -5,8 +5,8 @@
     <a href="https://discord.gg/YhpdhVBmXX" target="_blank">
         <img src="https://img.shields.io/discord/1104386300750082081.svg?label=&logo=discord&logoColor=ffffff&color=5865F2&labelColor=404EED">
     </a>
-    <a href="https://github.com/strato-emu/strato/actions/workflows/ci.yml" target="_blank">
-        <img src="https://github.com/strato-emu/strato/actions/workflows/ci.yml/badge.svg"><br>
+    <a href="https://github.com/CodeNinja-sys/strato/actions/workflows/ci.yml" target="_blank">
+        <img src="https://github.com/CodeNinja-sys/strato/actions/workflows/ci.yml/badge.svg"><br>
     </a>
 </h1>
 
