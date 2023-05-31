@@ -3,18 +3,18 @@
     <PreferenceCategory
         android:key="category_content"
         android:title="@string/content">
-        <emu.skyline.preference.DocumentsProviderPreference
+        <skyline.strato.preference.DocumentsProviderPreference
             app:key="document_provider"
             app:summary="@string/open_data_directory_summary"
             app:title="@string/open_data_directory" />
-        <emu.skyline.preference.FolderPickerPreference
+        <skyline.strato.preference.FolderPickerPreference
             app:key="search_location"
             app:title="@string/search_location" />
-        <emu.skyline.preference.KeyPickerPreference
+        <skyline.strato.preference.KeyPickerPreference
             app:key="prod_keys"
             app:title="@string/prod_keys"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.KeyPickerPreference
+        <skyline.strato.preference.KeyPickerPreference
             app:key="title_keys"
             app:title="@string/title_keys"
             app:useSimpleSummaryProvider="true" />
@@ -22,7 +22,7 @@
     <PreferenceCategory
         android:key="category_appearance"
         android:title="@string/appearance">
-        <emu.skyline.preference.ThemePreference
+        <skyline.strato.preference.ThemePreference
             android:defaultValue="2"
             android:entries="@array/app_theme"
             app:key="app_theme"
@@ -34,17 +34,17 @@
             app:summaryOff="@string/use_material_you_desc_off"
             app:summaryOn="@string/use_material_you_desc_on"
             app:title="@string/use_material_you" />
-        <emu.skyline.preference.LanguagePreference
+        <skyline.strato.preference.LanguagePreference
             app:key="app_language"
             app:persistent="false"
             app:title="@string/app_language" />
-        <emu.skyline.preference.IntegerListPreference
+        <skyline.strato.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/layout_type"
             app:key="layout_type"
             app:title="@string/layout_type"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.IntegerListPreference
+        <skyline.strato.preference.IntegerListPreference
             android:defaultValue="0"
             android:entries="@array/sort_apps_by"
             app:key="sort_apps_by"

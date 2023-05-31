@@ -11,7 +11,7 @@
 namespace skyline::loader {
     /**
      * @brief The types of ROM files
-     * @note This needs to be synchronized with emu.skyline.loader.BaseLoader.RomFormat
+     * @note This needs to be synchronized with skyline.strato.loader.BaseLoader.RomFormat
      */
     enum class RomFormat {
         NRO, //!< The NRO format: https://switchbrew.org/wiki/NRO
@@ -23,7 +23,7 @@ namespace skyline::loader {
 
     /**
      * @brief All possible results when parsing ROM files
-     * @note This needs to be synchronized with emu.skyline.loader.LoaderResult
+     * @note This needs to be synchronized with skyline.strato.loader.LoaderResult
      */
     enum class LoaderResult : int8_t {
         Success,

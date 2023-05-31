@@ -9,11 +9,11 @@
             android:summaryOn="@string/use_custom_settings_desc_on"
             app:key="use_custom_settings"
             app:title="@string/use_custom_settings" />
-        <emu.skyline.preference.ResetSettingsPreference
+        <skyline.strato.preference.ResetSettingsPreference
             android:summary="@string/reset_custom_settings_desc"
             app:key="reset_custom_settings"
             app:title="@string/reset_custom_settings" />
-        <emu.skyline.preference.CopyGlobalSettingsPreference
+        <skyline.strato.preference.CopyGlobalSettingsPreference
             android:summary="@string/copy_global_settings_desc"
             app:key="copy_global_settings"
             app:title="@string/copy_global_settings" />

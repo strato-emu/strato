@@ -9,13 +9,13 @@
     tools:context=".EmulationActivity"
     tools:ignore="RtlHardcoded">
 
-    <emu.skyline.views.FixedRatioSurfaceView
+    <skyline.strato.views.FixedRatioSurfaceView
         android:id="@+id/game_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center" />
 
-    <emu.skyline.input.onscreen.OnScreenControllerView
+    <skyline.strato.input.onscreen.OnScreenControllerView
         android:id="@+id/on_screen_controller_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

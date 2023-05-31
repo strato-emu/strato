@@ -103,7 +103,7 @@
                     app:layout_constraintStart_toStartOf="@+id/title_text"
                     app:layout_constraintTop_toBottomOf="@id/title_text" />
 
-                <emu.skyline.views.SearchBarView
+                <skyline.strato.views.SearchBarView
                     android:id="@+id/search_bar"
                     style="@style/Widget.Material3.CardView.Elevated"
                     android:layout_width="match_parent"

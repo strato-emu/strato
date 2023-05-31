@@ -14,7 +14,7 @@ idea.module {
 }
 
 android {
-    namespace 'emu.skyline'
+    namespace 'skyline.strato'
     compileSdk 33
 
     var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true")
