@@ -23,6 +23,11 @@ namespace skyline::service::nfp {
         return {};
     }
 
+    Result IUser::GetApplicationAreaSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u32>(0xD8); // 216 bytes
+        return {};
+    }
+
     Result IUser::AttachAvailabilityChangeEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(attachAvailabilityChangeEvent)};
         Logger::Debug("Attach Availability Change Event Handle: 0x{:X}", handle);
