@@ -39,6 +39,11 @@ namespace skyline::service::fssrv {
         Result DeleteDirectory(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Recursively delete a directory at the specified path in the filesystem
+         */
+        Result DeleteDirectoryRecursively(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Queries the DirectoryEntryType of the given path
          * @url https://switchbrew.org/wiki/Filesystem_services#GetEntryType
          */
@@ -68,6 +73,18 @@ namespace skyline::service::fssrv {
         Result GetFreeSpaceSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @brief Returns the total space (free + used) of the filesystem
+         * @url https://switchbrew.org/wiki/Filesystem_services#GetTotalSpaceSize
+         */
+        Result GetTotalSpaceSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @brief Recursively delete the contents of a directory at the specified path
+         * @url https://switchbrew.org/wiki/Filesystem_services#CleanDirectoryRecursively
+         */
+        Result CleanDirectoryRecursively(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/Filesystem_services#GetFileTimeStampRaw
          */
         Result GetFileTimeStampRaw(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -77,11 +94,14 @@ namespace skyline::service::fssrv {
             SFUNC(0x1, IFileSystem, DeleteFile),
             SFUNC(0x2, IFileSystem, CreateDirectory),
             SFUNC(0x3, IFileSystem, DeleteDirectory),
+            SFUNC(0x4, IFileSystem, DeleteDirectoryRecursively),
             SFUNC(0x7, IFileSystem, GetEntryType),
             SFUNC(0x8, IFileSystem, OpenFile),
             SFUNC(0x9, IFileSystem, OpenDirectory),
             SFUNC(0xA, IFileSystem, Commit),
             SFUNC(0xB, IFileSystem, GetFreeSpaceSize),
+            SFUNC(0xC, IFileSystem, GetTotalSpaceSize),
+            SFUNC(0xD, IFileSystem, CleanDirectoryRecursively)
             SFUNC(0xE, IFileSystem, GetFileTimeStampRaw)
         )
     };
