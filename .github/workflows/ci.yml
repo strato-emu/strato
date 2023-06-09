@@ -8,15 +8,11 @@ on:
 jobs:
   build:
     # Skip 'labeled' events that didn't add the 'ci' label
-    if: |
-      github.event_name != 'pull_request' ||
-      github.event.action != 'labeled' ||
-      github.event.label.name == 'ci'
+    
     runs-on: ubuntu-latest
     env:
       JVM_OPTS: -Xmx6G
-      IS_BUILD_SIGNED: ${{ secrets.KEYSTORE != '' }}
-      UPLOAD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci') }}
+      
       CMAKE_VERSION: "3.22.1"
       NDK_VERSION: "25.0.8775105"
 
@@ -49,58 +45,25 @@ jobs:
       - name: Install CMake & Android NDK
         run: echo "yes" | $ANDROID_HOME/tools/bin/sdkmanager "cmake;${{ env.CMAKE_VERSION }}" "ndk;${{ env.NDK_VERSION }}" --channel=3 | grep -v = || true
 
-      - name: Decode Keystore
-        if: env.IS_BUILD_SIGNED == 'true'
-        env:
-          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
-        run: echo $KEYSTORE_ENCODED | base64 --decode > "/home/runner/keystore.jks"
-
       - name: Android Assemble
         env:
-          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           CMAKE_C_COMPILER_LAUNCHER: "ccache"
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
         run: ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleFullRelease assembleFullReldebug
 
-      - name: Rename APKs (Signed)
-        if: env.IS_BUILD_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
-        run: |
-          mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk strato-$GITHUB_RUN_NUMBER-reldebug.apk
-          mv app/build/outputs/apk/full/release/app-full-release.apk strato-$GITHUB_RUN_NUMBER-release.apk
-
-      - name: Upload Signed Debug APK
-        if: env.IS_BUILD_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
-        uses: actions/upload-artifact@v3
-        with:
-          name: strato-${{ github.run_number }}-reldebug.apk
-          path: strato-${{ github.run_number }}-reldebug.apk
-
-      - name: Upload Signed Release APK
-        if: env.IS_BUILD_SIGNED == 'true' && env.UPLOAD_ARTIFACTS == 'true'
-        uses: actions/upload-artifact@v3
-        with:
-          name: strato-${{ github.run_number }}-release.apk
-          path: strato-${{ github.run_number }}-release.apk
-
       - name: Rename APKs (Unsigned)
-        if: env.IS_BUILD_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         run: |
           mv app/build/outputs/apk/full/reldebug/app-full-reldebug.apk strato-$GITHUB_RUN_NUMBER-unsigned-reldebug.apk
           mv app/build/outputs/apk/full/release/app-full-release.apk strato-$GITHUB_RUN_NUMBER-unsigned-release.apk
 
       - name: Upload Unsigned Debug APK
-        if: env.IS_BUILD_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: strato-${{ github.run_number }}-unsigned-reldebug.apk
           path: strato-${{ github.run_number }}-unsigned-reldebug.apk
 
       - name: Upload Unsigned Release APK
-        if: env.IS_BUILD_SIGNED == 'false' && env.UPLOAD_ARTIFACTS == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: strato-${{ github.run_number }}-unsigned-release.apk
