@@ -374,6 +374,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
             setOnClickListener { binding.onScreenControllerView.isInvisible = !binding.onScreenControllerView.isInvisible }
         }
 
+        binding.onScreenControllerView.isInvisible = isControllerConnected()
+
         binding.onScreenPauseToggle.apply {
             isGone = !emulationSettings.showPauseButton
             setOnClickListener {
@@ -637,6 +639,23 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 gameSurface = null
                 return
             }
+    }
+
+    private fun isControllerConnected() : Boolean {
+        val deviceIds = InputDevice.getDeviceIds()
+
+        deviceIds.forEach { deviceId ->
+            InputDevice.getDevice(deviceId).apply {
+                // Verify that the device has gamepad buttons, control sticks, or both.
+                if (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD
+                    || sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK) {
+                    // This device is a game controller.
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     override fun dispatchKeyEvent(event : KeyEvent) : Boolean {
