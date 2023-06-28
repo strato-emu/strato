@@ -10,7 +10,7 @@
     <string name="share_logs">Compartilhar Logs</string>
     <string name="refresh">Recarregar</string>
     <!-- Toolbar - Share Logs -->
-    <string name="log_share_prompt">Compartilhar arquivo de log</string>
+    <string name="log_share_prompt">Compartilhar arquivo log</string>
     <string name="logs_not_found">Nenhum log criado durante a última sessão</string>
     <!-- Main -->
     <string name="all">Todos</string>
