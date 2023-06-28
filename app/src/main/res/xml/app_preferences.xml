@@ -18,6 +18,9 @@
             app:key="title_keys"
             app:title="@string/title_keys"
             app:useSimpleSummaryProvider="true" />
+        <emu.skyline.preference.ImportExportSavesPreference
+            app:key="save_data_manager"
+            app:title="@string/save_data_manager" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_appearance"
