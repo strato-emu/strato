@@ -277,7 +277,7 @@
     <string name="amat_description">Android Material Components cung cấp một giao diện người dùng Material Design nhất quán</string>
     <string name="ktstd_description">Kotlin Standard Library cung cấp các chức năng tiện ích trong Kotlin</string>
     <string name="dagger_description">Dagger cung cấp một framework cho việc inject dependency trong thời gian biên dịch</string>
-    <string name="mtico_description">Material Design Icons cung cấp biểu tượng phù hợp trong ứng dụng</string>
+    <string name="mtico_description">Material Design Icons cung cấp biểu tượng nhất quán trong ứng dụng</string>
     <string name="noto_sans_description">Font Noto Sans được dùng như phần font chia sẻ từ FOSS của chúng tôi thay thế cho tiếng Latin, tiếng Nhật và tiếng Trung (phổn thể)</string>
     <string name="roboto_description">Font Roboto được dùng như phần font chia sẻ từ FOSS của chúng tôi thay thế cho tiếng Hàn Quốc và các ký tự mở rộng của Nitendo</string>
     <!-- Software Keyboard -->
