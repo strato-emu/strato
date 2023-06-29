@@ -136,7 +136,7 @@
     <string name="hacks">Hack</string>
     <string name="enable_fast_gpu_readback">Bật đọc lại nhanh GPU </string>
     <string name="enable_fast_gpu_readback_enabled">Đọc lại nhanh GPU sẽ được bật (Có thể gây trục trặc hoặc tăng hiệu suất game)</string>
-    <string name="enable_fast_gpu_readback_disabled">Đọc lại nhanh GPU sẽ được tắt(Đảm bảo độ chính xác tối đa)</string>
+    <string name="enable_fast_gpu_readback_disabled">Đọc lại nhanh GPU sẽ được tắt (Đảm bảo độ chính xác tối đa)</string>
     <string name="enable_fast_readback_writes">Bật ghi nhanh phần đọc lại</string>
     <string name="enable_fast_readback_writes_enabled">Ghi nhanh phần đọc lại đã được bật</string>
     <string name="enable_fast_readback_writes_disabled">Ghi nhanh phần đọc lại đã được tắt</string>
