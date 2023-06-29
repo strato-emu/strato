@@ -35,7 +35,7 @@
     <string name="open_data_directory">Xem thư mục nội bộ</string>
     <string name="open_data_directory_summary">Mở thư mục nội bộ của Skyline trong phần quản lý tệp</string>
     <string name="open_data_directory_failed">Không thể tìm ứng dụng quản lý tệp ngoài để mở thư mục nội bộ của Skyline</string>
-    <string name="search_location">Tìm kiếm vị trí</string>
+    <string name="search_location">Vị trí tìm kiếm</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys</string>
     <string name="prod_keys">Production Keys</string>
