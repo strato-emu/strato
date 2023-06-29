@@ -257,7 +257,7 @@
     <string name="skyline_license_description">Skyline được cấp phép dưới Giấy phép Công cộng Mozilla 2.0</string>
     <string name="ryujinx_description">Ryujinx được dùng như nguồn tham khảo trong suốt dự án do các triển khai của họ mang tính chính xác cao\n\n<b>Lưu ý: Skyline không dựa trên Ryujinx</b></string>
     <string name="shader_compiler_description">Trình biên dịch shader của Skyline là một <b>bản fork</b> của trình biên dịch shader của <i>yuzu</i>với những thay đổi cụ thể cho Skyline, trong khi các thay đổi khác được chia sẻ giữa hai dự án cho phép cả hai dự án cùng hưởng lợi từ việc phát triển nó\n\n<b>Lưu ý:</b> Việc sử dụng trình biên dịch này trong Skyline chỉ có thể được thực hiện nhờ sự miễn trừ giấy phép được nhóm <i>yuzu</i> cấp cho Skyline</string>
-    <string name="sirit_description">Trình biên dịch shader của Skyline sử dụng Sirit nội bộ để xuất SPIR-V một cách hiệu quả</string>
+    <string name="sirit_description">Trình biên dịch shader của Skyline dùng Sirit nội bộ để xuất SPIR-V một cách hiệu quả</string>
     <string name="vkhpp_description">Vulkan-Hpp cung cấp một API C++ cho Vulkan</string>
     <string name="vkma_description">Vulkan Memory Allocator cung cấp một bộ cấp bộ nhớ GPU chất lượng cao với hỗ trợ UMA</string>
     <string name="khvkval_description">Khronos\'s Vulkan Validation Layer cung cấp kiểm tra lỗi cho các lời gọi API Vulkan trong các phiên bản debug</string>
