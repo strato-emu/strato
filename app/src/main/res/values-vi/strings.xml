@@ -269,7 +269,7 @@
     <string name="frozen_description">Frozen cung cấp hash maps không thay đổi tại thời gian biên dịch với hàm băm hoàn hảo để tìm kiếm nhanh hơn</string>
     <string name="pugixml_description">pugixml được sử dụng để phân tích cú pháp XML để truy xuất các cài đặt từ C++</string>
     <string name="opus_description">Opus Audio Codec cung cấp một bộ giải mã Opus chất lượng cao được sử dụng để giải mã âm thanh được mã hóa bằng Opus được cung cấp bởi guest</string>
-    <string name="mbedtls_description">Mbed TLS được sử dụng để giải mã các NCAs được mã hóa AES.</string>
+    <string name="mbedtls_description">Mbed TLS được dùng để giải mã các NCAs được mã hóa AES.</string>
     <string name="lz4_description">LZ4 được dùng để giải nén các phần của ELF được nén bằng LZ4 từ một NSO</string>
     <string name="tzcode_description">tzcode cung cấp một API C để truy cập vào tzdb để lấy dữ liệu múi giờ</string>
     <string name="jssim_description">Java String Similarity là công cụ hỗ trợ cho chức năng tìm kiếm của chúng tôi</string>
