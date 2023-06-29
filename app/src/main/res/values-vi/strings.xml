@@ -261,7 +261,7 @@
     <string name="vkhpp_description">Vulkan-Hpp cung cấp một API C++ cho Vulkan</string>
     <string name="vkma_description">Vulkan Memory Allocator cung cấp một bộ cấp bộ nhớ GPU chất lượng cao với hỗ trợ UMA</string>
     <string name="khvkval_description">Khronos\'s Vulkan Validation Layer cung cấp kiểm tra lỗi cho các lời gọi API Vulkan trong các phiên bản debug</string>
-    <string name="oboe_description">Oboe được sử dụng cho đầu ra âm thanh hiệu suất cao</string>
+    <string name="oboe_description">Oboe được dùng cho đầu ra âm thanh hiệu suất cao</string>
     <string name="perfetto_description">Perfetto được dùng để lập hồ sơ và gỡ lỗi với dấu vết chi tiết</string>
     <string name="fmtlib_description">{fmt} cung cấp API bố cục xâu C++ hiện đại</string>
     <string name="boost_description">Boost cung cấp các triển khai chất lượng cao của các container và các hàm tiện ích khác trong C++</string>
