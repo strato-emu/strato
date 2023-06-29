@@ -67,7 +67,7 @@
     <string name="use_custom_settings_desc_off">Cài đặt tùy chỉnh đã được tắt cho game này</string>
     <string name="export_custom_settings">Xuất cài đặt tùy chỉnh ra tệp text</string>
     <string name="export_custom_settings_desc">Copy tệp text với cài đặt tùy chỉnh của bạn để chia sẻ online</string>
-    <string name="reset_custom_settings">Cài lại cài đặt tùy chỉnh</string>
+    <string name="reset_custom_settings">Đặt lại lại cài đặt tùy chỉnh</string>
     <string name="reset_custom_settings_desc">Cài lại cài đặt tùy chỉnh ở giá trị gốc</string>
     <string name="reset_settings_warning">Bạn có chắc muốn cài lại tất cả các cài đặt ở giá trị gốc? <b>Cài đặt hiện tại sẽ bị mất</b></string>
     <string name="copy_global_settings">Copy cài đặt chung</string>
