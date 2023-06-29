@@ -29,7 +29,9 @@ namespace skyline::kernel::type {
     void KProcess::Kill(bool join, bool all, bool disableCreation) {
         Logger::Warn("Killing {}{}KProcess{}", join ? "and joining " : "", all ? "all threads in " : "HOS-1 in ", disableCreation ? " with new thread creation disabled" : "");
         Logger::EmulationContext.Flush();
-        state.jvm->reportCrash();
+        // disableCreation is set only when gracefully exiting, it being false means an exception/crash occurred
+        if (!disableCreation)
+            state.jvm->reportCrash();
 
         bool expected{false};
         if (!join && !alreadyKilled.compare_exchange_strong(expected, true))
