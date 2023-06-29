@@ -156,7 +156,7 @@
     <string name="system_driver">Driver hệ thống</string>
     <string name="system_driver_desc">Driver GPU được cung cấp bởi hệ thống của bạn</string>
     <string name="install">Cài đặt</string>
-    <string name="gpu_driver_install_inprogress">Đang cài đặt driver GPU</string>
+    <string name="gpu_driver_install_inprogress">Đang cài đặt driver GPU...</string>
     <string name="gpu_driver_install_success">Driver GPU đã được cài đặt thành công</string>
     <string name="gpu_driver_install_invalid_archive">Thất bại khi giải nén gói driver được cung cấp</string>
     <string name="gpu_driver_install_missing_metadata">Gói driver được cung cấp không hợp lệ do thiếu metadata</string>
