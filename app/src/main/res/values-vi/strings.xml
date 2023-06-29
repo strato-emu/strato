@@ -116,7 +116,7 @@
     <string name="triple_buffering_enabled">Sử dụng ít nhất ba bộ đệm swapchain (Tăng FPS nhưng tăng độ trễ đầu vào)</string>
     <string name="triple_buffering_disabled">Sử dụng ít nhất hai bộ đệm swapchain (Giảm FPS nhưng giảm độ trễ đầu vào)</string>
     <string name="disable_frame_throttling">Tắt giới hạn tốc độ khung hình</string>
-    <string name="disable_frame_throttling_enabled">Trò chơi được phép xuất các khung hình càng nhanh càng tốt (chỉ để kiểm tra hiệu năng)\n\n<b>Ghi chú:</b> Một phương pháp thay thế được sử dụng để đo FPS khi chức năng này được bật, các con số này không được so sánh với con số FPS bị giới hạn</string>
+    <string name="disable_frame_throttling_enabled">Trò chơi được phép xuất các khung hình càng nhanh càng tốt (chỉ để kiểm tra hiệu năng)\n\n<b>Lưu ý:</b> Một phương pháp thay thế được sử dụng để đo FPS khi chức năng này được bật, các con số này không được so sánh với con số FPS bị giới hạn</string>
     <string name="disable_frame_throttling_disabled">Chỉ cho phép trò chơi xuất khung hình theo tốc độ làm tươi màn hình</string>
     <string name="executor_slot_count_scale">Thang điều chỉnh số lượng khe thực thi</string>
     <string name="executor_slot_count_scale_desc">Thang điều khiển số lượng lõi GPU thực thi trong cùng một lúc(Cao hơn có thể sẽ chạy mượt hơn nhưng sẽ dùng nhiều RAM hơn)</string>
