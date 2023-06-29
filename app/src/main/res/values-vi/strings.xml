@@ -46,7 +46,7 @@
     <string name="import_keys_delete_previous_failed">Thất bại khi xóa keys đang dùng</string>
     <string name="import_keys_move_failed">Thất bại khi chuyển keys tới thư mục nội bộ</string>
     <!-- Settings - Appearance -->
-    <string name="appearance">Ngoại quan</string>
+    <string name="appearance">Giao diện</string>
     <string name="theme">Chủ đề</string>
     <string name="use_material_you">Dùng Material You</string>
     <string name="use_material_you_desc_off">Màu của Skyline sẽ được dùng</string>
