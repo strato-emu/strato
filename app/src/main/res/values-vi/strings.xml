@@ -14,7 +14,7 @@
     <string name="logs_not_found">Không log nào được tạo trong lần chạy cuối</string>
     <!-- Main -->
     <string name="all">Tất cả</string>
-    <string name="metadata_missing">Thiếu Metadata</string>
+    <string name="metadata_missing">Thiếu metadata</string>
     <string name="icon">Biểu tượng</string>
     <string name="no_rom">Không tìm thấy ROMs</string>
     <string name="pin">Mã Pin</string>
