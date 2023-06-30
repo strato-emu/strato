@@ -4,7 +4,7 @@
     <string name="error">Đã xảy ra lỗi</string>
     <string name="copied_to_clipboard">Đã sao chép vào bộ nhớ tạm</string>
     <string name="emulator">Giả lập</string>
-    <string name="enabled">Bật</string>
+    <string name="enabled">Đã bật</string>
     <!-- Toolbar Main -->
     <string name="settings">Cài đặt</string>
     <string name="share_logs">Chia sẻ log</string>
