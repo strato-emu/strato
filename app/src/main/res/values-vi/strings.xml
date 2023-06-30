@@ -160,7 +160,7 @@
     <string name="gpu_driver_install_success">Driver GPU đã được cài đặt thành công</string>
     <string name="gpu_driver_install_invalid_archive">Thất bại khi giải nén gói driver được cung cấp</string>
     <string name="gpu_driver_install_missing_metadata">Gói driver được cung cấp không hợp lệ do thiếu metadata</string>
-    <string name="gpu_driver_install_invalid_metadata">Gói driver được cung cấp chứa metadata không hợp lệ, có thể bị hỏng.</string>
+    <string name="gpu_driver_install_invalid_metadata">Gói driver được cung cấp chứa metadata không hợp lệ, có thể bị hỏng</string>
     <string name="gpu_driver_install_unsupported_android_version">Thiết bị của bạn không đáp ứng các yêu cầu về phiên bản Android tối thiểu cho driver được cung cấp</string>
     <string name="gpu_driver_install_already_installed">Gói driver được cung cấp đã được cài đặt trên hệ thống</string>
     <!-- Input -->
