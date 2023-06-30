@@ -123,7 +123,7 @@
     <string name="executor_flush_threshold">Ngưỡng xử lý của trình thực thi</string>
     <string name="executor_flush_threshold_desc">Điều khiển tần suất công việc được gửi đến GPU</string>
     <string name="use_direct_memory_import">Dùng nhập trực tiếp bộ nhớ</string>
-    <string name="use_direct_memory_import_desc">Có thể làm thay đổi hiệu suất và mức độ ổn định một số game\n<b> Lưu ý:</b> Tùy chọn này chỉ hoat động trên thiết bị có driver Adreno</string>
+    <string name="use_direct_memory_import_desc">Có thể làm thay đổi hiệu suất và mức độ ổn định một số game\n<b> Lưu ý:</b> Tùy chọn này chỉ hoat động trên thiết bị có driver Adreno độc quyền</string>
     <string name="force_max_gpu_clocks">Buộc ép xung GPU ở mức tối đa</string>
     <string name="force_max_gpu_clocks_desc">Buộc GPU ép xung ở xung nhịp tối đa có thể (Có thể gây nhiệt độ cao và tiêu thụ năng lượng quá mức)</string>
     <string name="force_max_gpu_clocks_desc_unsupported">Thiết bị của bạn không hỗ trợ buộc ép xung tối đa GPU</string>
