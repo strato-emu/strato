@@ -211,7 +211,7 @@
     <string name="builtin">Tích hợp</string>
     <string name="builtin_vibrator">Thiết bị rung tích hợp</string>
     <string name="reset">Đặt lại</string>
-    <string name="buttons">Các nút</string>
+    <string name="buttons">Nút</string>
     <string name="use_button_axis">Sử dụng bất kỳ nút hoặc trục nào trên tay cầm</string>
     <string name="release_confirm">Nhả để xác nhận lựa chọn</string>
     <string name="hold_confirm">Giữ để xác nhận lựa chọn</string>
