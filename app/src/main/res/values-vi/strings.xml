@@ -94,7 +94,7 @@
     <string name="screen_orientation">Hướng màn hình</string>
     <string name="aspect_ratio">Tỉ lệ khung hình</string>
     <string name="respect_display_cutout">Dùng đúng khu vực bị khuyết</string>
-    <string name="respect_display_cutout_enabled">Không tạo các yếu tố giao diện người dùng ở khu vực cắt ra</string>
+    <string name="respect_display_cutout_enabled">Không tạo các yếu tố giao diện người dùng ở khu vực bị khuyết</string>
     <string name="respect_display_cutout_disabled">Cho phép tạo các yếu tố giao diện người dùng ở khu vực cắt ra</string>
     <string name="enable_foldable_layout">Bật bố cục gập</string>
     <string name="enable_foldable_layout_enabled">Các thiết bị gập sẽ hiển thị game và phần điều khiển riêng biệt</string>
