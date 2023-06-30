@@ -129,7 +129,7 @@
     <string name="force_max_gpu_clocks_desc_unsupported">Thiết bị của bạn không hỗ trợ buộc ép xung tối đa GPU</string>
     <string name="free_guest_texture_memory">Giải phóng bộ nhớ kết cấu khách</string>
     <string name="free_guest_texture_memory_desc">Cho phép giải phóng dữ liệu kết cấu khách khỏi bộ nhớ khi không cần (Hiếm khi gây sập game)</string>
-    <string name="shader_cache">Tắt Shader Cache</string>
+    <string name="shader_cache">Tắt cache shader</string>
     <string name="shader_cache_disabled">Các shader đã được lưu trong bộ nhớ cache sẽ không được tải, sẽ gây hiện tượng giật lag</string>
     <string name="shader_cache_enabled">Các shader đã được lưu trong bộ nhớ cache sẽ được tải, giúp giảm đáng kể hiện tượng giật lag</string>
     <!-- Settings - Hacks -->
