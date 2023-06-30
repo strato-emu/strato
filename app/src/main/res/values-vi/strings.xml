@@ -98,7 +98,7 @@
     <string name="respect_display_cutout_disabled">Cho phép tạo các yếu tố giao diện người dùng ở khu vực bị khuyết</string>
     <string name="enable_foldable_layout">Bật bố cục gập</string>
     <string name="enable_foldable_layout_enabled">Các thiết bị gập sẽ hiển thị game và phần điều khiển riêng biệt</string>
-    <string name="enable_foldable_layout_disabled">Hiển thị phần điều khiển trên game ngay cả khi thiết bị được gập</string>
+    <string name="enable_foldable_layout_disabled">Hiển thị phần điều khiển trên game khi thiết bị được gập</string>
     <string name="show_pause_button">Hiện nút Tạm dừng</string>
     <string name="show_pause_button_disabled">Nút Tạm dừng sẽ không được hiển thị</string>
     <string name="show_pause_button_enabled">Nút Tạm dừng sẽ được hiển thị</string>
