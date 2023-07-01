@@ -94,7 +94,7 @@
     <string name="screen_orientation">Orientación de la pantalla</string>
     <string name="aspect_ratio">Relación de Aspecto</string>
     <string name="respect_display_cutout">Respetar recorte de pantalla</string>
-    <string name="respect_display_cutout_enabled">No dibujar elementos de la UI en la parte cortada de la pantalla </string>
+    <string name="respect_display_cutout_enabled">No dibujar elementos de la interfaz en la parte cortada de la pantalla </string>
     <string name="respect_display_cutout_disabled">Permite que se puedan dibujar elementos de la UI en el área de recorte</string>
     <string name="enable_foldable_layout">Habilitar interfaz para plegables</string>
     <string name="enable_foldable_layout_enabled">Los dispositivos plegables mostrarán el juego y los controles por separados</string>
