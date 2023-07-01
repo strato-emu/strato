@@ -95,7 +95,7 @@
     <string name="aspect_ratio">Relación de Aspecto</string>
     <string name="respect_display_cutout">Respetar recorte de pantalla</string>
     <string name="respect_display_cutout_enabled">No dibujar elementos de la interfaz en la parte cortada de la pantalla </string>
-    <string name="respect_display_cutout_disabled">Permite que se puedan dibujar elementos de la UI en el área de recorte</string>
+    <string name="respect_display_cutout_disabled">Permite que se puedan dibujar elementos de la interfaz en el área de recorte</string>
     <string name="enable_foldable_layout">Habilitar interfaz para plegables</string>
     <string name="enable_foldable_layout_enabled">Los dispositivos plegables mostrarán el juego y los controles por separados</string>
     <string name="enable_foldable_layout_disabled">Muestra los controles sobre los juegos aún cuando el dispositivo sea plegable</string>
@@ -130,7 +130,7 @@
     <string name="free_guest_texture_memory">Liberar memoria de texturas huéspedes</string>
     <string name="free_guest_texture_memory_desc">Permite que los datos de textura del programa huésped (juego o aplicación) sean liberados de la memoria cuando no se necesiten (Rara vez podría causar fallas)</string>
     <string name="shader_cache">Desactivar caché de shaders</string>
-    <string name="shader_cache_disabled">No se cargarán los shaders en caché. Podría causar tartamudeo</string>
+    <string name="shader_cache_disabled">No se cargarán los shaders en caché. Podría causar interrupciones</string>
     <string name="shader_cache_enabled">Se cargarán los shaders en caché. Podría reducir bastante el tartamudeo </string>
     <!-- Settings - Hacks -->
     <string name="hacks">Hacks</string>
