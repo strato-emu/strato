@@ -77,7 +77,7 @@
     <string name="system">Sistema</string>
     <string name="use_docked">Usar Modo Dock</string>
     <string name="handheld_enabled">El sistema emulará estar en modo portátil</string>
-    <string name="docked_enabled">El sistema emulará estar en modo dock (colocado en la base)</string>
+    <string name="docked_enabled">El sistema emulará estar en modo dock (modo televisor)</string>
     <string name="username">Nombre de usuario</string>
     <string name="profile_picture">Imagen de perfil</string>
     <string name="system_language">Idioma del sistema</string>
