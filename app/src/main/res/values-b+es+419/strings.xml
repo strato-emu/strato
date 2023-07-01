@@ -89,7 +89,7 @@
     <string name="perf_stats_desc_off">No se mostrarán las estadísticas de rendimiento</string>
     <string name="perf_stats_desc_on">Se mostrarán las estadisticas de rendimiento en la esquina superior izquierda</string>
     <string name="max_refresh_rate">Usar tasa máxima de refresco de pantalla</string>
-    <string name="max_refresh_rate_enabled">Deja la tasa de refresco en lo más alto posible (romperá la mayoría de los juegos)</string>
+    <string name="max_refresh_rate_enabled">Establece la tasa de refresco a lo más alto posible (romperá la mayoría de los juegos)</string>
     <string name="max_refresh_rate_disabled">Deja la tasa de refresco de la pantalla en 60hz</string>
     <string name="screen_orientation">Orientación de la pantalla</string>
     <string name="aspect_ratio">Relación de Aspecto</string>
