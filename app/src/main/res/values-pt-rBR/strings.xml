@@ -4,24 +4,32 @@
     <string name="error">Ocorreu um erro</string>
     <string name="copied_to_clipboard">Copiado para área de transferência</string>
     <string name="emulator">Emulador</string>
+    <string name="enabled">Ativado</string>
     <!-- Toolbar Main -->
     <string name="settings">Configurações</string>
-    <string name="share_logs">Compartilhar Registros</string>
+    <string name="share_logs">Compartilhar Logs</string>
     <string name="refresh">Recarregar</string>
     <!-- Toolbar - Share Logs -->
-    <string name="log_share_prompt">Compartilhar arquivo de registro</string>
-    <string name="logs_not_found">Nenhum registro criado durante a última execução</string>
+    <string name="log_share_prompt">Compartilhar arquivo log</string>
+    <string name="logs_not_found">Nenhum log criado durante a última sessão</string>
     <!-- Main -->
     <string name="all">Todos</string>
-    <string name="metadata_missing">Metadados Ausentes</string>
+    <string name="metadata_missing">Metadados ausentes</string>
     <string name="icon">Ícone</string>
-    <string name="no_rom">Não foi possível encontrar nenhum arquivo de ROM</string>
+    <string name="no_rom">Falha ao encontrar ROM</string>
     <string name="pin">Fixar</string>
     <string name="play">Jogar</string>
+    <string name="save_management">Gerenciamento de saves</string>
+    <string name="delete_save">Deletar save</string>
+    <string name="import_save">Importar</string>
+    <string name="export_save">Exportar</string>
     <string name="searching_roms">Buscando por ROMs</string>
     <string name="invalid_file">Arquivo inválido </string>
     <string name="missing_title_key">Arquivo title.keys faltando</string>
     <string name="incomplete_prod_keys">Arquivo prod.keys incompleto</string>
+    <!-- Picture-In-Picture -->
+    <string name="pause">Pausar</string>
+    <string name="mute">Mutar</string>
     <!-- Settings - Content -->
     <string name="content">Conteúdo</string>
     <string name="open_data_directory">Ver Diretório Interno</string>
@@ -29,50 +37,58 @@
     <string name="open_data_directory_failed">Não foi possivel encontrar um gerenciador de arquivos para abrir o diretório interno do Skyline</string>
     <string name="search_location">Local de Busca</string>
     <!-- Settings - Keys -->
-    <string name="keys">Chaves de Decriptação</string>
+    <string name="keys">Keys</string>
     <string name="prod_keys">Arquivo prod.keys</string>
     <string name="title_keys">Arquivo title.keys</string>
-    <string name="import_keys_success">Chaves de Decriptação importadas com sucesso</string>
-    <string name="import_keys_invalid_input_path">O caminho para as chaves fornecidas é inválido</string>
-    <string name="import_keys_invalid_keys">As chaves que você tentou importar são inválidas</string>
-    <string name="import_keys_delete_previous_failed">Falha ao excluir as chaves já instaladas</string>
-    <string name="import_keys_move_failed">Falha ao mover as chaves para o diretório interno</string>
+    <string name="import_keys_success">Keys importadas com sucesso</string>
+    <string name="import_keys_invalid_input_path">O caminho para as keys fornecidas é inválido</string>
+    <string name="import_keys_invalid_keys">As keys que você tentou importar são inválidas</string>
+    <string name="import_keys_delete_previous_failed">Falha ao excluir as keys atualmente instaladas</string>
+    <string name="import_keys_move_failed">Falha ao mover as keys para o diretório interno</string>
     <!-- Settings - Appearance -->
     <string name="appearance">Aparência</string>
     <string name="theme">Tema</string>
+    <string name="use_material_you">Usar Material You</string>
+    <string name="use_material_you_desc_off">Cores do Skyline serão usadas</string>
+    <string name="use_material_you_desc_on">Material You aplicado</string>
     <string name="app_language">Idioma do Aplicativo</string>
     <string name="app_language_default">Usar Padrão do Sistema</string>
     <string name="layout_type">Modo de Exibição dos Jogos</string>
     <string name="sort_apps_by">Ordem de Classificação dos Jogos</string>
     <string name="select_action">Sempre Mostrar Informação dos Jogos</string>
-    <string name="select_action_desc_on">Informação do jogo será mostrada ao clicar em um jogo</string>
-    <string name="select_action_desc_off">Informação do jogo será mostrada somente em um clique longo sobre um jogo</string>
+    <string name="select_action_desc_on">A Informação do jogo será mostrada ao clicar em um jogo</string>
+    <string name="select_action_desc_off">Informação do jogo será mostrada somente ao pressionar sobre um jogo</string>
+    <string name="filter_invalid_files_desc_off">Mostrar arquivos inválidos</string>
+    <string name="filter_invalid_files_desc_on">Ocultar arquivos inválidos</string>
     <!-- Settings - Game -->
     <string name="game">Jogo</string>
     <string name="use_custom_settings">Habilitar Configurações Personalizadas</string>
     <string name="use_custom_settings_desc_on">Configurações personalizadas estão habilitadas para este jogo</string>
     <string name="use_custom_settings_desc_off">Configurações personalizadas estão desabilitadas para esse jogo</string>
+    <string name="export_custom_settings">Exportar configurações customizadas para texto</string>
+    <string name="export_custom_settings_desc">Copiar um texto com suas configurações atuais para compartilhar online</string>
     <string name="reset_custom_settings">Redefinir Configurações Personalizadas</string>
-    <string name="reset_custom_settings_desc">Redefine as configurações personalizadas para os valores padrão</string>
-    <string name="reset_settings_warning">Tem certeza que deseja redefinir todas as configurações para os valores padrão? <b>As configurações atuais serão perdidas </b></string>
+    <string name="reset_custom_settings_desc">Redefinir as configurações personalizadas para o padrão</string>
+    <string name="reset_settings_warning">Tem certeza que deseja redefinir todas as configurações para o padrão? <b>Configurações atuais serão perdidas </b></string>
     <string name="copy_global_settings">Copiar Configurações Globais</string>
     <string name="copy_global_settings_desc">Copia as configurações globais para este jogo</string>
-    <string name="copy_global_settings_warning">Tem certeza que deseja copiar as configurações globais para este jogo? <b>As configurações atuais serão perdidas </b></string>
+    <string name="copy_global_settings_warning">Tem certeza que deseja copiar as configurações gerais para este jogo? <b>As configurações atuais serão perdidas </b></string>
     <!-- Settings - System -->
     <string name="system">Sistema</string>
-    <string name="use_docked">Utilizar Modo Docked</string>
-    <string name="handheld_enabled">O sistema será emulado no modo fora da dock</string>
-    <string name="docked_enabled">O sistema será emulado no modo docked</string>
+    <string name="use_docked">Habilitar Modo Dock</string>
+    <string name="handheld_enabled">O sistema será emulado no modo portátil</string>
+    <string name="docked_enabled">O sistema será emulado no Modo Dock</string>
     <string name="username">Nome de Usuário</string>
     <string name="profile_picture">Imagem de Perfil</string>
     <string name="system_language">Idioma do Sistema</string>
     <string name="system_region">Região do Sistema</string>
+    <string name="internet">Sistema poderá usar Internet</string>
     <!-- Settings - Display -->
-    <string name="display">Exibição</string>
+    <string name="display">Tela</string>
     <string name="perf_stats">Exibir Estatísticas de Desempenho</string>
     <string name="perf_stats_desc_off">Estastísticas de Desempenho não serão exibidas</string>
     <string name="perf_stats_desc_on">Estatísticas de Desempenho sersão exibidas no canto superior esquerdo</string>
-    <string name="max_refresh_rate">Use a Taxa Máxima de Atualização da Tela</string>
+    <string name="max_refresh_rate">Usar a Taxa Máxima de Atualização da Tela</string>
     <string name="max_refresh_rate_enabled">Define a taxa de atualização da tela para a mais alta possível (vai quebrar a maioria dos jogos)</string>
     <string name="max_refresh_rate_disabled">Define a taxa de atualização da tela para 60Hz</string>
     <string name="screen_orientation">Orientação da Tela</string>
@@ -80,6 +96,12 @@
     <string name="respect_display_cutout">Respeitar o Recorte da Tela</string>
     <string name="respect_display_cutout_enabled">Não desenha elementos da interface na área de recorte</string>
     <string name="respect_display_cutout_disabled">Permitie o desenho de elementos da interface na área de recorte</string>
+    <string name="enable_foldable_layout">Ativar suporte a telas dobráveis</string>
+    <string name="enable_foldable_layout_enabled">Ativar tela e controle separados em dispositivos dobráveis</string>
+    <string name="enable_foldable_layout_disabled">Apresentar controle sobre os jogos mesmo quando o aparelho estiver dobrado</string>
+    <string name="show_pause_button">Mostrar botão de pausar</string>
+    <string name="show_pause_button_disabled">Botão de pause não será mostrado</string>
+    <string name="show_pause_button_enabled">Botão de pause será mostrado</string>
     <!-- Settings - Audio -->
     <string name="audio">Áudio</string>
     <string name="disable_audio_output">Desabilitar Saída de Áudio</string>
@@ -91,23 +113,25 @@
     <string name="gpu_driver_config_desc">Driver ativo: %1$s</string>
     <string name="gpu_driver_config_desc_unsupported">Seu dispositivo não possui suporte a drivers customizados</string>
     <string name="force_triple_buffering">Forçar Buffer Triplo</string>
-    <string name="triple_buffering_enabled">Utilize pelo menos três buffers em cadeia de troca (FPS mais altos, porém há mais atraso de entrada)</string>
-    <string name="triple_buffering_disabled">Utilize pelo menos dois buffers em cadeia de troca (FPS mais baixos, mas há menos atraso de entrada)</string>
-    <string name="disable_frame_throttling">Desabilitar o Limitador de Quadros</string>
+    <string name="triple_buffering_enabled">Utilize pelo menos três buffers em cadeia de troca (FPS mais altos, porém aumenta a latência)</string>
+    <string name="triple_buffering_disabled">Utilize pelo menos dois buffers em cadeia de troca (FPS mais baixos, porém terá menos latência)</string>
+    <string name="disable_frame_throttling">Desativar Supressão de Frames</string>
     <string name="disable_frame_throttling_enabled">O jogo pode rodar o mais rápido possível (somente para benchmarking) <b>Nota:</b>Um método alternativo é utilizado para medir o FPS com isso habilitado, os valores não devem ser comparados aos valores de FPS limitados</string>
     <string name="disable_frame_throttling_disabled">Permitir que o jogo rode de acordo com a taxa de atualização da tela do seu dispositivo</string>
     <string name="executor_slot_count_scale">Escala de Contagem de Slots do Executor</string>
-    <string name="executor_slot_count_scale_desc">Escala controlando o número máximo de execuções simultâneas da GPU (mais alto às vezes pode ter um desempenho melhor, mas usará mais RAM)</string>
-    <string name="executor_flush_threshold">Limite de Descarga do Executor</string>
-    <string name="executor_flush_threshold_desc">Controla a frequência com que o trabalho é descarregado para a GPU</string>
+    <string name="executor_slot_count_scale_desc">Escala que controla o número máximo de execuções simultâneas da GPU (mais alto pode resultar em melhor desempenho, mas usará mais RAM)</string>
+    <string name="executor_flush_threshold">Limiar de Descarga do Executor</string>
+    <string name="executor_flush_threshold_desc">Controla a frequência com que o trabalho é liberado para a GPU</string>
     <string name="use_direct_memory_import">Usar Importação Direta da Memória</string>
     <string name="use_direct_memory_import_desc">Pode alterar o desempenho e estabilidade em alguns jogos\n<b>NOTA:</b>Esta opção funciona apenas em drivers proprietários Adreno</string>
     <string name="force_max_gpu_clocks">Forçar Frequência Máxima da GPU</string>
     <string name="force_max_gpu_clocks_desc">Força a GPU a rodar na sua maior frequência possível (Pode causar calor e consumo de energia excessivos)</string>
-    <string name="force_max_gpu_clocks_desc_unsupported">Seu disponível não suportar forçar a frequência máxima da GPU</string>
+    <string name="force_max_gpu_clocks_desc_unsupported">Seu disponível não suporta forçar a frequência máxima da GPU</string>
+    <string name="free_guest_texture_memory">Liberar memória de texturas pré-existentes</string>
+    <string name="free_guest_texture_memory_desc">Permitir dados de textura já existentes a serem limpados da memória quando desnecessários (Raramente pode causar crashes)</string>
     <string name="shader_cache">Desabilitar Cache de Shader</string>
-    <string name="shader_cache_disabled">Shaders armazenados em cache não serão carregadas, resultará em engasgos</string>
-    <string name="shader_cache_enabled">Shaders armazenados em cache serão carregadas, pode reduzir fortemente os engasgos</string>
+    <string name="shader_cache_disabled">Shaders armazenados em cache não serão carregadas. Resultará em travamentos</string>
+    <string name="shader_cache_enabled">Shaders armazenados em cache serão carregados. Pode reduzir fortemente travamentos</string>
     <!-- Settings - Hacks -->
     <string name="hacks">Hacks</string>
     <string name="enable_fast_gpu_readback">Habilitar Releitura Rápida de GPU</string>
@@ -121,7 +145,7 @@
     <string name="disable_subgroup_shuffle_disabled">As operações de embaralhamento do subgrupo de shaders estão ativadas, garante máxima precisão</string>
     <!-- Settings - Debug -->
     <string name="debug">Depurar</string>
-    <string name="log_level">Nível do Registro</string>
+    <string name="log_level">Nível do Log</string>
     <string name="validation_layer">Habilitar Camada de Validação</string>
     <string name="validation_layer_enabled">A camada de validação do Vulkan está habilitada, grandes quedas de desempenho são esperadas</string>
     <string name="validation_layer_disabled">A camada de validação Vulkan está desabilitada</string>
@@ -136,7 +160,7 @@
     <string name="gpu_driver_install_success">Driver GPU instalado com sucesso</string>
     <string name="gpu_driver_install_invalid_archive">Falha ao descompactar o pacote de driver fornecido</string>
     <string name="gpu_driver_install_missing_metadata">O pacote de driver fornecido é inválido devido a metadados ausentes</string>
-    <string name="gpu_driver_install_invalid_metadata">O pacote de driver fornecido contém metadados inválidos, ele pode estar corrompido</string>
+    <string name="gpu_driver_install_invalid_metadata">O pacote de driver fornecido contém metadados inválidos. Pode estar corrompido</string>
     <string name="gpu_driver_install_unsupported_android_version">Seu dispositivo não atende aos requisitos mínimos de versão do Android para o driver fornecido</string>
     <string name="gpu_driver_install_already_installed">O pacote de driver fornecido já está instalado</string>
     <!-- Input -->
@@ -148,12 +172,27 @@
     <string name="osc_feedback">Habilitar Feedback Tátil</string>
     <string name="osc_feedback_description">Exclui os joysticks e controles físicos</string>
     <string name="osc_edit">Editar esquema de controles na tela</string>
+    <string name="osc_text_color">Cor do texto</string>
+    <string name="osc_background_color">Cor de fundo</string>
+    <string name="osc_reset">Botão de Reset: %1$s</string>
+    <string name="osc_reset_confirm">Tem certeza que deseja resetar esse botão? </string>
+    <string name="osc_toggle_mode">Alternar modo</string>
+    <string name="osc_current_button">Botão Atual: %1$s</string>
+    <string name="select_all">Selecionar tudo</string>
+    <string name="osc_scale">Escala</string>
+    <string name="osc_opacity">Opacidade</string>
+    <string name="osc_activation_radius">Campo tátil</string>
+    <string name="button_color">Cor do botão</string>
+    <string name="toggle_grid">Ativar grade</string>
     <string name="setup_guide">Guia de Configuração</string>
     <string name="setup_guide_description">Mapeia em sequência todos os analógicos e botões</string>
     <string name="joystick">Joystick</string>
     <string name="confirm">Confirmar</string>
     <string name="cancel">Cancelar</string>
-    <string name="osc_recenter_sticks">Recentralizar analógico ao toque</string>
+    <string name="osc_recenter_sticks">Recentralizar analógicos ao toque</string>
+    <string name="osc_recenter_sticks_desc">Reposicionar os analógicos na localização pressionada quando tocados</string>
+    <string name="osc_use_stick_regions">Usar regiões do analógico</string>
+    <string name="osc_use_stick_regions_desc">Ampliar a área de ativação dos analógicos para retângulos cobrindo o correspondente a metade da tela</string>
     <string name="controller">Controle</string>
     <string name="config_controller">Configurar Controle</string>
     <string name="controller_type">Tipo de Controle</string>
@@ -170,7 +209,7 @@
     <string name="press_any_button">Pressione qualquer botão em um controle</string>
     <string name="confirm_button_again">Confirme a escolha pressionando um botão novamente</string>
     <string name="builtin">Embutido</string>
-    <string name="builtin_vibrator">Vibrador Embutido</string>
+    <string name="builtin_vibrator">Vibração embutida</string>
     <string name="reset">Restaurar</string>
     <string name="buttons">Botões</string>
     <string name="use_button_axis">Use qualquer botão ou eixo em um controle</string>
@@ -205,6 +244,8 @@
     <string name="dpad">Botões Direcionais</string>
     <string name="left_stick">Analógico Esquerdo</string>
     <string name="right_stick">Analógico Direito</string>
+    <string name="left_stick_button">Botão da Esquerda</string>
+    <string name="right_stick_button">Botão da Direita</string>
     <string name="face_buttons">Botões de Superfície</string>
     <string name="shoulder_trigger">Ombro &amp;  Botões de Gatilho</string>
     <string name="shoulder_rail">Botões de Ombro no Trilho do Joy-Con</string>
@@ -213,10 +254,10 @@
     <string name="credits">Créditos</string>
     <!-- Licenses -->
     <string name="licenses">Licenças</string>
-    <string name="skyline_license_description">Skyline está licenciado sob a Licença Pública Mozilla 2.0</string>
+    <string name="skyline_license_description">Skyline está licenciado sob a Mozilla Public License 2.0</string>
     <string name="ryujinx_description">Ryujix foi utilizado como referência por todo o projeto devido às suas implementações altamente precisas\n\n<b>Nota: Skyline não é baseado no Ryujinx</b></string>
-    <string name="shader_compiler_description">O compilador de shaders do Skyline é uma <b>bifurcação</b>do compilador de shaders do <i>Yuzu</i> com mudanças específicas para o Skyline enquanto outras mudanças são compartilhadas entre eles, permitindo que ambos os projetos se beneficiem do desenvolvimento\n\n <b>Nota:</b>Usa-lo no Skyline só é possível devido à isenção de licença garantida ao Skuline pela equipe do <i>Yuzu</i></string>
-    <string name="sirit_description">O compilador de shader do Skyline internamente utiliza Sirit para emitir SPIR-V de maneira eficiente</string>
+    <string name="shader_compiler_description">O Compilador de Shaders do Skyline foi criado a partir de modificações feitas do compilador de shaders do Yuzu, com mudanças especificas para o Skyline e outras compartilhadas entre eles, permitindo beneficio mútuo. Obs: A criação do Compilador de Shader do Skyline, só foi possível devido à isenção de licença garantida pela equipe do Yuzu.</string>
+    <string name="sirit_description">O compilador de shader do Skyline utiliza internamente Sirit para emitir SPIR-V de maneira eficiente</string>
     <string name="vkhpp_description">Vulkan-Hpp fornece uma API C++ para Vulkan</string>
     <string name="vkma_description">Vulkan Memory Allocator fornece um alocador de memória de GPU de alta qualidade com suporte para UMA</string>
     <string name="khvkval_description">Vulkan Validation Layer da Khronos fornece uma checagem de erros paras as chamadas da API Vulkan nas compilações de depuração</string>
@@ -225,24 +266,34 @@
     <string name="fmtlib_description">{fmt} fornece uma API de formatação de strings C++ moderna</string>
     <string name="boost_description">Boost fornece uma implementação de alta qualidade de contêineres e outras funções de conveniência em C++</string>
     <string name="rangev3_description">Range v3 é uma implementação de referência de intervalos ISO C++ 20, isso nos permite utilizar intervalos enquanto eles são desenvolvidos em libc++ do LLVM</string>
-    <string name="frozen_description">Frozen fornece mapas de hash imutáveis em tempo de compilação com função de hash perfeita para pesquisas mais rápidas</string>
+    <string name="frozen_description">Frozen fornece mapas de hash em tempo de compilação imutáveis com função de hash perfeita para pesquisas mais rápidas</string>
     <string name="pugixml_description">pugixml é utilizado para analisar o XML de preferência para recuperar configurações do C++</string>
     <string name="opus_description">O Codec de Áudio Opus fornece um decodificador Opus de alta qualidade utilizado para decodificar áudio codificado em Opus fornecido pelo convidado</string>
     <string name="mbedtls_description">Mbed TLS é utilizado para descriptografar NCAs criptografados em AES</string>
-    <string name="lz4_description">LZ4 é utilizado para extrair seções de ELF compactadas em LZ4 a partir de um NSO</string>
+    <string name="lz4_description">LZ4 é utilizado para extrair seções ELF compactadas em LZ4 de um NSO</string>
     <string name="tzcode_description">tzcode fornece uma API C para acessar tzdb para dados de fuso horário</string>
     <string name="jssim_description">Java String Similarity potencializa nossa funcionalidade de pesquisas</string>
     <string name="andx_description">AndroidX fornece uma experiência de usuário consistente em todas as versões do Android</string>
     <string name="amat_description">Android Material Components fornece uma interface de usuário do Material Desing consistente</string>
-    <string name="ktstd_description">Kotlin Standar Library fornece funções de conveniência em Kotlin</string>
-    <string name="dagger_description">Dagger fornece uma estrutura para injenção de dependência em tempo de compilação</string>
+    <string name="ktstd_description">Kotlin Standard Library fornece funções de conveniência em Kotlin</string>
+    <string name="dagger_description">Dagger fornece um framework para injenção de dependência em tempo de compilação</string>
     <string name="mtico_description">Material Design Icons fornece uma iconografia consistente em todo o aplicativo</string>
     <string name="noto_sans_description">Nato Sans é utilizado como nossa substituição de fonte compartilhada FOSS para Latin, Japonês and Chinês (Tradicional)</string>
     <string name="roboto_description">Roboto é utilizado como nossa substituição de fonte compartilhada para Coreano e o conjunto de caracteres estendidos da Nintendo</string>
     <!-- Software Keyboard -->
     <string name="input_hint">Entrada de texto</string>
     <!-- Misc -->
+    <string name="compiling_cached_pipelines">Compilando canais em cache...</string>
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expandir</string>
     <string name="undo">Desfazer</string>
+    <string name="per_game_settings_active_message">Configurações por jogo estão ativadas</string>
+    <string name="delete_save_confirmation_message">Você tem certeza que quer deletar esse save?</string>
+    <string name="action_irreversible">Esta ação é irreversível </string>
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
+    <string name="save_file_imported_ok">Save importado com sucesso</string>
+    <string name="save_file_invalid_zip_structure">Estrutura de diretório do ZIP inválida: o primeiro nome da subpasta tem que ser o ID de título do jogo.</string>
+    <string name="game_crash">O jogo crashou.</string>
+    <string name="game_crash_message">Aconteceu um falha. Leia o log para detalhes.</string>
 </resources>
