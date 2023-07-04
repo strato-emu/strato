@@ -36,7 +36,15 @@
     <string name="open_data_directory">View Internal Directory</string>
     <string name="open_data_directory_summary">Opens Skyline\'s internal directory in a file manager</string>
     <string name="open_data_directory_failed">Cannot find an external file manager to open Skyline\'s internal directory</string>
-    <string name="search_location">Search Location</string>
+    <string name="search_location">Search Locations</string>
+    <string name="search_location_config">Search Locations Configuration</string>
+    <string name="delete_search_location">Delete this search location</string>
+    <string name="add">Add</string>
+    <string name="add_search_location">Add a search location</string>
+    <string name="search_locations_count">%1$s search location%2$s selected</string>
+    <string name="search_location_add_success">Search location added successfully</string>
+    <string name="search_location_delete_success">Search location deleted successfully</string>
+    <string name="search_location_duplicated">Search location already added</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys</string>
     <string name="prod_keys">Production Keys</string>

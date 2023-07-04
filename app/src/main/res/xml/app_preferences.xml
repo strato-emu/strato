@@ -7,7 +7,7 @@
             app:key="document_provider"
             app:summary="@string/open_data_directory_summary"
             app:title="@string/open_data_directory" />
-        <emu.skyline.preference.FolderPickerPreference
+        <emu.skyline.preference.SearchLocationPreference
             app:key="search_location"
             app:title="@string/search_location" />
         <emu.skyline.preference.KeyPickerPreference

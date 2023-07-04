@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Material3.CardView.Elevated"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/cornerRadiusMedium">
+
+        <TextView
+            android:id="@+id/name"
+            style="?attr/textAppearanceTitleMedium"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            android:textAlignment="viewStart"
+            app:layout_constraintEnd_toStartOf="@+id/delete_button"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Mesa Turnip Driver" />
+
+        <TextView
+            android:id="@+id/path"
+            style="?attr/textAppearanceTitleSmall"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:includeFontPadding="false"
+            android:textAlignment="viewStart"
+            app:layout_constraintEnd_toEndOf="@+id/name"
+            app:layout_constraintStart_toStartOf="@id/name"
+            app:layout_constraintTop_toBottomOf="@id/name"
+            tools:text="v1.0.2 by Strato" />
+
+        <ImageView
+            android:id="@+id/delete_button"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/delete_search_location"
+            android:padding="3dp"
+            android:scaleType="fitCenter"
+            android:layout_centerVertical="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:srcCompat="@drawable/ic_delete"
+            app:tint="?android:attr/textColorSecondary"
+            tools:ignore="MissingConstraints" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

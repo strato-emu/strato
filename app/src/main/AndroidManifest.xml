@@ -59,6 +59,12 @@
         </activity>
 
         <activity
+            android:name=".preference.SearchLocationActivity"
+            android:exported="true"
+            android:parentActivityName=".settings.SettingsActivity">
+        </activity>
+
+        <activity
             android:name=".input.onscreen.OnScreenEditActivity"
             android:exported="true"
             android:screenOrientation="sensorLandscape"
