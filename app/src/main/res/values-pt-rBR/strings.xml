@@ -295,5 +295,5 @@
     <string name="save_file_imported_ok">Save importado com sucesso</string>
     <string name="save_file_invalid_zip_structure">Estrutura de diretório do ZIP inválida: o primeiro nome da subpasta tem que ser o ID de título do jogo.</string>
     <string name="game_crash">O jogo crashou.</string>
-    <string name="game_crash_message">Aconteceu um falha. Leia o log para detalhes.</string>
+    <string name="game_crash_message">Ocorreu um erro fatal. Leia o log para detalhes.</string>
 </resources>
