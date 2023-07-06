@@ -75,7 +75,7 @@
     <string name="copy_global_settings_warning">Tem certeza que deseja copiar as configurações gerais para este jogo? <b>As configurações atuais serão perdidas </b></string>
     <!-- Settings - System -->
     <string name="system">Sistema</string>
-    <string name="use_docked">Habilitar Modo Dock</string>
+    <string name="use_docked">Habilitar Modo TV</string>
     <string name="handheld_enabled">O sistema será emulado no modo portátil</string>
     <string name="docked_enabled">O sistema será emulado no Modo Dock</string>
     <string name="username">Nome de Usuário</string>
