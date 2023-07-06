@@ -77,7 +77,7 @@
     <string name="system">Sistema</string>
     <string name="use_docked">Habilitar Modo TV</string>
     <string name="handheld_enabled">O sistema será emulado no modo portátil</string>
-    <string name="docked_enabled">O sistema será emulado no Modo Dock</string>
+    <string name="docked_enabled">O sistema será emulado no Modo TV</string>
     <string name="username">Nome de Usuário</string>
     <string name="profile_picture">Imagem de Perfil</string>
     <string name="system_language">Idioma do Sistema</string>
