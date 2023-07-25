@@ -12,6 +12,11 @@
 namespace skyline::loader {
     Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name, bool dynamicallyLinked) {
         u8 *base{reinterpret_cast<u8 *>(process->memory.code.data() + offset)};
+        const bool is64bit{process->npdm.meta.flags.is64Bit};
+        // NCE patching is only required for 64-bit executables
+        const bool needsNcePatching{is64bit};
+        // Only enable symbol hooking for 64-bit executables
+        const bool enableSymbolHooking{is64bit};
 
         size_t textSize{executable.text.contents.size()};
         size_t roSize{executable.ro.contents.size()};
@@ -26,7 +31,8 @@ namespace skyline::loader {
         if (!util::IsPageAligned(executable.text.offset) || !util::IsPageAligned(executable.ro.offset) || !util::IsPageAligned(executable.data.offset))
             throw exception("Section offsets are not aligned with page size: 0x{:X}, 0x{:X}, 0x{:X}", executable.text.offset, executable.ro.offset, executable.data.offset);
 
-        auto patch{state.nce->GetPatchData(executable.text.contents)};
+        // Use an empty PatchData if we don't need to patch
+        auto patch{needsNcePatching ? state.nce->GetPatchData(executable.text.contents) : nce::NCE::PatchData{}};
 
         span dynsym{reinterpret_cast<u8 *>(executable.ro.contents.data() + executable.dynsym.offset), executable.dynsym.size};
         span dynstr{reinterpret_cast<char *>(executable.ro.contents.data() + executable.dynstr.offset), executable.dynstr.size};
@@ -34,20 +40,23 @@ namespace skyline::loader {
         // Get patching info for symbols that we want to hook if symbol hooking is enabled
         std::vector<hle::HookedSymbolEntry> executableSymbols;
         size_t hookSize{0};
-        if (dynamicallyLinked) {
+        if (enableSymbolHooking && dynamicallyLinked) {
             executableSymbols = hle::GetExecutableSymbols(dynsym.cast<Elf64_Sym>(), dynstr);
             hookSize = util::AlignUp(state.nce->GetHookSectionSize(executableSymbols), PAGE_SIZE);
         }
 
-        if (process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit) {
-            process->memory.MapHeapMemory(span<u8>{base, patch.size + hookSize}); // ---
-            process->memory.SetRegionPermission(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false});
-        } else {
-            process->memory.Reserve(span<u8>{base, patch.size + hookSize}); // ---
+        // Reserve patch + hook size only if we need to patch
+        if (patch.size > 0) {
+            if (process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit) {
+                process->memory.MapHeapMemory(span<u8>{base, patch.size + hookSize}); // ---
+                process->memory.SetRegionPermission(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false});
+            } else {
+                process->memory.Reserve(span<u8>{base, patch.size + hookSize}); // ---
+            }
+            LOGD("Successfully mapped section .patch @ {}, Size = 0x{:X}", fmt::ptr(base), patch.size);
+            if (hookSize > 0)
+                LOGD("Successfully mapped section .hook @ {}, Size = 0x{:X}", fmt::ptr(base + patch.size), hookSize);
         }
-        LOGD("Successfully mapped section .patch @ {}, Size = 0x{:X}", fmt::ptr(base), patch.size);
-        if (hookSize > 0)
-            LOGD("Successfully mapped section .hook @ {}, Size = 0x{:X}", fmt::ptr(base + patch.size), hookSize);
 
         u8 *executableBase{base + patch.size + hookSize};
         process->memory.MapCodeMemory(span<u8>{executableBase + executable.text.offset, textSize}, memory::Permission{true, false, true}); // R-X
@@ -76,10 +85,14 @@ namespace skyline::loader {
             executables.insert(std::upper_bound(executables.begin(), executables.end(), base, [](void *ptr, const ExecutableSymbolicInfo &it) { return ptr < it.patchStart; }), std::move(symbolicInfo));
         }
 
-        state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32 *>(base), patch.size, patch.offsets, hookSize);
-        if (hookSize)
-            state.nce->WriteHookSection(executableSymbols, span<u8>{base + patch.size, hookSize}.cast<u32>());
+        // Patch the executable (NCE and symbol hooks)
+        if (patch.size > 0) {
+            state.nce->PatchCode(executable.text.contents, reinterpret_cast<u32 *>(base), patch.size, patch.offsets, hookSize);
+            if (hookSize)
+                state.nce->WriteHookSection(executableSymbols, span<u8>{base + patch.size, hookSize}.cast<u32>());
+        }
 
+        // Copy the executable sections to code memory
         std::memcpy(executableBase, executable.text.contents.data(), executable.text.contents.size());
         std::memcpy(executableBase + executable.ro.offset, executable.ro.contents.data(), roSize);
         std::memcpy(executableBase + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
