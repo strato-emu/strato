@@ -13,5 +13,15 @@ namespace skyline::service::bcat {
     class IBcatService : public BaseService {
       public:
         IBcatService(const DeviceState &state, ServiceManager &manager);
+
+        /**
+         * @url https://switchbrew.org/wiki/BCAT_services#RequestSyncDeliveryCache
+         */
+
+        Result RequestSyncDeliveryCache(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+        SFUNC(0x2774, IBcatService, RequestSyncDeliveryCache)
+        )
     };
 }
