@@ -33,7 +33,7 @@
 	url = https://github.com/xiph/opus
 [submodule "Boost"]
 	path = app/libraries/boost
-	url = https://github.com/skyline-emu/boost.git
+	url = https://github.com/strato-emu/boost.git
 [submodule "LLVM"]
 	path = app/libraries/llvm
 	url = https://github.com/llvm/llvm-project.git
