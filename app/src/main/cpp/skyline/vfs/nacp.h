@@ -25,15 +25,37 @@ namespace skyline::vfs {
       public:
         struct NacpData {
             std::array<ApplicationTitle, 0x10> titleEntries; //!< Title entries for each language
-            u8 _pad0_[0x2C];
+            std::array<u8, 0x25> isbn;
+            u8 startupUserAccount;
+            u8 userAccountSwitchLock;
+            u8 addonContentRegistrationType;
+            u32 attributeFlag;
             u32 supportedLanguageFlag; //!< A bitmask containing the game's supported languages
-            u8 _pad1_[0x30];
+            u32 parentalControlFlag;
+            u8 screenshotEnabled;
+            u8 videoCaptureMode;
+            u8 dataLossConfirmation;
+            u8 _pad0_[0x1];
+            u64 presenceGroupId;
+            std::array<u8, 0x20> ratingAge;
             std::array<char, 0x10> displayVersion; //!< The user-readable version of the application
-            u8 _pad4_[0x8];
+            u64 addOnContentBaseId;
             u64 saveDataOwnerId; //!< The ID that should be used for this application's savedata
-            u8 _pad2_[0x78];
+            u64 userAccountSaveDataSize;
+            u64 userAccountSaveDataJournalSize;
+            u64 deviceSaveDataSize;
+            u64 deviceSaveDataJournalSize;
+            u64 bcatDeliveryCacheStorageSize;
+            char applicationErrorCodeCategory[8];
+            std::array<u64, 0x8> localCommunicationId;
+            u8 logoType;
+            u8 logoHandling;
+            u8 runtimeAddOnContentInstall;
+            u8 runtimeParameterDelivery;
+            u8 appropriateAgeForChina;
+            u8 _pad1_[0x3];
             std::array<u8, 8> seedForPseudoDeviceId; //!< Seed that is combined with the device seed for generating the pseudo-device ID
-            u8 _pad3_[0xF00];
+            u8 _pad2_[0xF00];
         } nacpContents{};
         static_assert(sizeof(NacpData) == 0x4000);
 
@@ -48,6 +70,8 @@ namespace skyline::vfs {
         std::string GetApplicationName(language::ApplicationLanguage language);
 
         std::string GetApplicationVersion();
+
+        std::string GetAddOnContentBaseId();
 
         std::string GetSaveDataOwnerId();
 

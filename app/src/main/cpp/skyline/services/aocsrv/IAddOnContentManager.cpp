@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <os.h>
 #include <kernel/types/KProcess.h>
 #include "IAddOnContentManager.h"
 #include "IPurchaseEventManager.h"
@@ -17,6 +18,11 @@ namespace skyline::service::aocsrv {
 
     Result IAddOnContentManager::ListAddOnContent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push<u32>(0);
+        return {};
+    }
+
+    Result IAddOnContentManager::GetAddOnContentBaseId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u64>(state.loader->nacp->nacpContents.addOnContentBaseId);
         return {};
     }
 
