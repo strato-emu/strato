@@ -22,6 +22,8 @@ namespace skyline::service::aocsrv {
 
         Result ListAddOnContent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        Result GetAddOnContentBaseId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         Result GetAddOnContentListChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         Result GetAddOnContentListChangedEventWithProcessId(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -33,6 +35,7 @@ namespace skyline::service::aocsrv {
         SERVICE_DECL(
             SFUNC(0x2, IAddOnContentManager, CountAddOnContent),
             SFUNC(0x3, IAddOnContentManager, ListAddOnContent),
+            SFUNC(0x5, IAddOnContentManager, GetAddOnContentBaseId),
             SFUNC(0x8, IAddOnContentManager, GetAddOnContentListChangedEvent),
             SFUNC(0xA, IAddOnContentManager, GetAddOnContentListChangedEventWithProcessId),
             SFUNC(0x32, IAddOnContentManager, CheckAddOnContentMountStatus),
