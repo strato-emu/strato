@@ -117,10 +117,12 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
         // Reset the subtitle to null
         supportActionBar?.subtitle = null
 
-        supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.settings, preferenceFragment)
-            .commit()
+        if (savedInstanceState == null) {
+            supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.settings, preferenceFragment)
+                .commit()
+        }
     }
 
     override fun onCreateOptionsMenu(menu : Menu?) : Boolean {
