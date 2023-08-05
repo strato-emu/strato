@@ -21,6 +21,9 @@
         <emu.skyline.preference.ImportExportSavesPreference
             app:key="save_data_manager"
             app:title="@string/save_data_manager" />
+        <emu.skyline.preference.FirmwareImportPreference
+            app:key="firmware"
+            app:title="@string/firmware" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_appearance"
