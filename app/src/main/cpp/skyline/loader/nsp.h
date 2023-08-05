@@ -18,8 +18,7 @@ namespace skyline::loader {
       private:
         std::shared_ptr<vfs::PartitionFileSystem> nsp; //!< A shared pointer to the NSP's PFS0
         std::shared_ptr<vfs::RomFileSystem> controlRomFs; //!< A shared pointer to the control NCA's RomFS
-        std::optional<vfs::NCA> programNca; //!< The main program NCA within the NSP
-        std::optional<vfs::NCA> controlNca; //!< The main control NCA within the NSP
+        std::optional<vfs::NCA> metaNca; //!< The main meta NCA within the NSP
 
       public:
         NspLoader(const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<crypto::KeyStore> &keyStore);
