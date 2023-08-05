@@ -38,10 +38,12 @@ namespace skyline::loader {
                 try {
                     auto nca{vfs::NCA(secure->OpenFile(entry.name), keyStore, true)};
 
-                    if (nca.contentType == vfs::NcaContentType::Program && nca.romFs != nullptr && nca.exeFs != nullptr)
+                    if (nca.contentType == vfs::NCAContentType::Program && nca.romFs != nullptr && nca.exeFs != nullptr)
                         programNca = std::move(nca);
-                    else if (nca.contentType == vfs::NcaContentType::Control && nca.romFs != nullptr)
+                    else if (nca.contentType == vfs::NCAContentType::Control && nca.romFs != nullptr)
                         controlNca = std::move(nca);
+                    else if (nca.contentType == vfs::NCAContentType::Meta)
+                        metaNca = std::move(nca);
                 } catch (const loader_exception &e) {
                     throw loader_exception(e.error);
                 } catch (const std::exception &e) {
@@ -52,12 +54,16 @@ namespace skyline::loader {
             throw exception("Corrupted secure partition");
         }
 
-        if (!programNca || !controlNca)
-            throw exception("Incomplete XCI file");
+        if (programNca)
+            romFs = programNca->romFs;
 
-        romFs = programNca->romFs;
-        controlRomFs = std::make_shared<vfs::RomFileSystem>(controlNca->romFs);
-        nacp.emplace(controlRomFs->OpenFile("control.nacp"));
+        if (controlNca) {
+            controlRomFs = std::make_shared<vfs::RomFileSystem>(controlNca->romFs);
+            nacp.emplace(controlRomFs->OpenFile("control.nacp"));
+        }
+
+        if (metaNca)
+            cnmt = vfs::CNMT(metaNca->cnmt);
     }
 
     void *XciLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
