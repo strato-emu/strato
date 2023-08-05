@@ -306,6 +306,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/bcat/IDeliveryCacheFileService.cpp
         ${source_DIR}/skyline/services/bcat/IDeliveryCacheDirectoryService.cpp
         ${source_DIR}/skyline/services/bcat/IServiceCreator.cpp
+        ${source_DIR}/skyline/services/bcat/IDeliveryCacheProgressService.cpp
         ${source_DIR}/skyline/services/bt/IBluetoothUser.cpp
         ${source_DIR}/skyline/services/btm/IBtmUser.cpp
         ${source_DIR}/skyline/services/btm/IBtmUserCore.cpp
