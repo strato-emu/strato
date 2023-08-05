@@ -46,6 +46,12 @@
     <string name="import_keys_invalid_keys">The keys you tried to import are invalid</string>
     <string name="import_keys_delete_previous_failed">Failed to delete the currently installed keys</string>
     <string name="import_keys_move_failed">Failed to move the keys to the internal directory</string>
+    <!-- Settings - Firmware -->
+    <string name="firmware">Firmware</string>
+    <string name="import_firmware_in_progress">Installing firmware</string>
+    <string name="import_firmware_success">Firmware was successfully imported</string>
+    <string name="import_firmware_failure">Firmware installation failed</string>
+    <string name="import_firmware_invalid_contents">Ensure that the ZIP file includes a firmware</string>
     <!-- Settings - Appearance -->
     <string name="appearance">Appearance</string>
     <string name="theme">Theme</string>
