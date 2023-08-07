@@ -37,28 +37,35 @@ interface SaveManagementUtils {
     companion object {
         private val savesFolderRoot = "${SkylineApplication.instance.getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001"
         private var lastZipCreated : File? = null
-        private lateinit var documentPicker : ActivityResultLauncher<Array<String>>
-        private lateinit var startForResultExportSave : ActivityResultLauncher<Intent>
         var specificWorkUI = {}
 
-        fun registerActivityResults(context : Context) {
-            documentPicker = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) {
+        fun registerDocumentPicker(context : Context) : ActivityResultLauncher<Array<String>> {
+            return (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) {
                 it?.let { uri -> importSave(context, uri) }
             }
-            startForResultExportSave = context.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        }
+
+        fun registerDocumentPicker(fragmentAct : FragmentActivity) : ActivityResultLauncher<Array<String>> {
+            val activity = fragmentAct as AppCompatActivity
+            val activityResultRegistry = fragmentAct.activityResultRegistry
+
+            return activityResultRegistry.register("documentPickerKey", ActivityResultContracts.OpenDocument()) {
+                it?.let { uri -> importSave(activity, uri) }
+            }
+        }
+
+        fun registerStartForResultExportSave(context : Context) : ActivityResultLauncher<Intent> {
+            return (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 File(context.getPublicFilesDir().canonicalPath, "temp").deleteRecursively()
             }
         }
 
-        fun registerActivityResults(fragmentAct : FragmentActivity) {
+        fun registerStartForResultExportSave(fragmentAct : FragmentActivity) : ActivityResultLauncher<Intent> {
             val activity = fragmentAct as AppCompatActivity
-
             val activityResultRegistry = fragmentAct.activityResultRegistry
-            startForResultExportSave = activityResultRegistry.register("startForResultExportSaveKey", ActivityResultContracts.StartActivityForResult()) {
+
+            return activityResultRegistry.register("startForResultExportSaveKey", ActivityResultContracts.StartActivityForResult()) {
                 File(activity.getPublicFilesDir().canonicalPath, "temp").deleteRecursively()
-            }
-            documentPicker = activityResultRegistry.register("documentPickerKey", ActivityResultContracts.OpenDocument()) {
-                it?.let { uri -> importSave(activity, uri) }
             }
         }
 
@@ -119,7 +126,7 @@ interface SaveManagementUtils {
          * @param titleId The title ID of the game to export the save file of. If empty, export all save files.
          * @param outputZipName The initial part of the name of the zip file to create.
          */
-        fun exportSave(context : Context, titleId : String?, outputZipName : String) {
+        fun exportSave(context : Context, startForResultExportSave : ActivityResultLauncher<Intent>, titleId : String?, outputZipName : String) {
             if (titleId == null) return
             CoroutineScope(Dispatchers.IO).launch {
                 val saveFolderPath = "$savesFolderRoot/$titleId"
@@ -143,7 +150,7 @@ interface SaveManagementUtils {
         /**
          * Launches the document picker to import a save file.
          */
-        fun importSave() {
+        fun importSave(documentPicker : ActivityResultLauncher<Array<String>>) {
             documentPicker.launch(arrayOf("application/zip"))
         }
 

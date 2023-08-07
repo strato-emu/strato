@@ -15,6 +15,7 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -49,9 +50,16 @@ class AppDialog : BottomSheetDialogFragment() {
 
     private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
 
+    /**
+     * Used to manage save files
+     */
+    private lateinit var documentPicker : ActivityResultLauncher<Array<String>>
+    private lateinit var startForResultExportSave : ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
-        SaveManagementUtils.registerActivityResults(requireActivity())
+        documentPicker = SaveManagementUtils.registerDocumentPicker(requireActivity())
+        startForResultExportSave = SaveManagementUtils.registerStartForResultExportSave(requireActivity())
     }
 
     /**
@@ -129,12 +137,12 @@ class AppDialog : BottomSheetDialogFragment() {
         }
 
         binding.importSave.setOnClickListener {
-            SaveManagementUtils.importSave()
+            SaveManagementUtils.importSave(documentPicker)
         }
 
         binding.exportSave.isEnabled = saveExists
         binding.exportSave.setOnClickListener {
-            SaveManagementUtils.exportSave(requireContext(), item.titleId, "${item.title} (v${binding.gameVersion.text}) [${item.titleId}]")
+            SaveManagementUtils.exportSave(requireContext(), startForResultExportSave, item.titleId, "${item.title} (v${binding.gameVersion.text}) [${item.titleId}]")
         }
 
         binding.gameTitleId.setOnLongClickListener {
