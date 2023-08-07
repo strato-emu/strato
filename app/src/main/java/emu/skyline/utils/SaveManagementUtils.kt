@@ -36,7 +36,6 @@ import java.util.zip.ZipOutputStream
 interface SaveManagementUtils {
     companion object {
         private val savesFolderRoot = "${SkylineApplication.instance.getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001"
-        private var lastZipCreated : File? = null
         var specificWorkUI = {}
 
         fun registerDocumentPicker(context : Context) : ActivityResultLauncher<Array<String>> {
@@ -95,9 +94,9 @@ interface SaveManagementUtils {
          * Zips the save file located in the given folder path and creates a new zip file with the given name, and the current date and time.
          * @param saveFolderPath The path to the folder containing the save file to zip.
          * @param outputZipName The initial part of the name of the zip file to create.
-         * @return true if the zip file is successfully created, false otherwise.
+         * @return the zip file created.
          */
-        private fun zipSave(saveFolderPath : String, outputZipName : String) : Boolean {
+        private fun zipSave(saveFolderPath : String, outputZipName : String) : File? {
             try {
                 val tempFolder = File(SkylineApplication.instance.getPublicFilesDir().canonicalPath, "temp")
                 tempFolder.mkdirs()
@@ -114,11 +113,10 @@ interface SaveManagementUtils {
                         if (file.isFile) file.inputStream().use { fis -> fis.copyTo(zos) }
                     }
                 }
-                lastZipCreated = outputZipFile
+                return outputZipFile
             } catch (e : Exception) {
-                return false
+                return null
             }
-            return true
         }
 
         /**
@@ -130,9 +128,8 @@ interface SaveManagementUtils {
             if (titleId == null) return
             CoroutineScope(Dispatchers.IO).launch {
                 val saveFolderPath = "$savesFolderRoot/$titleId"
-                val wasZipCreated = zipSave(saveFolderPath, outputZipName)
-                val lastZipFile = lastZipCreated
-                if (!wasZipCreated || lastZipFile == null) {
+                val zipCreated = zipSave(saveFolderPath, outputZipName)
+                if (zipCreated == null) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show()
                     }
@@ -140,7 +137,7 @@ interface SaveManagementUtils {
                 }
 
                 withContext(Dispatchers.Main) {
-                    val file = DocumentFile.fromSingleUri(context, DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/temp/${lastZipFile.name}"))!!
+                    val file = DocumentFile.fromSingleUri(context, DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/temp/${zipCreated.name}"))!!
                     val intent = Intent(Intent.ACTION_SEND).setDataAndType(file.uri, "application/zip").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).putExtra(Intent.EXTRA_STREAM, file.uri)
                     startForResultExportSave.launch(Intent.createChooser(intent, "Share save file"))
                 }
