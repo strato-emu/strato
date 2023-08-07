@@ -4,6 +4,7 @@
 #include "skyline/crypto/key_store.h"
 #include "skyline/vfs/nca.h"
 #include "skyline/vfs/os_backing.h"
+#include "skyline/vfs/os_filesystem.h"
 #include "skyline/loader/nro.h"
 #include "skyline/loader/nso.h"
 #include "skyline/loader/nca.h"
@@ -70,4 +71,39 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
     }
 
     return static_cast<jint>(skyline::loader::LoaderResult::Success);
+}
+
+extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreference_fetchFirmwareVersion(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring) {
+    struct SystemVersion {
+        unsigned char major;
+        unsigned char minor;
+        unsigned char micro;
+        unsigned char _pad0_;
+        unsigned char revisionMajor;
+        unsigned char revisionMinor;
+        unsigned char _pad1_[2];
+        unsigned char platformString[0x20];
+        unsigned char versionHash[0x40];
+        unsigned char displayVersion[0x18];
+        unsigned char displayTitle[0x80];
+    };
+
+    unsigned long systemVersionProgramId{0x0100000000000809};
+
+    auto systemArchivesFileSystem{std::make_shared<skyline::vfs::OsFileSystem>(skyline::JniString(env, systemArchivesPathJstring))};
+    auto systemArchives{systemArchivesFileSystem->OpenDirectory("")};
+    auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, keysPathJstring))};
+    for (const auto &entry : systemArchives->Read()) {
+        std::shared_ptr<skyline::vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
+        auto nca{skyline::vfs::NCA(backing, keyStore)};
+        if (nca.header.programId == systemVersionProgramId && nca.romFs != nullptr) {
+            auto controlRomFs = std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs);
+            auto file = controlRomFs->OpenFile("file");
+            SystemVersion systemVersion{};
+            file->Read<SystemVersion>(systemVersion);
+            return env->NewStringUTF(reinterpret_cast<char *>(systemVersion.displayVersion));
+        }
+    }
+
+    return env->NewStringUTF("");
 }
