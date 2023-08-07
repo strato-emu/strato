@@ -66,8 +66,13 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
     }
 
     init {
+        val keysDir = File("${context.filesDir.canonicalFile}/keys/")
+        isEnabled = keysDir.exists() && keysDir.listFiles()?.isNotEmpty() == true
         summaryProvider = SummaryProvider<FirmwareImportPreference> { preference ->
-            preference.getPersistedString("No firmware installed")
+            if (preference.isEnabled)
+                preference.getPersistedString("No firmware installed")
+            else
+                "First import your keys"
         }
     }
 
