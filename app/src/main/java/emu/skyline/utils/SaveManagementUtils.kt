@@ -139,7 +139,7 @@ interface SaveManagementUtils {
                 withContext(Dispatchers.Main) {
                     val file = DocumentFile.fromSingleUri(context, DocumentsContract.buildDocumentUri(DocumentsProvider.AUTHORITY, "${DocumentsProvider.ROOT_ID}/temp/${zipCreated.name}"))!!
                     val intent = Intent(Intent.ACTION_SEND).setDataAndType(file.uri, "application/zip").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).putExtra(Intent.EXTRA_STREAM, file.uri)
-                    startForResultExportSave.launch(Intent.createChooser(intent, "Share save file"))
+                    startForResultExportSave.launch(Intent.createChooser(intent, context.getString(R.string.save_file_share)))
                 }
             }
         }
