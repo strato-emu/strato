@@ -4,6 +4,7 @@
     <string name="error">Une erreur est survenue</string>
     <string name="copied_to_clipboard">Copié dans le presse-papier</string>
     <string name="emulator">Émulateur</string>
+    <string name="enabled">Activé</string>
     <!-- Toolbar Main -->
     <string name="settings">Paramètres</string>
     <string name="share_logs">Partager les logs</string>
@@ -18,10 +19,17 @@
     <string name="no_rom">Aucune ROM n\'a été trouvée</string>
     <string name="pin">Épingler</string>
     <string name="play">Jouer</string>
+    <string name="save_management">Gestion des sauvegardes</string>
+    <string name="delete_save">Supprimer la sauvegarde</string>
+    <string name="import_save">Importer</string>
+    <string name="export_save">Exporter</string>
     <string name="searching_roms">Recherche de ROMs</string>
     <string name="invalid_file">Fichier invalide</string>
     <string name="missing_title_key">Clé de titres manquante</string>
     <string name="incomplete_prod_keys">Clé de production incomplète</string>
+    <!-- Picture-In-Picture -->
+    <string name="pause">Pause</string>
+    <string name="mute">Muet</string>
     <!-- Settings - Content -->
     <string name="content">Contenu</string>
     <string name="open_data_directory">Afficher le dossier interne</string>
@@ -40,6 +48,9 @@
     <!-- Settings - Appearance -->
     <string name="appearance">Apparence</string>
     <string name="theme">Thème</string>
+    <string name="use_material_you">Utiliser Material You</string>
+    <string name="use_material_you_desc_off">Les couleurs de Skyline seront utilisées</string>
+    <string name="use_material_you_desc_on">Material You va être utilisé</string>
     <string name="app_language">Langue de l\'application</string>
     <string name="app_language_default">Utiliser Langue Système</string>
     <string name="layout_type">Mode d\'affichage des jeux</string>
@@ -47,11 +58,15 @@
     <string name="select_action">Toujours afficher les informations du jeu</string>
     <string name="select_action_desc_on">Les informations du jeu seront affichées en cliquant sur un jeu</string>
     <string name="select_action_desc_off">Les informations du jeu seront uniquement affichées en cliquant longtemps sur un jeu</string>
+    <string name="filter_invalid_files_desc_off">Afficher les fichiers qui ont été analysés comme invalides</string>
+    <string name="filter_invalid_files_desc_on">Cacher les fichiers qui ont été analysés comme invalides</string>
     <!-- Settings - Game -->
     <string name="game">Jeu</string>
     <string name="use_custom_settings">Activer les paramètres personnalisables</string>
     <string name="use_custom_settings_desc_on">Les paramètres personnalisables sont activés pour ce jeu</string>
     <string name="use_custom_settings_desc_off">Les paramètres personnalisables sont désactivés pour ce jeu</string>
+    <string name="export_custom_settings">Exporter les paramètres personnalisés sous forme de texte</string>
+    <string name="export_custom_settings_desc">Copier un texte avec vos paramètres actuels pour les partager en ligne</string>
     <string name="reset_custom_settings">Remise à zéro des paramètres personnalisables</string>
     <string name="reset_custom_settings_desc">Remise à zéro des paramètres personnalisables avec les valeurs par défaut</string>
     <string name="reset_settings_warning">Êtes-vous sûr de vouloir réinitialiser tous les paramètres à leurs valeurs par défaut ? <b>Les paramètres actuels seront perdus</b></string>
@@ -67,12 +82,13 @@
     <string name="profile_picture">Photo de profil</string>
     <string name="system_language">Langage du système</string>
     <string name="system_region">Région du système</string>
+    <string name="internet">Le système pourra utiliser internet</string>
     <!-- Settings - Display -->
     <string name="display">Affichage</string>
     <string name="perf_stats">Afficher les statistiques de performance</string>
     <string name="perf_stats_desc_off">Les statistiques de performance ne seront pas affichées</string>
     <string name="perf_stats_desc_on">Les statistiques de performance seront affichées dans le coin supérieur gauche</string>
-    <string name="max_refresh_rate">Utilise le taux de rafraîchissement maximal de l\'écran</string>
+    <string name="max_refresh_rate">Utiliser le taux de rafraîchissement maximal de l\'écran</string>
     <string name="max_refresh_rate_enabled">Règle le taux de rafraîchissement aussi haut que possible (la plupart des jeux ne fonctionneront pas)</string>
     <string name="max_refresh_rate_disabled">Règle le taux de rafraîchissement de l\'écran à 60Hz</string>
     <string name="screen_orientation">Orientation de l\'écran</string>
@@ -80,6 +96,12 @@
     <string name="respect_display_cutout">Respecter l\'encoche de l\'écran</string>
     <string name="respect_display_cutout_enabled">Ne pas afficher d\'éléments de l\'interface dans la zone de l\'encoche de l\'écran</string>
     <string name="respect_display_cutout_disabled">Autorise les éléments d\'interface à s\'afficher dans la zone de l\'encoche</string>
+    <string name="enable_foldable_layout">Activer la disposition pour les écrans pliables</string>
+    <string name="enable_foldable_layout_enabled">Les appareils disposant d\'un écran pliable afficheront le jeu et les contrôles séparément</string>
+    <string name="enable_foldable_layout_disabled">Affiche les contrôles par dessus les jeux même quand l\'appareil est plié</string>
+    <string name="show_pause_button">Afficher le bouton pause</string>
+    <string name="show_pause_button_disabled">Le bouton pause ne sera pas affiché</string>
+    <string name="show_pause_button_enabled">Le bouton pause sera affiché</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Désactiver le son</string>
@@ -91,10 +113,10 @@
     <string name="gpu_driver_config_desc">Driver actif: %1$s</string>
     <string name="gpu_driver_config_desc_unsupported">Votre appareil ne supporte pas les drivers personnalisés</string>
     <string name="force_triple_buffering">Forcer la triple mise en mémoire-tampon</string>
-    <string name="triple_buffering_enabled">Utilise au moins trois tampon (plus de FPS mais plus de délai avec les touches)</string>
+    <string name="triple_buffering_enabled">Utilise au moins trois tampons (plus de FPS mais plus de délai avec les touches)</string>
     <string name="triple_buffering_disabled">Utilise au moins deux tampons (moins de FPS mais moins de délai avec les touches)</string>
     <string name="disable_frame_throttling">Désactiver la limitation de frames</string>
-    <string name="disable_frame_throttling_enabled">Le jeu est autorisé à afficher autant d\'images que possible (seulement pour le benchmarking)\n\n<b>Note :</b> Une méthode alternative est utilisée pour mesurer le nombre d\'images par secondes lorsque cette option est activée, les chiffres ne doivent pas être comparés avec les chiffres correspondant aux images par seconde lorsqu\'elles sont limitées</string>
+    <string name="disable_frame_throttling_enabled">Le jeu est autorisé à afficher autant d\'images que possible (seulement pour le benchmarking)\n\n<b>Note :</b> Une méthode alternative est utilisée pour mesurer le nombre d\'images par seconde lorsque cette option est activée, les chiffres ne doivent pas être comparés avec les chiffres correspondant aux images par seconde lorsqu\'elles sont limitées</string>
     <string name="disable_frame_throttling_disabled">Autorise le jeu à soumettre seulement des images à la fréquence de rafraîchissement de l\'écran.</string>
     <string name="executor_slot_count_scale">Échelle du nombre d\'emplacements de l\'exécuteur</string>
     <string name="executor_slot_count_scale_desc">Échelle qui contrôle le nombre maximum d\'exécutions simultanées du GPU (des valeurs plus élevées peuvent parfois donner de meilleurs résultats mais plus de RAM sera consommée)</string>
@@ -105,13 +127,15 @@
     <string name="force_max_gpu_clocks">Forcer la fréquence maximale du GPU</string>
     <string name="force_max_gpu_clocks_desc">Force le GPU à fonctionner à sa fréquence maximale (peut causer une surchauffe et une consommation d\'énergie excessive)</string>
     <string name="force_max_gpu_clocks_desc_unsupported">L\'appareil ne permet pas de forcer la fréquence maximale du GPU</string>
+    <string name="free_guest_texture_memory">Libérer la mémoire des textures inutilisées</string>
+    <string name="free_guest_texture_memory_desc">Autorise les textures inutilisées à être libérées de la mémoire quand cela n\'est pas nécessaire (peut causer des crashs dans de rares cas)</string>
     <string name="shader_cache">Désactiver le cache des shaders</string>
-    <string name="shader_cache_disabled">Les shaders stockés dans le cache ne seront pas chargés, causera des ralentissements</string>
+    <string name="shader_cache_disabled">Les shaders stockés dans le cache ne seront pas chargés, cela causera des ralentissements</string>
     <string name="shader_cache_enabled">Les shaders stockés dans le cache seront chargés, peut réduire significativement les ralentissements</string>
     <!-- Settings - Hacks -->
     <string name="hacks">Hacks</string>
     <string name="enable_fast_gpu_readback">Activer la Relecture Rapide du GPU</string>
-    <string name="enable_fast_gpu_readback_enabled">La relecture rapide du GPU est activée (certains jeux ne fonctionneront pas mais certains auront de meilleure performances)</string>
+    <string name="enable_fast_gpu_readback_enabled">La relecture rapide du GPU est activée (certains jeux ne fonctionneront pas mais certains auront de meilleures performances)</string>
     <string name="enable_fast_gpu_readback_disabled">La relecture rapide du GPU est désactivée (assure une plus grande précision)</string>
     <string name="enable_fast_readback_writes">Activer la relecture rapide des écritures</string>
     <string name="enable_fast_readback_writes_enabled">La relecture rapide d\'écritures est activée</string>
@@ -148,12 +172,27 @@
     <string name="osc_feedback">Activer le retour haptique</string>
     <string name="osc_feedback_description">Les contrôles des joysticks et du matériel sont désactivés</string>
     <string name="osc_edit">Éditer les contrôles sur l\'écran</string>
+    <string name="osc_text_color">Couleur du texte</string>
+    <string name="osc_background_color">Couleur de l\'arrière-plan</string>
+    <string name="osc_reset">Réinitialiser le bouton : %1$s</string>
+    <string name="osc_reset_confirm">Êtes-vous sûr de vouloir réinitialiser ce bouton ?</string>
+    <string name="osc_toggle_mode">Mode Appui Continu</string>
+    <string name="osc_current_button">Bouton sélectionné : %1$s</string>
+    <string name="select_all">Tout sélectionner</string>
+    <string name="osc_scale">Échelle</string>
+    <string name="osc_opacity">Opacité</string>
+    <string name="osc_activation_radius">Rayon d\'activation</string>
+    <string name="button_color">Couleur du bouton</string>
+    <string name="toggle_grid">Afficher la grille</string>
     <string name="setup_guide">Guide de démarrage</string>
     <string name="setup_guide_description">Mapper séquentiellement chaque stick et bouton</string>
     <string name="joystick">Joystick</string>
     <string name="confirm">Confirmer</string>
     <string name="cancel">Annuler</string>
     <string name="osc_recenter_sticks">Recentrer les joysticks au toucher</string>
+    <string name="osc_recenter_sticks_desc">Repositionne les sticks à l\'endroit appuyé quand on les touche</string>
+    <string name="osc_use_stick_regions">Utiliser les régions du stick</string>
+    <string name="osc_use_stick_regions_desc">Étend la surface d\'activation des sticks en des rectangles couvrant la moitié correspondante de l\'écran</string>
     <string name="controller">Contrôleur</string>
     <string name="config_controller">Configurer le contrôleur</string>
     <string name="controller_type">Type de contrôleur</string>
@@ -205,6 +244,8 @@
     <string name="dpad">Manette +</string>
     <string name="left_stick">Stick gauche</string>
     <string name="right_stick">Stick droite</string>
+    <string name="left_stick_button">Bouton du Stick Gauche</string>
+    <string name="right_stick_button">Bouton du Stick Droit</string>
     <string name="face_buttons">Boutons A,B,X,Y</string>
     <string name="shoulder_trigger">Boutons &amp; Gâchettes</string>
     <string name="shoulder_rail">Boutons dans la glissière du JoyCon</string>
@@ -242,7 +283,17 @@
     <!-- Software Keyboard -->
     <string name="input_hint">Insérer du texte</string>
     <!-- Misc -->
+    <string name="compiling_cached_pipelines">Compilation des pipelines en cache ...</string>
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Développer</string>
     <string name="undo">Annuler</string>
+    <string name="per_game_settings_active_message">Les paramètres personnalisés sont activés</string>
+    <string name="delete_save_confirmation_message">Êtes-vous sûr de vouloir supprimer cette sauvegarde ?</string>
+    <string name="action_irreversible">Cette action est irréversible</string>
+    <string name="yes">Oui</string>
+    <string name="no">Non</string>
+    <string name="save_file_imported_ok">Le fichier de sauvegarde a été importé avec succès</string>
+    <string name="save_file_invalid_zip_structure">Structure du dossier Zip invalide : le nom du premier sous-dossier doit correspondre à l\'ID du titre du jeu.</string>
+    <string name="game_crash">Le jeu a crashé</string>
+    <string name="game_crash_message">Une erreur fatale est survenue. Plus de détails dans le log</string>
 </resources>
