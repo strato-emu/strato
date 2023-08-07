@@ -21,7 +21,6 @@ class ImportExportSavesPreference @JvmOverloads constructor(context : Context, a
     init {
         documentPicker = SaveManagementUtils.registerDocumentPicker(context)
         startForResultExportSave = SaveManagementUtils.registerStartForResultExportSave(context)
-        SaveManagementUtils.specificWorkUI = {}
     }
 
     override fun onClick() {

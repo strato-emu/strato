@@ -55,10 +55,11 @@ class AppDialog : BottomSheetDialogFragment() {
      */
     private lateinit var documentPicker : ActivityResultLauncher<Array<String>>
     private lateinit var startForResultExportSave : ActivityResultLauncher<Intent>
+    private val specificWorkUI = SaveManagementUtils.SpecificWorkUI()
 
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
-        documentPicker = SaveManagementUtils.registerDocumentPicker(requireActivity())
+        documentPicker = SaveManagementUtils.registerDocumentPicker(requireActivity(), specificWorkUI)
         startForResultExportSave = SaveManagementUtils.registerStartForResultExportSave(requireActivity())
     }
 
@@ -116,7 +117,7 @@ class AppDialog : BottomSheetDialogFragment() {
             shortcutManager.requestPinShortcut(info.build(), null)
         }
 
-        SaveManagementUtils.specificWorkUI = {
+        specificWorkUI.specificWorkUI = {
             val isSaveFileOfThisGame = SaveManagementUtils.saveFolderGameExists(item.titleId)
             binding.deleteSave.isEnabled = isSaveFileOfThisGame
             binding.exportSave.isEnabled = isSaveFileOfThisGame

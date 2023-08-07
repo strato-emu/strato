@@ -34,9 +34,10 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 interface SaveManagementUtils {
+    class SpecificWorkUI(var specificWorkUI : () -> Unit = {})
+
     companion object {
         private val savesFolderRoot = "${SkylineApplication.instance.getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001"
-        var specificWorkUI = {}
 
         fun registerDocumentPicker(context : Context) : ActivityResultLauncher<Array<String>> {
             return (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) {
@@ -44,12 +45,12 @@ interface SaveManagementUtils {
             }
         }
 
-        fun registerDocumentPicker(fragmentAct : FragmentActivity) : ActivityResultLauncher<Array<String>> {
+        fun registerDocumentPicker(fragmentAct : FragmentActivity, specificWorkUI : SpecificWorkUI = SpecificWorkUI()) : ActivityResultLauncher<Array<String>> {
             val activity = fragmentAct as AppCompatActivity
             val activityResultRegistry = fragmentAct.activityResultRegistry
 
             return activityResultRegistry.register("documentPickerKey", ActivityResultContracts.OpenDocument()) {
-                it?.let { uri -> importSave(activity, uri) }
+                it?.let { uri -> importSave(activity, uri, specificWorkUI.specificWorkUI) }
             }
         }
 
@@ -155,7 +156,7 @@ interface SaveManagementUtils {
          * Imports the save files contained in the zip file, and replaces any existing ones with the new save file.
          * @param zipUri The Uri of the zip file containing the save file(s) to import.
          */
-        private fun importSave(context : Context, zipUri : Uri) {
+        private fun importSave(context : Context, zipUri : Uri, specificWorkUI : () -> Unit = {}) {
             val inputZip = SkylineApplication.instance.contentResolver.openInputStream(zipUri)
             // A zip needs to have at least one subfolder named after a TitleId in order to be considered valid.
             var validZip = false
