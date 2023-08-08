@@ -110,6 +110,16 @@ namespace skyline::service::am {
         Result ReportUserIsActive(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IsIlluminanceAvailable
+         */
+        Result IsIlluminanceAvailable(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetCurrentIlluminanceEx
+         */
+        Result GetCurrentIlluminanceEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns how long the process was suspended for in ticks
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetAccumulatedSuspendedTickValue
          */
@@ -147,6 +157,8 @@ namespace skyline::service::am {
             SFUNC(0x3E, ISelfController, SetIdleTimeDetectionExtension),
             SFUNC(0x3F, ISelfController, GetIdleTimeDetectionExtension),
             SFUNC(0x41, ISelfController, ReportUserIsActive),
+            SFUNC(0x43, ISelfController, IsIlluminanceAvailable),
+            SFUNC(0x47, ISelfController, GetCurrentIlluminanceEx),
             SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
             SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent),
             SFUNC(0x64, ISelfController, SetAlbumImageTakenNotificationEnabled),
