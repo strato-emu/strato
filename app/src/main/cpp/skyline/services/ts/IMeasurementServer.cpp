@@ -13,6 +13,12 @@ namespace skyline::service::ts {
         return {};
     }
 
+    Result IMeasurementServer::GetTemperatureMilliC(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        u8 location{request.Pop<u8>()};
+        response.Push<u32>(!location ? 35000 : 20000);
+        return {};
+    }
+
     Result IMeasurementServer::OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         manager.RegisterService(SRVREG(ISession), session, response);
         return {};

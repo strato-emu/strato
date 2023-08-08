@@ -17,12 +17,18 @@ namespace skyline::service::ts {
         Result GetTemperature(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/PTM_services#GetTemperatureMilliC
+         */
+        Result GetTemperatureMilliC(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/PTM_services#OpenSession_2
          */
         Result OpenSession(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         SERVICE_DECL(
             SFUNC(0x1, IMeasurementServer, GetTemperature),
+            SFUNC(0x3, IMeasurementServer, GetTemperatureMilliC),
             SFUNC(0x4, IMeasurementServer, OpenSession)
         )
     };
