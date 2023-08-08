@@ -24,6 +24,12 @@ namespace skyline::service::irs {
          * @url https://switchbrew.org/wiki/HID_services#GetNpadIrCameraHandle
          */
         Result GetNpadIrCameraHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/HID_services#StopImageProcessorAsync
+        */
+        Result StopImageProcessorAsync(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         /**
          * @brief Requests a PID and Fuction Level and activates the IR sensor
          * @url https://switchbrew.org/wiki/HID_services#ActivateIrsensorWithFunctionLevel
@@ -39,6 +45,7 @@ namespace skyline::service::irs {
       SERVICE_DECL(
           SFUNC(0x130, IIrSensorServer, GetIrsensorSharedMemoryHandle),
           SFUNC(0x137, IIrSensorServer, GetNpadIrCameraHandle),
+          SFUNC(0x13E, IIrSensorServer, StopImageProcessorAsync),
           SFUNC(0x13F, IIrSensorServer, ActivateIrsensorWithFunctionLevel)
       );
     };
