@@ -85,10 +85,12 @@ namespace skyline::service::am {
         auto userId{request.Pop<account::UserId>()};
         LOGD("Save data type: {}, UserId: {:016X}{:016X}", saveDataType, userId.upper, userId.lower);
 
-        // Response values based on Ryujinx stub
-        // https://github.com/Ryujinx/Ryujinx/blob/b8556530f2b160db70ff571adf25ae26d4b8f58f/Ryujinx.HLE/HOS/Services/Am/AppletOE/ApplicationProxyService/ApplicationProxy/IApplicationFunctions.cs#L228
-        static constexpr u64 SaveDataSize{200000000};
-        static constexpr u64 JournalSaveDataSize{200000000};
+        response.Push(SaveDataSize);
+        response.Push(JournalSaveDataSize);
+        return {};
+    }
+
+    Result IApplicationFunctions::GetSaveDataSizeMax(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         response.Push(SaveDataSize);
         response.Push(JournalSaveDataSize);
         return {};
