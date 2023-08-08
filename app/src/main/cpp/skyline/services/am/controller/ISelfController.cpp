@@ -81,6 +81,10 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result ISelfController::ReportUserIsActive(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        return {};
+    }
+
     Result ISelfController::GetAccumulatedSuspendedTickValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         // TODO: Properly handle this after we implement game suspending
         response.Push<u64>(0);
