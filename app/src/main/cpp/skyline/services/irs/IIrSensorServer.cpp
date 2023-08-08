@@ -27,6 +27,13 @@ namespace skyline::service::irs {
         return {};
     }
 
+    Result IIrSensorServer::StopImageProcessorAsync(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto irCameraHandle = request.Pop<u32>();
+        auto appletResourceUserId  = request.Pop<u64>();
+
+        return {};
+    }
+
     Result IIrSensorServer::ActivateIrsensorWithFunctionLevel(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         return {};
     }
