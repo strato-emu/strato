@@ -22,7 +22,9 @@ import java.io.File
 import java.io.FilenameFilter
 
 class FirmwareImportPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
-    class Firmware(val valid : Boolean, val version : String)
+    private class Firmware(val valid : Boolean, val version : String)
+
+    private val firmwarePath = File(context.getPublicFilesDir().canonicalPath + "/switch/nand/system/Contents/registered/")
 
     private val documentPicker = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
@@ -32,7 +34,6 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
                 return@registerForActivityResult
             }
 
-            val firmwarePath = File(context.getPublicFilesDir().canonicalPath + "/switch/nand/system/Contents/registered/")
             val cacheFirmwareDir = File("${context.cacheDir.path}/registered/")
 
             val task : () -> Any = {
@@ -68,11 +69,9 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
     init {
         val keysDir = File("${context.filesDir.canonicalFile}/keys/")
         isEnabled = keysDir.exists() && keysDir.listFiles()?.isNotEmpty() == true
+
         summaryProvider = SummaryProvider<FirmwareImportPreference> { preference ->
-            if (preference.isEnabled)
-                preference.getPersistedString("No firmware installed")
-            else
-                "First import your keys"
+            getFirmwareStringRes(preference)
         }
     }
 
@@ -92,6 +91,23 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
             val version = fetchFirmwareVersion(cacheFirmwareDir.path, context.filesDir.path + "/keys/")
             Firmware(version.isNotEmpty(), version)
         } else Firmware(false, "")
+    }
+
+    private fun getFirmwareStringRes(preference : Preference) : String {
+        if (!preference.isEnabled) {
+            return context.getString(R.string.firmware_keys_needed)
+        }
+
+        val noFirmwareInstalled = context.getString(R.string.firmware_not_installed)
+        val storedString = getPersistedString((noFirmwareInstalled))
+        val firmwarePathEmpty = !firmwarePath.exists() || firmwarePath.listFiles()?.isEmpty() == true
+
+        return if (storedString == noFirmwareInstalled && !firmwarePathEmpty)
+            fetchFirmwareVersion(firmwarePath.path, context.filesDir.path + "/keys/")
+        else if (storedString != noFirmwareInstalled && firmwarePathEmpty)
+            noFirmwareInstalled
+        else
+            storedString
     }
 
     private external fun fetchFirmwareVersion(systemArchivesPath : String, keysPath : String) : String

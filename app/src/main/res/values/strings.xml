@@ -52,6 +52,8 @@
     <string name="import_firmware_success">Firmware was successfully imported</string>
     <string name="import_firmware_failure">Firmware installation failed</string>
     <string name="import_firmware_invalid_contents">Ensure that the ZIP file includes a firmware</string>
+    <string name="firmware_keys_needed">First import your keys</string>
+    <string name="firmware_not_installed">No firmware installed</string>
     <!-- Settings - Appearance -->
     <string name="appearance">Appearance</string>
     <string name="theme">Theme</string>
