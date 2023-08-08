@@ -19,6 +19,11 @@ namespace skyline::service::am {
      */
     class IApplicationFunctions : public BaseService {
       private:
+        // Response values based on Ryujinx stub
+        // https://github.com/Ryujinx/Ryujinx/blob/b8556530f2b160db70ff571adf25ae26d4b8f58f/Ryujinx.HLE/HOS/Services/Am/AppletOE/ApplicationProxyService/ApplicationProxy/IApplicationFunctions.cs#L28
+        static constexpr i64 SaveDataSize{200000000};
+        static constexpr i64 JournalSaveDataSize{200000000};
+
         std::shared_ptr<type::KEvent> gpuErrorEvent; //!< The event signalled on GPU errors
         std::shared_ptr<type::KEvent> friendInvitationStorageChannelEvent; //!< The event signalled on friend invitations
         std::shared_ptr<type::KEvent> notificationStorageChannelEvent;
@@ -57,6 +62,11 @@ namespace skyline::service::am {
         Result GetDisplayVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         Result GetSaveDataSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetSaveDataSizeMax
+         */
+        Result GetSaveDataSizeMax(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
          * @brief Returns if the application is running or not, always returns true
@@ -147,6 +157,7 @@ namespace skyline::service::am {
             SFUNC(0x16, IApplicationFunctions, SetTerminateResult),
             SFUNC(0x17, IApplicationFunctions, GetDisplayVersion),
             SFUNC(0x1A, IApplicationFunctions, GetSaveDataSize),
+            SFUNC(0x1C, IApplicationFunctions, GetSaveDataSizeMax),
             SFUNC(0x28, IApplicationFunctions, NotifyRunning),
             SFUNC(0x32, IApplicationFunctions, GetPseudoDeviceId),
             SFUNC(0x42, IApplicationFunctions, InitializeGamePlayRecording),
