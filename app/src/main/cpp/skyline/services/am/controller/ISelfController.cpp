@@ -85,6 +85,21 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result ISelfController::IsIlluminanceAvailable(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        response.Push<u8>(true);
+
+        return {};
+    }
+
+    Result ISelfController::GetCurrentIlluminanceEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        // Values based in Ryujinx
+        // https://github.com/Ryujinx/Ryujinx/blob/773e239db7ceb2c55aa15f9787add4430edcdfcf/src/Ryujinx.HLE/HOS/Services/Am/AppletAE/AllSystemAppletProxiesService/SystemAppletProxy/ISelfController.cs#L342
+        response.Push<u32>(1);
+        response.Push<float>(10000.0);
+
+        return {};
+    }
+
     Result ISelfController::GetAccumulatedSuspendedTickValue(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         // TODO: Properly handle this after we implement game suspending
         response.Push<u64>(0);
