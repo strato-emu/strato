@@ -56,7 +56,22 @@ namespace skyline::service::am {
     }
 
     Result ICommonStateGetter::IsVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        response.Push<u8>(false);
+        response.Push<u8>(vrModeEnabled);
+        return {};
+    }
+
+    Result ICommonStateGetter::SetVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        vrModeEnabled = request.Pop<u8>();
+        return {};
+    }
+
+    Result ICommonStateGetter::BeginVrModeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        vrModeEnabled = true;
+        return {};
+    }
+
+    Result ICommonStateGetter::EndVrModeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        vrModeEnabled = false;
         return {};
     }
 
