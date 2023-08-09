@@ -61,6 +61,8 @@ namespace skyline::service::am {
 
         std::shared_ptr<type::KEvent> defaultDisplayResolutionChangeEvent; //!< Signalled when the default display resolution changes,
 
+        bool vrModeEnabled{false};
+
         /**
          * @brief Queues a message for the application to read via ReceiveMessage
          * @param message The message to queue
@@ -107,6 +109,21 @@ namespace skyline::service::am {
         Result IsVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetVrModeEnabled
+         */
+        Result SetVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#BeginVrModeEx
+         */
+        Result BeginVrModeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#EndVrModeEx
+         */
+        Result EndVrModeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @brief Returns the current display width and height in two u32s
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetDefaultDisplayResolution
          */
@@ -135,6 +152,9 @@ namespace skyline::service::am {
             SFUNC(0x6, ICommonStateGetter, GetPerformanceMode),
             SFUNC(0x9, ICommonStateGetter, GetCurrentFocusState),
             SFUNC(0x32, ICommonStateGetter, IsVrModeEnabled),
+            SFUNC(0x33, ICommonStateGetter, SetVrModeEnabled),
+            SFUNC(0x35, ICommonStateGetter, BeginVrModeEx),
+            SFUNC(0x36, ICommonStateGetter, EndVrModeEx),
             SFUNC(0x3C, ICommonStateGetter, GetDefaultDisplayResolution),
             SFUNC(0x3D, ICommonStateGetter, GetDefaultDisplayResolutionChangeEvent),
             SFUNC(0x42, ICommonStateGetter, SetCpuBoostMode),
