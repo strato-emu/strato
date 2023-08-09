@@ -41,7 +41,7 @@ namespace skyline::applet::swkbd {
     }
 
     static std::u16string FillDefaultText(u32 minLength, u32 maxLength) {
-        std::u16string text{u"Skyline"};
+        std::u16string text{u"Strato"};
         while (text.size() < minLength)
             text += u"Emulator" + text;
         if (text.size() > maxLength)

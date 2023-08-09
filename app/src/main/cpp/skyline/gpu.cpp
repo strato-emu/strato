@@ -11,7 +11,7 @@
 namespace skyline::gpu {
     static vk::raii::Instance CreateInstance(const DeviceState &state, const vk::raii::Context &context) {
         vk::ApplicationInfo applicationInfo{
-            .pApplicationName = "Skyline",
+            .pApplicationName = "Strato",
             .applicationVersion = static_cast<uint32_t>(state.jvm->GetVersionCode()), // Get the application version from JNI
             .pEngineName = "FTX1", // "Fast Tegra X1"
             .apiVersion = VkApiVersion,
