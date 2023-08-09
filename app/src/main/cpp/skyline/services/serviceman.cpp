@@ -34,6 +34,7 @@
 #include "pl/shared_font_core.h"
 #include "aocsrv/IAddOnContentManager.h"
 #include "pctl/IParentalControlServiceFactory.h"
+#include "lbl/ILblController.h"
 #include "lm/ILogService.h"
 #include "ldn/IUserServiceCreator.h"
 #include "account/IAccountServiceForApplication.h"
@@ -121,6 +122,7 @@ namespace skyline::service {
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:a")
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:s")
             SERVICE_CASE(pctl::IParentalControlServiceFactory, "pctl:r")
+            SERVICE_CASE(lbl::ILblController, "lbl")
             SERVICE_CASE(lm::ILogService, "lm")
             SERVICE_CASE(ldn::IUserServiceCreator, "ldn:u")
             SERVICE_CASE(account::IAccountServiceForApplication, "acc:u0")
