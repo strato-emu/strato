@@ -372,6 +372,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/services/aocsrv/IPurchaseEventManager.cpp
         ${source_DIR}/skyline/services/pctl/IParentalControlServiceFactory.cpp
         ${source_DIR}/skyline/services/pctl/IParentalControlService.cpp
+        ${source_DIR}/skyline/services/lbl/ILblController.cpp
         ${source_DIR}/skyline/services/lm/ILogService.cpp
         ${source_DIR}/skyline/services/lm/ILogger.cpp
         ${source_DIR}/skyline/services/ldn/IUserServiceCreator.cpp
