@@ -6,6 +6,13 @@
 namespace skyline::service::capsrv {
     IAlbumApplicationService::IAlbumApplicationService(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
+    Result IAlbumApplicationService::SetShimLibraryVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto shimLibraryVersion{request.Pop<u64>()};
+        auto appletResourceUserId{request.Pop<u64>()};
+
+        return {};
+    }
+
     Result IAlbumApplicationService::GetAlbumFileList0AafeAruidDeprecated(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u64 totalOutputEntries{0};
 

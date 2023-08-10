@@ -13,5 +13,14 @@ namespace skyline::service::capsrv {
     class IScreenShotApplicationService : public BaseService {
       public:
         IScreenShotApplicationService(const DeviceState &state, ServiceManager &manager);
+
+        /**
+         * @brief Wrapper for caps:c cmd33
+         */
+        Result SetShimLibraryVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        SERVICE_DECL(
+            SFUNC(0x20, IScreenShotApplicationService, SetShimLibraryVersion)
+        )
     };
 }

@@ -24,6 +24,11 @@ namespace skyline::service::capsrv {
         IAlbumApplicationService(const DeviceState &state, ServiceManager &manager);
 
         /**
+         * @url https://switchbrew.org/wiki/Capture_services#SetShimLibraryVersion
+         */
+        Result SetShimLibraryVersion(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/Capture_services#GetAlbumFileList0AafeAruidDeprecated
          */
         Result GetAlbumFileList0AafeAruidDeprecated(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -34,6 +39,7 @@ namespace skyline::service::capsrv {
         Result GetAlbumFileList3AaeAruid(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         SERVICE_DECL(
+            SFUNC(0x20, IAlbumApplicationService, SetShimLibraryVersion),
             SFUNC(0x66, IAlbumApplicationService, GetAlbumFileList0AafeAruidDeprecated),
             SFUNC(0x8E, IAlbumApplicationService, GetAlbumFileList3AaeAruid)
         )
