@@ -65,6 +65,11 @@ namespace skyline::service::am {
         return {};
     }
 
+    Result ICommonStateGetter::SetLcdBacklighOffEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        bool lcdBacklighOffEnabled{request.Pop<bool>()};
+        return {};
+    }
+
     Result ICommonStateGetter::BeginVrModeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         vrModeEnabled = true;
         return {};
