@@ -21,6 +21,8 @@ namespace skyline::service::am {
         std::shared_ptr<hosbinder::IHOSBinderDriver> hosbinder; //!< IHOSBinder service for managed display layers
         u32 idleTimeDetectionExtension{0};
 
+        bool autoSleepDisabled{false};
+
       public:
         ISelfController(const DeviceState &state, ServiceManager &manager);
 
@@ -115,6 +117,16 @@ namespace skyline::service::am {
         Result IsIlluminanceAvailable(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetAutoSleepDisabled
+         */
+        Result SetAutoSleepDisabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#IsAutoSleepDisabled
+         */
+        Result IsAutoSleepDisabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/Applet_Manager_services#GetCurrentIlluminanceEx
          */
         Result GetCurrentIlluminanceEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -158,6 +170,8 @@ namespace skyline::service::am {
             SFUNC(0x3F, ISelfController, GetIdleTimeDetectionExtension),
             SFUNC(0x41, ISelfController, ReportUserIsActive),
             SFUNC(0x43, ISelfController, IsIlluminanceAvailable),
+            SFUNC(0x44, ISelfController, SetAutoSleepDisabled),
+            SFUNC(0x45, ISelfController, IsAutoSleepDisabled),
             SFUNC(0x47, ISelfController, GetCurrentIlluminanceEx),
             SFUNC(0x5A, ISelfController, GetAccumulatedSuspendedTickValue),
             SFUNC(0x5B, ISelfController, GetAccumulatedSuspendedTickChangedEvent),
