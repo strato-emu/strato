@@ -88,6 +88,11 @@ namespace skyline::service::am {
          */
         Result GetPopInteractiveOutDataEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
+        /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#GetIndirectLayerConsumerHandle
+         */
+        Result GetIndirectLayerConsumerHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
         SERVICE_DECL(
             SFUNC(0x0, ILibraryAppletAccessor, GetAppletStateChangedEvent),
             SFUNC(0xA, ILibraryAppletAccessor, Start),
@@ -97,7 +102,8 @@ namespace skyline::service::am {
             SFUNC(0x67, ILibraryAppletAccessor, PushInteractiveInData),
             SFUNC(0x68, ILibraryAppletAccessor, PopInteractiveOutData),
             SFUNC(0x69, ILibraryAppletAccessor, GetPopOutDataEvent),
-            SFUNC(0x6A, ILibraryAppletAccessor, GetPopInteractiveOutDataEvent)
+            SFUNC(0x6A, ILibraryAppletAccessor, GetPopInteractiveOutDataEvent),
+            SFUNC(0xA0, ILibraryAppletAccessor, GetIndirectLayerConsumerHandle)
         )
     };
 }
