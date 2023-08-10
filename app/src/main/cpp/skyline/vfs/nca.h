@@ -166,7 +166,7 @@ namespace skyline {
                 std::array<std::array<u8, 0x10>, 4> encryptedKeyArea; //!< The encrypted key area for each filesystem
                 u8 _pad1_[0xC0];
                 std::array<NcaSectionHeader, 4> sectionHeaders;
-            } header{};
+            };
             static_assert(sizeof(NcaHeader) == 0xC00);
 
             std::shared_ptr<Backing> backing;
@@ -192,6 +192,7 @@ namespace skyline {
             std::shared_ptr<FileSystem> logo; //!< The PFS0 filesystem for this NCA's logo section
             std::shared_ptr<FileSystem> cnmt; //!< The PFS0 filesystem for this NCA's CNMT section
             std::shared_ptr<Backing> romFs; //!< The backing for this NCA's RomFS section
+            NcaHeader header; //!< The header of the NCA
             NcaContentType contentType; //!< The content type of the NCA
 
             NCA(std::shared_ptr<vfs::Backing> backing, std::shared_ptr<crypto::KeyStore> keyStore, bool useKeyArea = false);
