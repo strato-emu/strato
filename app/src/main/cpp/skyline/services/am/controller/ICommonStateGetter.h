@@ -114,6 +114,11 @@ namespace skyline::service::am {
         Result SetVrModeEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
 
         /**
+         * @url https://switchbrew.org/wiki/Applet_Manager_services#SetLcdBacklighOffEnabled
+         */
+        Result SetLcdBacklighOffEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
+
+        /**
          * @url https://switchbrew.org/wiki/Applet_Manager_services#BeginVrModeEx
          */
         Result BeginVrModeEx(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response);
@@ -153,6 +158,7 @@ namespace skyline::service::am {
             SFUNC(0x9, ICommonStateGetter, GetCurrentFocusState),
             SFUNC(0x32, ICommonStateGetter, IsVrModeEnabled),
             SFUNC(0x33, ICommonStateGetter, SetVrModeEnabled),
+            SFUNC(0x34, ICommonStateGetter, SetLcdBacklighOffEnabled),
             SFUNC(0x35, ICommonStateGetter, BeginVrModeEx),
             SFUNC(0x36, ICommonStateGetter, EndVrModeEx),
             SFUNC(0x3C, ICommonStateGetter, GetDefaultDisplayResolution),
