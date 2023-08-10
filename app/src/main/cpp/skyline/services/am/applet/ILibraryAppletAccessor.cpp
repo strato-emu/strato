@@ -70,4 +70,12 @@ namespace skyline::service::am {
         response.copyHandles.push_back(popInteractiveOutDataEventHandle);
         return {};
     }
+
+    Result ILibraryAppletAccessor::GetIndirectLayerConsumerHandle(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto appletResourceUserId{request.Pop<u64>()};
+
+        u64 indirectLayerConsumerHandle{1};
+        response.Push<u64>(indirectLayerConsumerHandle);
+        return {};
+    }
 }
