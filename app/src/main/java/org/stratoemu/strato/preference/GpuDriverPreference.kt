@@ -13,7 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R as AndroidR
-import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.BaseAppItem
 import org.stratoemu.strato.data.AppItemTag
 import org.stratoemu.strato.settings.EmulationSettings
 import org.stratoemu.strato.utils.GpuDriverHelper
@@ -31,7 +31,7 @@ class GpuDriverPreference @JvmOverloads constructor(context : Context, attrs : A
      * The app item being configured, used to load the correct settings in [GpuDriverActivity]
      * This is populated by [org.stratoemu.strato.settings.GameSettingsFragment]
      */
-    var item : AppItem? = null
+    var item : BaseAppItem? = null
 
     init {
         val supportsCustomDriverLoading = GpuDriverHelper.supportsCustomDriverLoading()
