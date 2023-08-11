@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.*
 import emu.skyline.BuildConfig
 import emu.skyline.R
-import emu.skyline.data.AppItem
+import emu.skyline.data.BaseAppItem
 import emu.skyline.data.AppItemTag
 import emu.skyline.preference.GpuDriverPreference
 import emu.skyline.utils.GpuDriverHelper
@@ -22,7 +22,7 @@ import emu.skyline.utils.serializable
  * This fragment is used to display custom game preferences
  */
 class GameSettingsFragment : PreferenceFragmentCompat() {
-    private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
+    private val item by lazy { requireArguments().serializable<BaseAppItem>(AppItemTag)!! }
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
