@@ -1,5 +1,5 @@
 #if ($HEADER_COMMENTS)
-// SPDX-License-Identifier: MPL-2.0
-// Copyright © ${YEAR} Skyline Team and Contributors (https://github.com/skyline-emu/)
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright © ${YEAR} Strato Team and Contributors (https://github.com/strato-emu/)
 #end
 

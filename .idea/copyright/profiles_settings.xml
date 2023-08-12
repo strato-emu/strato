@@ -1,7 +1,3 @@
 <component name="CopyrightManager">
-  <settings>
-    <module2copyright>
-      <element module="SkylineKotlin" copyright="Skyline-License" />
-    </module2copyright>
-  </settings>
+  <settings default="Strato-License" />
 </component>
