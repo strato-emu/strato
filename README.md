@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-    <b>Strato</b> is an experimental emulator that runs on <b>ARMv8 Android™</b> devices and emulates the functionality of a <b>Nintendo Switch™</b> system, licensed under <a href="https://github.com/strato-emu/strato/blob/master/LICENSE.md"><b>Mozilla Public License 2.0</b></a>
+    <b>Strato</b> is an experimental emulator that runs on <b>ARMv8 Android™</b> devices and emulates the functionality of a <b>Nintendo Switch™</b> system, licensed under <a href="https://github.com/strato-emu/strato/blob/master/LICENSE.md"><b>GNU General Public License v3.0 or later</b></a>
 </p>
 
 ---
