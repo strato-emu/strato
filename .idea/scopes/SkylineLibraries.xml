@@ -1,3 +1,0 @@
-<component name="DependencyValidationManager">
-  <scope name="SkylineLibraries" pattern="(file[skyline.app]:libraries/fmt/include//*||file[skyline.app]:libraries/frozen/include//*||file[skyline.app]:libraries/lz4/lib//*||file[skyline.app]:libraries/oboe/include//*||file[skyline.app]:libraries/perfetto/include//*||file:libraries/pugixml/src/pugixml.hpp||file[skyline.app]:libraries/tzcode/include/*||file[skyline.app]:libraries/vkhpp/vulkan//*||file[skyline.app]:libraries/vkhpp/Vulkan-Headers/include//*)&amp;&amp;!file:libraries/vkhpp/Vulkan-Headers/include/vulkan/vulkan.hpp||file:libraries/vkma/include/vk_mem_alloc.h" />
-</component>

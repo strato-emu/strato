@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Native" pattern="file[strato.app.main]:cpp//*.cpp||file[strato.app.main]:cpp//*.h||file[strato.app.main]:cpp//*.S||file[strato.app.main]:cpp//*.inc||file[strato.app.main]:cpp//*.natvis" />
+</component>

@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="XmlResources" pattern="file[strato.app.main]:res/layout/*||file[strato.app.main]:res/menu/*||file[strato.app.main]:res/values/*||file[strato.app.main]:res/values-night/*||file[strato.app.main]:res/xml/*" />
+</component>

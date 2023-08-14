@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Kotlin" pattern="file[strato.app.main]:java//*.kt" />
+</component>
