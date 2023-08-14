@@ -55,6 +55,7 @@ render.experimental.xml
 .idea/modules.xml
 .idea/navEditor.xml
 .idea/runConfigurations.xml
+.idea/appInsightsSettings.xml
 
 # Keystore files
 *.jks

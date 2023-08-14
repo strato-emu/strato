@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Controller Configuration" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
-    <module name="skyline.app.main" />
+    <module name="strato.app.main" />
     <option name="DEPLOY" value="true" />
     <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
     <option name="DEPLOY_AS_INSTANT" value="false" />
@@ -9,7 +9,6 @@
     <option name="ALL_USERS" value="false" />
     <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
     <option name="CLEAR_APP_STORAGE" value="false" />
-    <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
     <option name="ACTIVITY_EXTRA_FLAGS" value="" />
     <option name="MODE" value="specific_activity" />
     <option name="CLEAR_LOGCAT" value="false" />
@@ -25,6 +24,8 @@
       <option name="WORKING_DIR" value="" />
       <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
       <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+      <option name="DEBUG_SANDBOX_SDK" value="false" />
     </Auto>
     <Hybrid>
       <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
@@ -32,14 +33,21 @@
       <option name="WORKING_DIR" value="" />
       <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
       <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+      <option name="DEBUG_SANDBOX_SDK" value="false" />
     </Hybrid>
-    <Java />
+    <Java>
+      <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+      <option name="DEBUG_SANDBOX_SDK" value="false" />
+    </Java>
     <Native>
       <option name="USE_JAVA_AWARE_DEBUGGER" value="false" />
       <option name="SHOW_STATIC_VARS" value="true" />
       <option name="WORKING_DIR" value="" />
       <option name="TARGET_LOGGING_CHANNELS" value="lldb process:gdb-remote packets" />
       <option name="SHOW_OPTIMIZED_WARNING" value="true" />
+      <option name="ATTACH_ON_WAIT_FOR_DEBUGGER" value="false" />
+      <option name="DEBUG_SANDBOX_SDK" value="false" />
     </Native>
     <Profilers>
       <option name="ADVANCED_PROFILING_ENABLED" value="false" />
