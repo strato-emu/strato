@@ -1,3 +1,3 @@
 <component name="DependencyValidationManager">
-  <scope name="ShaderCompiler" pattern="file[skyline.app.main]:shader-compiler//*" />
+  <scope name="ShaderCompiler" pattern="file[strato.app.main]:shader-compiler//*" />
 </component>
