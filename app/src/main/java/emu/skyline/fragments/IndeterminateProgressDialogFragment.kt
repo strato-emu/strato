@@ -31,10 +31,6 @@ class IndeterminateProgressDialogFragment : DialogFragment() {
                 return@observe
 
             dialog.dismiss()
-            when (val result = taskViewModel.result.value) {
-                // TODO: Fix Snackbar not showing after rotation
-                is Snackbar -> result.show()
-            }
             taskViewModel.clear()
         }
 
@@ -49,7 +45,7 @@ class IndeterminateProgressDialogFragment : DialogFragment() {
         const val TAG = "IndeterminateProgressDialogFragment"
 
         private const val TITLE = "Title"
-        fun newInstance(activity : AppCompatActivity, titleId : Int, task : () -> Any) : IndeterminateProgressDialogFragment {
+        fun newInstance(activity : AppCompatActivity, titleId : Int, task : () -> Unit) : IndeterminateProgressDialogFragment {
             val dialog = IndeterminateProgressDialogFragment()
             val bundle = Bundle(1)
             bundle.putInt(TITLE, titleId)

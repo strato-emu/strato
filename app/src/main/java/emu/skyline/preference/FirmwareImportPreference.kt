@@ -38,7 +38,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
 
             val cacheFirmwareDir = File("${context.cacheDir.path}/registered/")
 
-            val task : () -> Any = {
+            val task : () -> Unit = {
                 var messageToShow : Int
 
                 try {
@@ -62,7 +62,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
                     cacheFirmwareDir.deleteRecursively()
                 }
 
-                Snackbar.make((context as SettingsActivity).binding.root, messageToShow, Snackbar.LENGTH_LONG)
+                Snackbar.make((context as SettingsActivity).binding.root, messageToShow, Snackbar.LENGTH_LONG).show()
             }
 
             IndeterminateProgressDialogFragment.newInstance(context as SettingsActivity, R.string.import_firmware_in_progress, task)
