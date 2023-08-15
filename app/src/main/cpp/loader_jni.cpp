@@ -75,27 +75,29 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
 
 extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreference_fetchFirmwareVersion(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring) {
     struct SystemVersion {
-        unsigned char major;
-        unsigned char minor;
-        unsigned char micro;
-        unsigned char _pad0_;
-        unsigned char revisionMajor;
-        unsigned char revisionMinor;
-        unsigned char _pad1_[2];
-        unsigned char platformString[0x20];
-        unsigned char versionHash[0x40];
-        unsigned char displayVersion[0x18];
-        unsigned char displayTitle[0x80];
+        skyline::u8 major;
+        skyline::u8 minor;
+        skyline::u8 micro;
+        skyline::u8 _pad0_;
+        skyline::u8 revisionMajor;
+        skyline::u8 revisionMinor;
+        skyline::u8 _pad1_[2];
+        skyline::u8 platformString[0x20];
+        skyline::u8 versionHash[0x40];
+        skyline::u8 displayVersion[0x18];
+        skyline::u8 displayTitle[0x80];
     };
 
-    unsigned long systemVersionProgramId{0x0100000000000809};
+    constexpr skyline::u64 systemVersionProgramId{0x0100000000000809};
 
     auto systemArchivesFileSystem{std::make_shared<skyline::vfs::OsFileSystem>(skyline::JniString(env, systemArchivesPathJstring))};
     auto systemArchives{systemArchivesFileSystem->OpenDirectory("")};
     auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, keysPathJstring))};
+
     for (const auto &entry : systemArchives->Read()) {
         std::shared_ptr<skyline::vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
         auto nca{skyline::vfs::NCA(backing, keyStore)};
+
         if (nca.header.programId == systemVersionProgramId && nca.romFs != nullptr) {
             auto controlRomFs = std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs);
             auto file = controlRomFs->OpenFile("file");
@@ -106,4 +108,80 @@ extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreferenc
     }
 
     return env->NewStringUTF("");
+}
+
+std::vector<u_char> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile){
+    constexpr skyline::u32 fontKey{0x06186249};
+    constexpr skyline::u32 BFTTFMagic{0x18029a7f};
+
+    auto firstBytes{(bfttfFile->Read<skyline::u32>())};
+    auto firstBytesXor{(firstBytes ^ fontKey)};
+
+    if (firstBytesXor == BFTTFMagic) {
+        const size_t initialOffset = 8;
+        std::vector<skyline::u8> font(bfttfFile->size - initialOffset);
+
+        for (size_t offset = initialOffset; offset < bfttfFile->size; offset+=4) {
+            skyline::u32 decodedData{bfttfFile->Read<skyline::u32>(offset) ^ fontKey};
+
+            font[offset - 8] = static_cast<skyline::u8>(decodedData >> 0);
+            font[offset - 7] = static_cast<skyline::u8>(decodedData >> 8);
+            font[offset - 6] = static_cast<skyline::u8>(decodedData >> 16);
+            font[offset - 5] = static_cast<skyline::u8>(decodedData >> 24);
+        }
+
+        return font;
+    }
+}
+
+extern "C" JNIEXPORT void Java_emu_skyline_preference_FirmwareImportPreference_extractFonts(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring, jstring fontsPath) {
+    // Fonts are stored in the following NCAs
+    // 0x0100000000000810 -> "FontNintendoExtended"
+    // 0x0100000000000811 -> "FontStandard"
+    // 0x0100000000000812 -> "FontKorean"
+    // 0x0100000000000813 -> "FontChineseTraditional"
+    // 0x0100000000000814 -> "FontChineseSimplified"
+
+    constexpr skyline::u64 firstFontProgramId{0x0100000000000810};
+    constexpr skyline::u64 lastFontProgramId{0x0100000000000814};
+
+    const std::map<std::string, std::string> sharedFontFilenameDictionary = {
+        {"nintendo_ext_003.bfttf", "FontNintendoExtended"},
+        {"nintendo_ext2_003.bfttf", "FontNintendoExtended2"},
+        {"nintendo_udsg-r_std_003.bfttf", "FontStandard"},
+        {"nintendo_udsg-r_ko_003.bfttf", "FontKorean"},
+        {"nintendo_udjxh-db_zh-tw_003.bfttf", "FontChineseTraditional"},
+        {"nintendo_udsg-r_org_zh-cn_003.bfttf", "FontChineseSimplified"},
+        {"nintendo_udsg-r_ext_zh-cn_003.bfttf", "FontExtendedChineseSimplified"}
+    };
+
+    auto fontsFileSystem{std::make_shared<skyline::vfs::OsFileSystem>(skyline::JniString(env, fontsPath))};
+    auto systemArchivesFileSystem{std::make_shared<skyline::vfs::OsFileSystem>(skyline::JniString(env, systemArchivesPathJstring))};
+    auto systemArchives{systemArchivesFileSystem->OpenDirectory("")};
+    auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, keysPathJstring))};
+
+    for (const auto &entry : systemArchives->Read()) {
+        std::shared_ptr<skyline::vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
+        auto nca{skyline::vfs::NCA(backing, keyStore)};
+
+        if (nca.header.programId >= firstFontProgramId && nca.header.programId <= lastFontProgramId && nca.romFs != nullptr) {
+            auto controlRomFs = std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs);
+
+            for (auto fileEntry = controlRomFs->fileMap.begin(); fileEntry != controlRomFs->fileMap.end(); fileEntry++) {
+                auto fileName{fileEntry->first};
+                auto bfttfFile = controlRomFs->OpenFile(fileName);
+
+                auto decodedFont{decodeBfttfFont(bfttfFile)};
+
+                auto ttfFileName{sharedFontFilenameDictionary.at(fileName) + ".ttf"};
+                if (fontsFileSystem->FileExists(ttfFileName)) {
+                    fontsFileSystem->DeleteFile(ttfFileName);
+                }
+                fontsFileSystem->CreateFile(ttfFileName, decodedFont.size());
+                std::shared_ptr<skyline::vfs::Backing> ttfFile{fontsFileSystem->OpenFile(ttfFileName, {true, true, false})};
+
+                ttfFile->Write(decodedFont);
+            }
+        }
+    }
 }
