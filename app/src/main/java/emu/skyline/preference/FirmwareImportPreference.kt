@@ -25,6 +25,8 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
     private class Firmware(val valid : Boolean, val version : String)
 
     private val firmwarePath = File(context.getPublicFilesDir().canonicalPath + "/switch/nand/system/Contents/registered/")
+    private val keysPath = "${context.filesDir.canonicalPath}/keys/"
+    private val fontsPath = "${context.getPublicFilesDir().canonicalPath}/fonts/"
 
     private val documentPicker = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
@@ -40,6 +42,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
                 var messageToShow : Int
 
                 try {
+                    // Unzip in cache dir to not delete previous firmware in case the zip given doesn't contain a valid one
                     ZipUtils.unzip(inputZip, cacheFirmwareDir)
 
                     val firmware = isFirmwareValid(cacheFirmwareDir)
@@ -49,6 +52,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
                         firmwarePath.deleteRecursively()
                         cacheFirmwareDir.copyRecursively(firmwarePath, true)
                         PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, firmware.version).apply()
+                        extractFonts(firmwarePath.path, keysPath, fontsPath)
                         notifyChanged()
                         R.string.import_firmware_success
                     }
@@ -67,7 +71,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
     }
 
     init {
-        val keysDir = File("${context.filesDir.canonicalFile}/keys/")
+        val keysDir = File(keysPath)
         isEnabled = keysDir.exists() && keysDir.listFiles()?.isNotEmpty() == true
 
         summaryProvider = SummaryProvider<FirmwareImportPreference> { preference ->
@@ -78,7 +82,8 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
     override fun onClick() = documentPicker.launch(arrayOf("application/zip"))
 
     /**
-     * Checks if the given directory stores a valid firmware
+     * Checks if the given directory stores a valid firmware. For that, all files must be NCAs and
+     * one of them must store the firmware version.
      * @return A pair that tells if the firmware is valid, and if so, which firmware version it is
      */
     private fun isFirmwareValid(cacheFirmwareDir : File) : Firmware {
@@ -88,7 +93,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
         val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
 
         return if (unfilteredNumOfFiles == filteredNumOfFiles) {
-            val version = fetchFirmwareVersion(cacheFirmwareDir.path, context.filesDir.path + "/keys/")
+            val version = fetchFirmwareVersion(cacheFirmwareDir.path, keysPath)
             Firmware(version.isNotEmpty(), version)
         } else Firmware(false, "")
     }
@@ -103,7 +108,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
         val firmwarePathEmpty = !firmwarePath.exists() || firmwarePath.listFiles()?.isEmpty() == true
 
         return if (storedString == noFirmwareInstalled && !firmwarePathEmpty)
-            fetchFirmwareVersion(firmwarePath.path, context.filesDir.path + "/keys/")
+            fetchFirmwareVersion(firmwarePath.path, keysPath)
         else if (storedString != noFirmwareInstalled && firmwarePathEmpty)
             noFirmwareInstalled
         else
@@ -111,4 +116,5 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
     }
 
     private external fun fetchFirmwareVersion(systemArchivesPath : String, keysPath : String) : String
+    private external fun extractFonts(systemArchivesPath : String, keysPath : String, fontsPath: String)
 }
