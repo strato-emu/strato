@@ -253,6 +253,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         GpuDriverHelper.ensureFileRedirectDir(this)
         emulationThread = Thread {
+
             executeApplication(rom.toString(), romType, romFd.detachFd(), NativeSettings(this, emulationSettings), applicationContext.getPublicFilesDir().canonicalPath + "/", applicationContext.filesDir.canonicalPath + "/", applicationInfo.nativeLibraryDir + "/", assets)
             returnFromEmulation()
         }
@@ -392,6 +393,15 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         }
 
         executeApplication(intent!!)
+
+        binding.perfStats.apply {
+            postDelayed(object : Runnable {
+                override fun run() {
+                    disableAudio()
+                    postDelayed(this, 250)
+                }
+            }, 250)
+        }
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -407,6 +417,12 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         gameSurface?.let { setSurface(it) }
         changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
         isEmulatorPaused = false
+    }
+
+
+    @SuppressWarnings("WeakerAccess")
+    fun disableAudio() {
+        changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
     }
 
     override fun onPause() {
