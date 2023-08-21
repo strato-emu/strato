@@ -422,7 +422,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     @SuppressWarnings("WeakerAccess")
     fun disableAudio() {
-        changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
+        if (!isEmulatorPaused && emulationSettings.isAudioOutputDisabled)
+            changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
     }
 
     override fun onPause() {
