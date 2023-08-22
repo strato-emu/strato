@@ -390,17 +390,18 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 }
             }
         }
+        if (!isEmulatorPaused && emulationSettings.isAudioOutputDisabled) {
+            binding.perfStats.apply {
+                postDelayed(object : Runnable {
+                    override fun run() {
+                        disableAudio()
+                        postDelayed(this, 250)
+                    }
+                }, 250)
+            }
+        }
 
         executeApplication(intent!!)
-
-        binding.perfStats.apply {
-            postDelayed(object : Runnable {
-                override fun run() {
-                    disableAudio()
-                    postDelayed(this, 250)
-                }
-            }, 250)
-        }
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -421,8 +422,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
     @SuppressWarnings("WeakerAccess")
     fun disableAudio() {
-        if (!isEmulatorPaused && emulationSettings.isAudioOutputDisabled)
-            changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
+        changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
     }
 
     override fun onPause() {
