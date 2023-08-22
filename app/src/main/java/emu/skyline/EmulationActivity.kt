@@ -390,6 +390,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 }
             }
         }
+
         if (!isEmulatorPaused && emulationSettings.isAudioOutputDisabled) {
             binding.perfStats.apply {
                 postDelayed(object : Runnable {
@@ -418,7 +419,6 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         changeAudioStatus(!emulationSettings.isAudioOutputDisabled)
         isEmulatorPaused = false
     }
-
 
     @SuppressWarnings("WeakerAccess")
     fun disableAudio() {
