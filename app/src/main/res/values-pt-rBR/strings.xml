@@ -49,7 +49,7 @@
     <string name="appearance">Aparência</string>
     <string name="theme">Tema</string>
     <string name="use_material_you">Usar Material You</string>
-    <string name="use_material_you_desc_off">Cores do Skyline serão aplicadas</string>
+    <string name="use_material_you_desc_off">As cores do Skyline serão aplicadas</string>
     <string name="use_material_you_desc_on">Material You aplicado</string>
     <string name="app_language">Idioma do Aplicativo</string>
     <string name="app_language_default">Usar Padrão do Sistema</string>
