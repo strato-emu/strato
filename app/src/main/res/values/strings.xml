@@ -37,6 +37,11 @@
     <string name="open_data_directory_summary">Opens Skyline\'s internal directory in a file manager</string>
     <string name="open_data_directory_failed">Cannot find an external file manager to open Skyline\'s internal directory</string>
     <string name="search_location">Search Location</string>
+    <string name="export_all_game_saves">Export All Saves</string>
+    <string name="export_all_game_saves_summary">Yes, now you can export all the saves</string>
+    <string name="export_all_game_saves_summary_no_save">There is no save yet, please run the game first</string>
+    <string name="import_all_game_saves">Import Saves</string>
+    <string name="import_all_game_saves_summary">Will replace existing saves</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys</string>
     <string name="prod_keys">Production Keys</string>

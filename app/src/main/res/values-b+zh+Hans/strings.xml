@@ -28,6 +28,11 @@
     <string name="open_data_directory_summary">在文件管理器中打开 Skyline 的内部目录</string>
     <string name="open_data_directory_failed">找不到外部文件管理器来打开 Skyline 的内部目录</string>
     <string name="search_location">搜索位置</string>
+    <string name="export_all_game_saves">导出全部存档</string>
+    <string name="export_all_game_saves_summary">是的，现在你可以导出全部存档</string>
+    <string name="import_all_game_saves">导入存档</string>
+    <string name="import_all_game_saves_summary">将会替换掉现有存档</string>
+    <string name="export_all_game_saves_summary_no_save">现在还没有存档，请先运行游戏</string>
     <!-- Settings - Keys -->
     <string name="keys">Keys文件</string>
     <string name="prod_keys">Production Keys</string>

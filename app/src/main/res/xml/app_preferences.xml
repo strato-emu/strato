@@ -10,6 +10,14 @@
         <emu.skyline.preference.FolderPickerPreference
             app:key="search_location"
             app:title="@string/search_location" />
+        <emu.skyline.preference.ExportAllGameSamesPreference
+            app:key="export_all_game_saves"
+            app:title="@string/export_all_game_saves"
+            app:summary="@string/export_all_game_saves_summary"/>
+        <emu.skyline.preference.ImportAllGameSamesPreference
+            app:key="import_all_game_saves"
+            app:title="@string/import_all_game_saves"
+            app:summary="@string/import_all_game_saves_summary"/>
         <emu.skyline.preference.KeyPickerPreference
             app:key="prod_keys"
             app:title="@string/prod_keys"
