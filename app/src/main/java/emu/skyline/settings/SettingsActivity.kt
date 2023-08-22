@@ -39,9 +39,15 @@ private const val PREFERENCE_DIALOG_FRAGMENT_TAG = "androidx.preference.Preferen
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
     val binding by lazy { SettingsActivityBinding.inflate(layoutInflater) }
     val hiddenCategoriesFromSearch = if (BuildConfig.BUILD_TYPE == "release") {
-        arrayOf("category_debug", "category_credits", "category_licenses")
+        arrayOf("category_credits", "category_licenses")
     } else {
         arrayOf("category_credits", "category_licenses")
+    }
+
+    val hiddenTitlesFromSearch = if (BuildConfig.BUILD_TYPE == "release") {
+        "Enable Validation Layer"
+    } else {
+        "DontHideFromSearch"
     }
 
     /**
@@ -146,30 +152,22 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
 
             override fun onQueryTextChange(newText : String) : Boolean {
                 val queries = newText.split(",")
-                if (newText.isNotEmpty()) {
-                    preferenceFragment.preferenceScreen.forEach { preferenceCategory ->
-                        if (hiddenCategoriesFromSearch.contains(preferenceCategory.key)) {
-                            preferenceCategory.isVisible = false
-                            return@forEach
-                        }
-                        val queryMatchesCategory = queries.any { preferenceCategory.title?.contains(it, true) ?: false }
-                        // Tracks whether all preferences under this category are hidden
-                        var areAllPrefsHidden = true
-                        (preferenceCategory as PreferenceCategory).forEach { preference ->
-                            preference.isVisible = queryMatchesCategory || queries.any { preference.title?.contains(it, true) ?: false }
-                            if (preference.isVisible && areAllPrefsHidden)
-                                areAllPrefsHidden = false
-                        }
-                        // Hide PreferenceCategory if none of its preferences match the search and neither the category title
-                        preferenceCategory.isVisible = !areAllPrefsHidden || queryMatchesCategory
+                preferenceFragment.preferenceScreen.forEach { preferenceCategory ->
+                    if (hiddenCategoriesFromSearch.contains(preferenceCategory.key)) {
+                        preferenceCategory.isVisible = false
+                        return@forEach
                     }
-                } else { // If user input is empty, show all preferences
-                    preferenceFragment.preferenceScreen.forEach { preferenceCategory ->
-                        preferenceCategory.isVisible = true
-                        (preferenceCategory as PreferenceCategory).forEach { preference ->
-                            preference.isVisible = true
-                        }
+                    val queryMatchesCategory = queries.any { preferenceCategory.title?.contains(it, true) ?: false }
+                    // Tracks whether all preferences under this category are hidden
+                    var areAllPrefsHidden = true
+                    (preferenceCategory as PreferenceCategory).forEach { preference ->
+                        val isValidationLayer = preference.title?.contains(hiddenTitlesFromSearch, true) ?: false
+                        preference.isVisible = (queryMatchesCategory || queries.any { preference.title?.contains(it, true) ?: false }) && !isValidationLayer
+                        if (preference.isVisible && areAllPrefsHidden)
+                            areAllPrefsHidden = false
                     }
+                    // Hide PreferenceCategory if none of its preferences match the search and neither the category title
+                    preferenceCategory.isVisible = !areAllPrefsHidden || queryMatchesCategory
                 }
                 return true
             }
