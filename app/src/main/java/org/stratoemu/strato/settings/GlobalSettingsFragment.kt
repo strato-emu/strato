@@ -78,11 +78,5 @@ class GlobalSettingsFragment : PreferenceFragmentCompat() {
             forceMaxGpuClocksPref.isChecked = false
             forceMaxGpuClocksPref.summary = context!!.getString(R.string.force_max_gpu_clocks_desc_unsupported)
         }
-
-        resources.getStringArray(R.array.credits_entries).asIterable().shuffled().forEach {
-            findPreference<PreferenceCategory>("category_credits")?.addPreference(Preference(context!!).apply {
-                title = it
-            })
-        }
     }
 }
