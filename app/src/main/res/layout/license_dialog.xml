@@ -10,7 +10,7 @@
         android:orientation="vertical"
         android:paddingHorizontal="2.5dp">
 
-        <emu.skyline.views.DragHandleView
+        <org.stratoemu.strato.views.DragHandleView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="40dp"

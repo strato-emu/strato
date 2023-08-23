@@ -10,7 +10,7 @@
 #include "skyline/common/signal.h"
 #include "skyline/common/utils.h"
 
-extern "C" JNIEXPORT jobjectArray JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_getSystemDriverInfo(JNIEnv *env, jobject) {
+extern "C" JNIEXPORT jobjectArray JNICALL Java_org_stratoemu_strato_utils_GpuDriverHelper_00024Companion_getSystemDriverInfo(JNIEnv *env, jobject) {
     auto libvulkanHandle{dlopen("libvulkan.so", RTLD_NOW)};
 
     vk::raii::Context vkContext{reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(libvulkanHandle, "vkGetInstanceProcAddr"))};
@@ -36,16 +36,16 @@ static bool CheckKgslPresent() {
     return access(KgslPath, F_OK) == 0;
 }
 
-extern "C" JNIEXPORT jboolean JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_supportsCustomDriverLoading(JNIEnv *env, jobject instance) {
+extern "C" JNIEXPORT jboolean JNICALL Java_org_stratoemu_strato_utils_GpuDriverHelper_00024Companion_supportsCustomDriverLoading(JNIEnv *env, jobject instance) {
     // If the KGSL device exists custom drivers can be loaded using adrenotools
     return CheckKgslPresent();
 }
 
-extern "C" JNIEXPORT jboolean JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_supportsForceMaxGpuClocks(JNIEnv *env, jobject instance) {
+extern "C" JNIEXPORT jboolean JNICALL Java_org_stratoemu_strato_utils_GpuDriverHelper_00024Companion_supportsForceMaxGpuClocks(JNIEnv *env, jobject instance) {
     // If the KGSL device exists adrenotools can be used to set GPU turbo mode
     return CheckKgslPresent();
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_utils_GpuDriverHelper_00024Companion_forceMaxGpuClocks(JNIEnv *env, jobject instance, jboolean enable) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_utils_GpuDriverHelper_00024Companion_forceMaxGpuClocks(JNIEnv *env, jobject instance, jboolean enable) {
     adrenotools_set_turbo(enable);
 }

@@ -4,13 +4,13 @@
         android:key="category_input"
         android:title="@string/input"
         app:initialExpandedChildrenCount="4">
-        <emu.skyline.preference.ControllerPreference index="0" />
-        <emu.skyline.preference.ControllerPreference index="1" />
-        <emu.skyline.preference.ControllerPreference index="2" />
-        <emu.skyline.preference.ControllerPreference index="3" />
-        <emu.skyline.preference.ControllerPreference index="4" />
-        <emu.skyline.preference.ControllerPreference index="5" />
-        <emu.skyline.preference.ControllerPreference index="6" />
-        <emu.skyline.preference.ControllerPreference index="7" />
+        <org.stratoemu.strato.preference.ControllerPreference index="0" />
+        <org.stratoemu.strato.preference.ControllerPreference index="1" />
+        <org.stratoemu.strato.preference.ControllerPreference index="2" />
+        <org.stratoemu.strato.preference.ControllerPreference index="3" />
+        <org.stratoemu.strato.preference.ControllerPreference index="4" />
+        <org.stratoemu.strato.preference.ControllerPreference index="5" />
+        <org.stratoemu.strato.preference.ControllerPreference index="6" />
+        <org.stratoemu.strato.preference.ControllerPreference index="7" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

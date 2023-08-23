@@ -14,13 +14,13 @@ idea.module {
 }
 
 android {
-    namespace 'emu.skyline'
+    namespace 'org.stratoemu.strato'
     compileSdk 33
 
-    var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true")
+    var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_STRATO_SIGNED") == "true")
 
     defaultConfig {
-        applicationId "skyline.emu"
+        applicationId "org.stratoemu.strato"
 
         minSdk 29
         targetSdk 33
@@ -110,16 +110,14 @@ android {
 
     flavorDimensions += "version"
     productFlavors {
-        full {
+        mainline {
             dimension = "version"
-            manifestPlaceholders += [appLabel: "Skyline"]
         }
 
         dev {
             dimension = "version"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            manifestPlaceholders += [appLabel: "Skyline Dev"]
         }
     }
 

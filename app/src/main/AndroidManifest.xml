@@ -12,7 +12,7 @@
         android:version="0x401000" />
 
     <application
-        android:name=".SkylineApplication"
+        android:name=".StratoApplication"
         android:enableOnBackInvokedCallback="true"
         android:allowBackup="true"
         android:extractNativeLibs="true"
@@ -20,7 +20,7 @@
         android:hasFragileUserData="${shouldSaveUserData}"
         android:icon="@drawable/logo_skyline"
         android:isGame="true"
-        android:label="${appLabel}"
+        android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"

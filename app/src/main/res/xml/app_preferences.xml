@@ -3,32 +3,32 @@
     <PreferenceCategory
         android:key="category_content"
         android:title="@string/content">
-        <emu.skyline.preference.DocumentsProviderPreference
+        <org.stratoemu.strato.preference.DocumentsProviderPreference
             app:key="document_provider"
             app:summary="@string/open_data_directory_summary"
             app:title="@string/open_data_directory" />
-        <emu.skyline.preference.FolderPickerPreference
+        <org.stratoemu.strato.preference.FolderPickerPreference
             app:key="search_location"
             app:title="@string/search_location" />
-        <emu.skyline.preference.KeyPickerPreference
+        <org.stratoemu.strato.preference.KeyPickerPreference
             app:key="prod_keys"
             app:title="@string/prod_keys"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.KeyPickerPreference
+        <org.stratoemu.strato.preference.KeyPickerPreference
             app:key="title_keys"
             app:title="@string/title_keys"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.ImportExportSavesPreference
+        <org.stratoemu.strato.preference.ImportExportSavesPreference
             app:key="save_data_manager"
             app:title="@string/save_data_manager" />
-        <emu.skyline.preference.FirmwareImportPreference
+        <org.stratoemu.strato.preference.FirmwareImportPreference
             app:key="firmware"
             app:title="@string/firmware" />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="category_appearance"
         android:title="@string/appearance">
-        <emu.skyline.preference.ThemePreference
+        <org.stratoemu.strato.preference.ThemePreference
             android:defaultValue="2"
             android:entries="@array/app_theme"
             app:key="app_theme"
@@ -40,17 +40,17 @@
             app:summaryOff="@string/use_material_you_desc_off"
             app:summaryOn="@string/use_material_you_desc_on"
             app:title="@string/use_material_you" />
-        <emu.skyline.preference.LanguagePreference
+        <org.stratoemu.strato.preference.LanguagePreference
             app:key="app_language"
             app:persistent="false"
             app:title="@string/app_language" />
-        <emu.skyline.preference.IntegerListPreference
+        <org.stratoemu.strato.preference.IntegerListPreference
             android:defaultValue="1"
             android:entries="@array/layout_type"
             app:key="layout_type"
             app:title="@string/layout_type"
             app:useSimpleSummaryProvider="true" />
-        <emu.skyline.preference.IntegerListPreference
+        <org.stratoemu.strato.preference.IntegerListPreference
             android:defaultValue="0"
             android:entries="@array/sort_apps_by"
             app:key="sort_apps_by"
@@ -63,7 +63,7 @@
             android:summaryOn="@string/select_action_desc_on"
             app:key="select_action"
             app:title="@string/select_action" />
-        <emu.skyline.preference.RefreshSwitchPreferenceCompat
+        <org.stratoemu.strato.preference.RefreshSwitchPreferenceCompat
             android:defaultValue="false"
             android:summaryOff="@string/filter_invalid_files_desc_off"
             android:summaryOn="@string/filter_invalid_files_desc_on"
