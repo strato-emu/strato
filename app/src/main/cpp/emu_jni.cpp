@@ -55,7 +55,7 @@ static std::string GetTimeZoneName() {
     return "GMT";
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
+extern "C" JNIEXPORT void Java_org_stratoemu_strato_EmulationActivity_executeApplication(
     JNIEnv *env,
     jobject instance,
     jstring romUriJstring,
@@ -134,7 +134,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     close(romFd);
 }
 
-extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_stopEmulation(JNIEnv *, jobject, jboolean join) {
+extern "C" JNIEXPORT jboolean Java_org_stratoemu_strato_EmulationActivity_stopEmulation(JNIEnv *, jobject, jboolean join) {
     auto os{OsWeak.lock()};
     if (!os)
         return false;
@@ -145,7 +145,7 @@ extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_stopEmulation(J
     return true;
 }
 
-extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_setSurface(JNIEnv *, jobject, jobject surface) {
+extern "C" JNIEXPORT jboolean Java_org_stratoemu_strato_EmulationActivity_setSurface(JNIEnv *, jobject, jobject surface) {
     auto gpu{GpuWeak.lock()};
     if (!gpu)
         return false;
@@ -153,7 +153,7 @@ extern "C" JNIEXPORT jboolean Java_emu_skyline_EmulationActivity_setSurface(JNIE
     return true;
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_changeAudioStatus(JNIEnv *, jobject, jboolean play) {
+extern "C" JNIEXPORT void Java_org_stratoemu_strato_EmulationActivity_changeAudioStatus(JNIEnv *, jobject, jboolean play) {
     auto audio{AudioWeak.lock()};
     if (audio)
         if (play)
@@ -162,7 +162,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_changeAudioStatus(J
             audio->Pause();
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceStatistics(JNIEnv *env, jobject thiz) {
+extern "C" JNIEXPORT void Java_org_stratoemu_strato_EmulationActivity_updatePerformanceStatistics(JNIEnv *env, jobject thiz) {
     static jclass clazz{};
     if (!clazz)
         clazz = env->GetObjectClass(thiz);
@@ -183,17 +183,17 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_updatePerformanceSt
     env->SetFloatField(thiz, averageFrametimeDeviationField, AverageFrametimeDeviationMs);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_input_InputHandler_00024Companion_setController(JNIEnv *, jobject, jint index, jint type, jint partnerIndex) {
     auto input{InputWeak.lock()};
     std::lock_guard guard(input->npad.mutex);
     input->npad.controllers[static_cast<size_t>(index)] = skyline::input::GuestController{static_cast<skyline::input::NpadControllerType>(type), static_cast<skyline::i8>(partnerIndex)};
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_updateControllers(JNIEnv *, jobject) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_input_InputHandler_00024Companion_updateControllers(JNIEnv *, jobject) {
     InputWeak.lock()->npad.Update();
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jboolean pressed) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_input_InputHandler_00024Companion_setButtonState(JNIEnv *, jobject, jint index, jlong mask, jboolean pressed) {
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss button updates while input hasn't been initialized
@@ -202,7 +202,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Compa
         device->SetButtonState(skyline::input::NpadButton{.raw = static_cast<skyline::u64>(mask)}, pressed);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_input_InputHandler_00024Companion_setAxisValue(JNIEnv *, jobject, jint index, jint axis, jint value) {
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss axis updates while input hasn't been initialized
@@ -211,7 +211,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Compa
         device->SetAxisValue(static_cast<skyline::input::NpadAxisId>(axis), value);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setMotionState(JNIEnv *env, jobject, jint index, jint motionId, jobject value) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_input_InputHandler_00024Companion_setMotionState(JNIEnv *env, jobject, jint index, jint motionId, jobject value) {
     auto input{InputWeak.lock()};
     if (!input)
         return; // We don't mind if we miss motion updates while input hasn't been initialized
@@ -223,7 +223,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Compa
         device->SetMotionValue(static_cast<skyline::input::MotionId>(motionId), motionValue);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Companion_setTouchState(JNIEnv *env, jobject, jintArray pointsJni) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_input_InputHandler_00024Companion_setTouchState(JNIEnv *env, jobject, jintArray pointsJni) {
     using Point = skyline::input::TouchScreenPoint;
 
     auto input{InputWeak.lock()};
@@ -237,7 +237,7 @@ extern "C" JNIEXPORT void JNICALL Java_emu_skyline_input_InputHandler_00024Compa
     env->ReleaseIntArrayElements(pointsJni, reinterpret_cast<jint *>(points.data()), JNI_ABORT);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_emu_skyline_settings_NativeSettings_updateNative(JNIEnv *env, jobject) {
+extern "C" JNIEXPORT void JNICALL Java_org_stratoemu_strato_settings_NativeSettings_updateNative(JNIEnv *env, jobject) {
     auto settings{SettingsWeak.lock()};
     if (!settings)
         return; // We don't mind if we miss settings updates while settings haven't been initialized

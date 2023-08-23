@@ -9,15 +9,15 @@
             android:summaryOn="@string/use_custom_settings_desc_on"
             app:key="use_custom_settings"
             app:title="@string/use_custom_settings" />
-        <emu.skyline.preference.ExportCustomSettingsPreference
+        <org.stratoemu.strato.preference.ExportCustomSettingsPreference
             android:summary="@string/export_custom_settings_desc"
             app:key="@string/export_custom_settings"
             app:title="@string/export_custom_settings" />
-        <emu.skyline.preference.ResetSettingsPreference
+        <org.stratoemu.strato.preference.ResetSettingsPreference
             android:summary="@string/reset_custom_settings_desc"
             app:key="reset_custom_settings"
             app:title="@string/reset_custom_settings" />
-        <emu.skyline.preference.CopyGlobalSettingsPreference
+        <org.stratoemu.strato.preference.CopyGlobalSettingsPreference
             android:summary="@string/copy_global_settings_desc"
             app:key="copy_global_settings"
             app:title="@string/copy_global_settings" />

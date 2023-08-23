@@ -12,7 +12,7 @@
 #include "skyline/loader/nsp.h"
 #include "skyline/jvm.h"
 
-extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring, jint systemLanguage) {
+extern "C" JNIEXPORT jint JNICALL Java_org_stratoemu_strato_loader_RomFile_populate(JNIEnv *env, jobject thiz, jint jformat, jint fd, jstring appFilesPathJstring, jint systemLanguage) {
     skyline::signal::ScopedStackBlocker stackBlocker;
 
     skyline::loader::RomFormat format{static_cast<skyline::loader::RomFormat>(jformat)};
@@ -73,7 +73,7 @@ extern "C" JNIEXPORT jint JNICALL Java_emu_skyline_loader_RomFile_populate(JNIEn
     return static_cast<jint>(skyline::loader::LoaderResult::Success);
 }
 
-extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreference_fetchFirmwareVersion(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring) {
+extern "C" JNIEXPORT jstring Java_org_stratoemu_strato_preference_FirmwareImportPreference_fetchFirmwareVersion(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring) {
     struct SystemVersion {
         skyline::u8 major;
         skyline::u8 minor;
@@ -135,7 +135,7 @@ std::vector<skyline::u8> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Bac
     return {};
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_preference_FirmwareImportPreference_extractFonts(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring, jstring fontsPath) {
+extern "C" JNIEXPORT void Java_org_stratoemu_strato_preference_FirmwareImportPreference_extractFonts(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring, jstring fontsPath) {
     // Fonts are stored in the following NCAs
     // 0x0100000000000810 -> "FontNintendoExtended"
     // 0x0100000000000811 -> "FontStandard"

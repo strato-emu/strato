@@ -6,13 +6,13 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <emu.skyline.views.AlignmentGridView
+    <org.stratoemu.strato.views.AlignmentGridView
         android:id="@+id/alignment_grid"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:visibility="gone" />
 
-    <emu.skyline.input.onscreen.OnScreenControllerView
+    <org.stratoemu.strato.input.onscreen.OnScreenControllerView
         android:id="@+id/on_screen_controller_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
