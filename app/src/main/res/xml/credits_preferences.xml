@@ -1,9 +1,6 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-        android:key="category_credits"
-        android:title="@string/credits" />
-    <PreferenceCategory
         android:key="category_licenses"
         android:title="@string/licenses"
         app:initialExpandedChildrenCount="5">
