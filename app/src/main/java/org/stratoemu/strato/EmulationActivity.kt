@@ -44,6 +44,8 @@ import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowLayoutInfo
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.stratoemu.strato.applet.swkbd.SoftwareKeyboardConfig
 import org.stratoemu.strato.applet.swkbd.SoftwareKeyboardDialog
 import org.stratoemu.strato.data.AppItem
@@ -59,8 +61,6 @@ import org.stratoemu.strato.settings.NativeSettings
 import org.stratoemu.strato.utils.ByteBufferSerializable
 import org.stratoemu.strato.utils.GpuDriverHelper
 import org.stratoemu.strato.utils.serializable
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -772,7 +772,11 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     @ExperimentalUnsignedTypes
     @Suppress("unused")
     fun getVersionCode() : Int {
-        val (major, minor, patch) = BuildConfig.VERSION_NAME.split('-')[0].split('.').map { it.toUInt() }
+        val (major, minor, patch) = try {
+            BuildConfig.VERSION_NAME.split('-')[0].split('.').map { it.toUInt() }
+        } catch (_ : Exception) {
+            listOf(0u, 0u, 0u)
+        }
         return ((major shl 22) or (minor shl 12) or (patch)).toInt()
     }
 
