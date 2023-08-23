@@ -78,7 +78,7 @@
                 <ImageView
                     android:id="@+id/title_text"
                     android:layout_width="0dp"
-                    android:layout_height="24dp"
+                    android:layout_height="20dp"
                     android:layout_marginStart="16dp"
                     android:layout_marginTop="16dp"
                     android:layout_marginEnd="16dp"
@@ -92,16 +92,21 @@
 
                 <TextView
                     android:id="@+id/sub_text"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.1"
-                    android:text="@string/emulator"
-                    android:textAllCaps="true"
-                    android:textColor="?attr/colorOnBackground"
-                    android:textSize="12sp"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="marquee"
+                    android:focusableInTouchMode="true"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="-0.04"
+                    android:marqueeRepeatLimit="1"
+                    android:singleLine="true"
+                    android:textSize="16sp"
+                    app:layout_constraintEnd_toStartOf="@+id/refresh_icon"
+                    app:layout_constraintHorizontal_bias="0.0"
                     app:layout_constraintStart_toStartOf="@+id/title_text"
-                    app:layout_constraintTop_toBottomOf="@id/title_text" />
+                    app:layout_constraintTop_toBottomOf="@id/title_text"
+                    tools:text="1.0.0" />
 
                 <org.stratoemu.strato.views.SearchBarView
                     android:id="@+id/search_bar"
@@ -122,7 +127,7 @@
                     android:layout_marginHorizontal="16dp"
                     android:text="@string/searching_roms"
                     android:textAlignment="viewStart"
-                    app:layout_constraintTop_toBottomOf="@id/search_bar"/>
+                    app:layout_constraintTop_toBottomOf="@id/search_bar" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
