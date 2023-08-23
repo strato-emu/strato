@@ -108,6 +108,11 @@ class MainActivity : AppCompatActivity() {
         PreferenceManager.setDefaultValues(this, R.xml.app_preferences, false)
         PreferenceManager.setDefaultValues(this, R.xml.emulation_preferences, false)
 
+        binding.subText.text = BuildConfig.VERSION_NAME
+        // The first click event is consumed by the focus acquisition
+        // Subsequent clicks should be interpreted as a request to clear focus
+        binding.subText.setOnClickListener { if (it.isFocused) binding.subText.clearFocus() }
+
         binding.appList.setHasFixedSize(true)
 
         setupAppList()
