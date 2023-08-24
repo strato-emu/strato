@@ -33,13 +33,8 @@ android {
             abiFilters "arm64-v8a"
         }
 
-        if (isBuildSigned)
-            manifestPlaceholders += [shouldSaveUserData: "true"]
-        else
-            manifestPlaceholders += [shouldSaveUserData: "false"]
-
-        // Only enable separate process for release builds
-        manifestPlaceholders += [emulationProcess: ""]
+        // Disable the use of a separate process for emulation by default
+        manifestPlaceholders["emulationProcess"] = ""
 
         def locales = ["en", "de", "el", "es", "es-419", "fr", "hu", "id", "it", "ja", "ko", "pl", "ru", "ta", "zh-Hans", "zh-Hant"]
 
@@ -85,7 +80,7 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
-            manifestPlaceholders += [emulationProcess: ":emulationProcess"]
+            manifestPlaceholders["emulationProcess"] = ":emulationProcess"
         }
 
         reldebug {
