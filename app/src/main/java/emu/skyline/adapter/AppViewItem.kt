@@ -17,7 +17,7 @@ import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.viewbinding.ViewBinding
 import emu.skyline.R
-import emu.skyline.data.AppItem
+import emu.skyline.data.BaseAppItem
 import emu.skyline.databinding.AppItemGridBinding
 import emu.skyline.databinding.AppItemGridCompactBinding
 import emu.skyline.databinding.AppItemLinearBinding
@@ -86,9 +86,9 @@ class GridCompatBinding(parent : ViewGroup) : LayoutBinding<AppItemGridCompactBi
     override val icon = binding.icon
 }
 
-private typealias InteractionFunction = (appItem : AppItem) -> Unit
+private typealias InteractionFunction = (appItem : BaseAppItem) -> Unit
 
-class AppViewItem(var layoutType : LayoutType, private val item : AppItem, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem<LayoutBinding<*>>() {
+class AppViewItem(var layoutType : LayoutType, private val item : BaseAppItem, private val onClick : InteractionFunction, private val onLongClick : InteractionFunction) : GenericListItem<LayoutBinding<*>>() {
     override fun getViewBindingFactory() = LayoutBindingFactory(layoutType)
 
     override fun bind(holder : GenericViewHolder<LayoutBinding<*>>, position : Int) {
@@ -116,7 +116,7 @@ class AppViewItem(var layoutType : LayoutType, private val item : AppItem, priva
         binding.root.findViewById<View>(R.id.item_card)?.let { handleClicks(it) }
     }
 
-    private fun showIconDialog(context : Context, appItem : AppItem) {
+    private fun showIconDialog(context : Context, appItem : BaseAppItem) {
         val builder = Dialog(context)
         builder.requestWindowFeature(Window.FEATURE_NO_TITLE)
         builder.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))

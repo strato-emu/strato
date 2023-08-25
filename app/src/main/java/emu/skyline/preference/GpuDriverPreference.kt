@@ -13,7 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
 import androidx.preference.R
-import emu.skyline.data.AppItem
+import emu.skyline.data.BaseAppItem
 import emu.skyline.data.AppItemTag
 import emu.skyline.settings.EmulationSettings
 import emu.skyline.utils.GpuDriverHelper
@@ -31,7 +31,7 @@ class GpuDriverPreference @JvmOverloads constructor(context : Context, attrs : A
      * The app item being configured, used to load the correct settings in [GpuDriverActivity]
      * This is populated by [emu.skyline.settings.GameSettingsFragment]
      */
-    var item : AppItem? = null
+    var item : BaseAppItem? = null
 
     init {
         val supportsCustomDriverLoading = GpuDriverHelper.supportsCustomDriverLoading()
