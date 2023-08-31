@@ -168,6 +168,6 @@ namespace skyline::service::hosbinder {
         if (layerId != DefaultLayerId)
             throw exception("Destroying non-existent layer #{}", layerId);
         else if (layer)
-            throw exception("Destroying layer #{} which hasn't been closed: Weak References: {}, Strong References: {}", layerWeakReferenceCount, layerStrongReferenceCount);
+            throw exception("Destroying layer #{} which hasn't been closed: Weak References: {}, Strong References: {}", layerId, layerWeakReferenceCount, layerStrongReferenceCount);
     }
 }
