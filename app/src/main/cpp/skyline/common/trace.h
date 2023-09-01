@@ -2,7 +2,7 @@
 
 #include <limits>
 #include <perfetto.h>
-#include <common.h>
+#include "base.h"
 
 #define TRACE_EVENT_FMT(category, formatString, ...) TRACE_EVENT(category, nullptr, [&](perfetto::EventContext ctx) { \
     ctx.event()->set_name(skyline::util::Format(formatString, __VA_ARGS__));                                          \
