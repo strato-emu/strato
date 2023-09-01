@@ -158,7 +158,7 @@ namespace skyline::gpu::interconnect {
 
             default:
                 if (format.Raw())
-                    Logger::Error("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
+                    LOGE("Cannot translate TIC format: 0x{:X}", static_cast<u32>(format.Raw()));
                 return {};
         }
 

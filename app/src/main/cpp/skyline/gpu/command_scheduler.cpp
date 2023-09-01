@@ -19,13 +19,13 @@ namespace skyline::gpu {
                 cycle->Wait(true);
             }, [] {});
         } catch (const signal::SignalException &e) {
-            Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            LOGE("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
                 state.process->Kill(false);
             else
                 std::rethrow_exception(std::current_exception());
         } catch (const std::exception &e) {
-            Logger::Error(e.what());
+            LOGE("{}", e.what());
             if (state.process)
                 state.process->Kill(false);
             else

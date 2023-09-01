@@ -39,16 +39,16 @@ namespace skyline::applet {
 
     void ErrorApplet::HandleErrorCommonArg() {
         auto errorCommonArg{errorStorage->GetSpan().as<ErrorCommonArg>()};
-        Logger::Error("ErrorApplet: error code: 0x{:X}, result: 0x{:X}", errorCommonArg.errorCode, errorCommonArg.result);
+        LOGE("ErrorApplet: error code: 0x{:X}, result: 0x{:X}", errorCommonArg.errorCode, errorCommonArg.result);
     }
 
     void ErrorApplet::HandleApplicationErrorArg() {
         auto applicationErrorStorage{errorStorage->GetSpan().as<ApplicationErrorArg>()};
 
         if (applicationErrorStorage.fullscreenMessage[0] == '\0')
-            Logger::ErrorNoPrefix("Application Error: {}", applicationErrorStorage.dialogMessage.data());
+            LOGENF("Application Error: {}", applicationErrorStorage.dialogMessage.data());
         else
-            Logger::ErrorNoPrefix("Application Error: {}\nFull message: {}", applicationErrorStorage.dialogMessage.data(), applicationErrorStorage.fullscreenMessage.data());
+            LOGENF("Application Error: {}\nFull message: {}", applicationErrorStorage.dialogMessage.data(), applicationErrorStorage.fullscreenMessage.data());
     }
 
     Result ErrorApplet::GetResult() {

@@ -35,7 +35,7 @@ namespace skyline::soc::host1x {
             }
 
             default:
-                Logger::Error("Unknown host1x class method called: 0x{:X}", method);
+                LOGE("Unknown host1x class method called: 0x{:X}", method);
                 break;
         }
     }

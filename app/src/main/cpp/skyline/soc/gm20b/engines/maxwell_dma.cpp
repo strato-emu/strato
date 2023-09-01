@@ -145,7 +145,7 @@ namespace skyline::soc::gm20b::engine {
 
     void MaxwellDma::CopyBlockLinearToPitch() {
         if (registers.srcSurface->blockSize.Width() != 1) [[unlikely]] {
-            Logger::Error("Blocklinear surfaces with a non-one block width are unsupported on the Tegra X1: {}", registers.srcSurface->blockSize.Width());
+            LOGE("Blocklinear surfaces with a non-one block width are unsupported on the Tegra X1: {}", registers.srcSurface->blockSize.Width());
             return;
         }
 
@@ -192,7 +192,7 @@ namespace skyline::soc::gm20b::engine {
 
     void MaxwellDma::CopyPitchToBlockLinear() {
         if (registers.dstSurface->blockSize.Width() != 1) [[unlikely]] {
-            Logger::Error("Blocklinear surfaces with a non-one block width are unsupported on the Tegra X1: {}", registers.srcSurface->blockSize.Width());
+            LOGE("Blocklinear surfaces with a non-one block width are unsupported on the Tegra X1: {}", registers.srcSurface->blockSize.Width());
             return;
         }
 

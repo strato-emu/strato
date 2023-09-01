@@ -76,7 +76,7 @@ namespace skyline::soc::host1x {
                     deviceClass.CallMethod(storedMethod, argument);
                     break;
                 default:
-                    Logger::Error("Unknown THI method called: 0x{:X}, argument: 0x{:X}", method, argument);
+                    LOGE("Unknown THI method called: 0x{:X}, argument: 0x{:X}", method, argument);
                     break;
             }
         }

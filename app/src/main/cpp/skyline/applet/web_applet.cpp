@@ -22,7 +22,7 @@ namespace skyline::applet {
         auto argHeader{PopNormalInput<WebArgHeader>()};
 
         if ((commonArg.apiVersion >= 0x80000 && argHeader.shimKind == ShimKind::Web) || (commonArg.apiVersion >= 0x30000 && argHeader.shimKind == ShimKind::Share))
-            Logger::Error("OfflineWeb TLV output is unsupported!");
+            LOGE("OfflineWeb TLV output is unsupported!");
 
         PushNormalDataAndSignal(std::make_shared<service::am::ObjIStorage<WebCommonReturnValue>>(state, manager, WebCommonReturnValue{
             .exitReason = WebExitReason::WindowClosed,

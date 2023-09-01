@@ -911,7 +911,7 @@ namespace skyline::kernel::svc {
         if (reason & (1ULL << 31)) {
             Logger::Debug("Debugger is being engaged ({})", reason);
         } else {
-            Logger::Error("Exit Stack Trace ({}){}", reason, state.loader->GetStackTrace());
+            LOGE("Exit Stack Trace ({}){}", reason, state.loader->GetStackTrace());
             if (state.thread->id)
                 state.process->Kill(false);
             std::longjmp(state.thread->originalCtx, true);
@@ -1272,7 +1272,7 @@ namespace skyline::kernel::svc {
 
             default:
                 [[unlikely]]
-                    Logger::Error("'arbitrationType' invalid: {}", arbitrationType);
+                    LOGE("'arbitrationType' invalid: {}", arbitrationType);
                 state.ctx->gpr.w0 = result::InvalidEnumValue;
                 return;
         }
@@ -1320,7 +1320,7 @@ namespace skyline::kernel::svc {
 
             default:
                 [[unlikely]]
-                    Logger::Error("'signalType' invalid: {}", signalType);
+                    LOGE("'signalType' invalid: {}", signalType);
                 state.ctx->gpr.w0 = result::InvalidEnumValue;
                 return;
         }
