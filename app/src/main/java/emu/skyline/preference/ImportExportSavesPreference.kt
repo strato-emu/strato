@@ -15,13 +15,8 @@ import emu.skyline.R
 import emu.skyline.utils.SaveManagementUtils
 
 class ImportExportSavesPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
-    private lateinit var documentPicker : ActivityResultLauncher<Array<String>>
-    private lateinit var startForResultExportSave : ActivityResultLauncher<Intent>
-
-    init {
-        documentPicker = SaveManagementUtils.registerDocumentPicker(context)
-        startForResultExportSave = SaveManagementUtils.registerStartForResultExportSave(context)
-    }
+    private val documentPicker = SaveManagementUtils.registerDocumentPicker(context)
+    private val startForResultExportSave = SaveManagementUtils.registerStartForResultExportSave(context)
 
     override fun onClick() {
         val saveDataExists = SaveManagementUtils.savesFolderRootExists()

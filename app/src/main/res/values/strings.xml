@@ -290,7 +290,7 @@
     <string name="expand_button_title" tools:override="true">Expand</string>
     <string name="undo">Undo</string>
     <string name="per_game_settings_active_message">Per-game settings are active</string>
-    <string name="import_export_saves">Import/Export save data</string>
+    <string name="save_data_manager">Manage save data</string>
     <string name="save_data_found">Save data found. What would you like to do?</string>
     <string name="save_data_not_found">No save data found. What would you like to do?</string>
     <string name="delete_save_confirmation_message">Are you sure you want to delete this save?</string>

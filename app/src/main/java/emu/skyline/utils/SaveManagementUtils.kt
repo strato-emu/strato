@@ -34,7 +34,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 interface SaveManagementUtils {
-    class SpecificWorkUI(var specificWorkUI : () -> Unit = {})
 
     companion object {
         private val savesFolderRoot = "${SkylineApplication.instance.getPublicFilesDir().canonicalPath}/switch/nand/user/save/0000000000000000/00000000000000000000000000000001"
@@ -45,12 +44,12 @@ interface SaveManagementUtils {
             }
         }
 
-        fun registerDocumentPicker(fragmentAct : FragmentActivity, specificWorkUI : SpecificWorkUI = SpecificWorkUI()) : ActivityResultLauncher<Array<String>> {
+        fun registerDocumentPicker(fragmentAct : FragmentActivity, onImportComplete : () -> Unit = {}) : ActivityResultLauncher<Array<String>> {
             val activity = fragmentAct as AppCompatActivity
             val activityResultRegistry = fragmentAct.activityResultRegistry
 
             return activityResultRegistry.register("documentPickerKey", ActivityResultContracts.OpenDocument()) {
-                it?.let { uri -> importSave(activity, uri, specificWorkUI.specificWorkUI) }
+                it?.let { uri -> importSave(activity, uri, onImportComplete) }
             }
         }
 
@@ -156,7 +155,7 @@ interface SaveManagementUtils {
          * Imports the save files contained in the zip file, and replaces any existing ones with the new save file.
          * @param zipUri The Uri of the zip file containing the save file(s) to import.
          */
-        private fun importSave(context : Context, zipUri : Uri, specificWorkUI : () -> Unit = {}) {
+        private fun importSave(context : Context, zipUri : Uri, onImportComplete : () -> Unit = {}) {
             val inputZip = SkylineApplication.instance.contentResolver.openInputStream(zipUri)
             // A zip needs to have at least one subfolder named after a TitleId in order to be considered valid.
             var validZip = false
@@ -185,7 +184,7 @@ interface SaveManagementUtils {
                             Toast.makeText(context, R.string.save_file_invalid_zip_structure, Toast.LENGTH_LONG).show()
                             return@withContext
                         }
-                        specificWorkUI()
+                        onImportComplete()
                         Toast.makeText(context, R.string.save_file_imported_ok, Toast.LENGTH_LONG).show()
                     }
 
