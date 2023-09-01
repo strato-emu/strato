@@ -179,7 +179,7 @@
     <PreferenceCategory
         android:key="category_debug"
         android:title="@string/debug">
-        <emu.skyline.preference.LogLevelPreference
+        <emu.skyline.preference.IntegerListPreference
             android:defaultValue="2"
             android:entries="@array/log_level"
             app:key="log_level"

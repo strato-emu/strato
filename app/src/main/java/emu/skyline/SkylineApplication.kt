@@ -38,10 +38,6 @@ class SkylineApplication : Application() {
         instance = this
         System.loadLibrary("skyline")
 
-        val publicAppFilesPath = applicationContext.getPublicFilesDir().canonicalPath
-        File("$publicAppFilesPath/logs/").mkdirs()
-        initializeLog("$publicAppFilesPath/", getSettings().logLevel)
-
         val dynamicColorsOptions = DynamicColorsOptions.Builder().setPrecondition { _, _ -> getSettings().useMaterialYou }.build()
         DynamicColors.applyToActivitiesIfAvailable(this, dynamicColorsOptions)
     }

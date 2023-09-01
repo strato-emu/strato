@@ -45,6 +45,7 @@ data class NativeSettings(
     var disableSubgroupShuffle : Boolean,
 
     // Debug
+    var logLevel : Int,
     var validationLayer : Boolean
 ) {
     constructor(context : Context, pref : EmulationSettings) : this(
@@ -68,6 +69,7 @@ data class NativeSettings(
         pref.enableFastGpuReadbackHack,
         pref.enableFastReadbackWrites,
         pref.disableSubgroupShuffle,
+        pref.logLevel,
         BuildConfig.BUILD_TYPE != "release" && pref.validationLayer
     )
 
@@ -75,11 +77,4 @@ data class NativeSettings(
      * Updates settings in libskyline during emulation
      */
     external fun updateNative()
-
-    companion object {
-        /**
-         * Sets libskyline logger level to the given one
-         */
-        external fun setLogLevel(logLevel : Int)
-    }
 }
