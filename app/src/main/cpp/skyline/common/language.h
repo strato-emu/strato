@@ -4,8 +4,10 @@
 #pragma once
 
 #include <frozen/unordered_map.h>
-#include <common.h>
 #include <common/macros.h>
+#include <common/exception.h>
+#include <common/base.h>
+#include <common/utils.h>
 
 namespace skyline {
     using LanguageCode = u64;
