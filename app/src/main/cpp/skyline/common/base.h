@@ -7,20 +7,7 @@
 #include <stdexcept>
 #include <variant>
 #include <bitset>
-#include <fmt/format.h>
-
-namespace fmt {
-    /**
-     * @brief A std::bitset formatter for {fmt}
-     */
-    template<size_t N>
-    struct formatter<std::bitset<N>> : formatter<std::string> {
-        template<typename FormatContext>
-        constexpr auto format(const std::bitset<N> &s, FormatContext &ctx) {
-            return formatter<std::string>::format(s.to_string(), ctx);
-        }
-    };
-}
+#include "format.h"
 
 namespace skyline {
     using u128 = __uint128_t; //!< Unsigned 128-bit integer
