@@ -498,7 +498,7 @@ namespace skyline::kernel {
 
         if (alignedStart < alignedEnd) [[likely]]
             if (madvise(alignedStart, static_cast<size_t>(alignedEnd - alignedStart), MADV_REMOVE) == -1) [[unlikely]]
-                Logger::Error("Failed to free memory: {}", strerror(errno));
+                LOGE("Failed to free memory: {}", strerror(errno));
     }
 
     void MemoryManager::SvcMapMemory(span<u8> source, span<u8> destination) {

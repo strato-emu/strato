@@ -280,12 +280,12 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         if (bigPageSize) {
             if (!std::has_single_bit(bigPageSize)) {
-                Logger::Error("Non power-of-2 big page size: 0x{:X}!", bigPageSize);
+                LOGE("Non power-of-2 big page size: 0x{:X}!", bigPageSize);
                 return PosixResult::InvalidArgument;
             }
 
             if (!(bigPageSize & VM::SupportedBigPageSizes)) {
-                Logger::Error("Unsupported big page size: 0x{:X}!", bigPageSize);
+                LOGE("Unsupported big page size: 0x{:X}!", bigPageSize);
                 return PosixResult::InvalidArgument;
             }
 

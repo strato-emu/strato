@@ -50,7 +50,7 @@ namespace skyline::service::audio {
         auto performanceOutput{request.outputBuf.size() > 1 ? request.outputBuf.at(1) : span<u8>{}};
 
         if (auto result{impl.RequestUpdate(input, performanceOutput, output)}; result.IsError()) {
-            Logger::Error("Update failed error: 0x{:X}", u32{result});
+            LOGE("Update failed error: 0x{:X}", u32{result});
             return Result{result};
         }
 

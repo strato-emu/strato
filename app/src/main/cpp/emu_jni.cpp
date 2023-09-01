@@ -18,6 +18,7 @@
 #include "skyline/audio.h"
 #include "skyline/input.h"
 #include "skyline/kernel/types/KProcess.h"
+#include "skyline/logger/logger.h"
 
 jint Fps; //!< An approximation of the amount of frames being submitted every second
 jfloat AverageFrametimeMs; //!< The average time it takes for a frame to be rendered and presented in milliseconds
@@ -123,11 +124,11 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {
-        skyline::Logger::ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
+        LOGENF("An uncaught exception has occurred: {}", e.what());
     } catch (const skyline::signal::SignalException &e) {
-        skyline::Logger::ErrorNoPrefix("An uncaught exception has occurred: {}", e.what());
+        LOGENF("An uncaught signal exception has occurred: {}", e.what());
     } catch (...) {
-        skyline::Logger::ErrorNoPrefix("An unknown uncaught exception has occurred");
+        LOGENF("An unknown uncaught exception has occurred");
     }
 
     perfetto::TrackEvent::Flush();

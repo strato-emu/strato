@@ -182,7 +182,7 @@ namespace skyline::kernel::type {
 
             __builtin_unreachable();
         } catch (const std::exception &e) {
-            Logger::Error(e.what());
+            LOGE("{}", e.what());
             Logger::EmulationContext.Flush();
             if (id) {
                 signal::BlockSignal({SIGINT});
@@ -192,7 +192,7 @@ namespace skyline::kernel::type {
             std::longjmp(originalCtx, true);
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
-                Logger::Error(e.what());
+                LOGE("{}", e.what());
                 Logger::EmulationContext.Flush();
                 if (id) {
                     signal::BlockSignal({SIGINT});

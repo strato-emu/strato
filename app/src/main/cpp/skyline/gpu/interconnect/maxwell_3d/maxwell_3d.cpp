@@ -420,7 +420,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
     void Maxwell3D::Query(soc::gm20b::IOVA address, engine::SemaphoreInfo::CounterType type, std::optional<u64> timestamp) {
         if (type != engine::SemaphoreInfo::CounterType::SamplesPassed) {
-            Logger::Error("Unsupported query type: {}", static_cast<u32>(type));
+            LOGE("Unsupported query type: {}", static_cast<u32>(type));
             return;
         }
 

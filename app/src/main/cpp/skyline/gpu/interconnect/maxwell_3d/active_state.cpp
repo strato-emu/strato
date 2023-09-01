@@ -103,7 +103,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     static BufferBinding GenerateQuadConversionIndexBuffer(InterconnectContext &ctx, engine::IndexBuffer::IndexSize indexType, BufferView &view, u32 firstIndex, u32 elementCount) {
         auto viewSpan{view.GetReadOnlyBackingSpan(false /* We attach above so always false */, []() {
             // TODO: see Read()
-            Logger::Error("Dirty index buffer reads for attached buffers are unimplemented");
+            LOGE("Dirty index buffer reads for attached buffers are unimplemented");
         })};
 
         size_t indexSize{1U << static_cast<u32>(indexType)};

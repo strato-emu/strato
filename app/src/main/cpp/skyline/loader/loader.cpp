@@ -59,10 +59,10 @@ namespace skyline::loader {
 
                     executableSymbols.emplace_back(std::string{symbolName}, hle::EntryExitHook{
                         .entry = [](const DeviceState &, const hle::HookedSymbol &symbol) {
-                            Logger::Error("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
+                            LOGE("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
                         },
                         .exit = [](const DeviceState &, const hle::HookedSymbol &symbol) {
-                            Logger::Error("Exiting \"{}\"", symbol.prettyName);
+                            LOGE("Exiting \"{}\"", symbol.prettyName);
                         },
                     }, &symbol.st_value);
                     #endif
@@ -77,10 +77,10 @@ namespace skyline::loader {
 
                     executableSymbols.emplace_back(std::string{symbolName}, hle::EntryExitHook{
                         .entry = [](const DeviceState &, const hle::HookedSymbol &symbol) {
-                            Logger::Error("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
+                            LOGE("Entering \"{}\" ({})", symbol.prettyName, symbol.name);
                         },
                         .exit = [](const DeviceState &, const hle::HookedSymbol &symbol) {
-                            Logger::Error("Exiting \"{}\"", symbol.prettyName);
+                            LOGE("Exiting \"{}\"", symbol.prettyName);
                         },
                     }, &symbol.st_value);
             }

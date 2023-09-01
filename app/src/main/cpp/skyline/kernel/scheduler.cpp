@@ -116,7 +116,7 @@ namespace skyline::kernel {
         // Scan the queue for the same thread to prevent double insertion
         for (auto &residentThread : core.queue) {
             if (residentThread == thread) {
-                Logger::Error("T{} already exists in C{}", thread->id, core.id);
+                LOGE("T{} already exists in C{}", thread->id, core.id);
                 Logger::EmulationContext.Flush();
             }
         }

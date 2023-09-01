@@ -93,7 +93,7 @@ namespace skyline::service::am {
                 Logger::Info("Set CPU boost mode to {}", ToString(cpuBoostMode));
                 return {};
             default:
-                Logger::Error("Unknown CPU boost mode value: 0x{:X}", cpuBoostMode);
+                LOGE("Unknown CPU boost mode value: 0x{:X}", cpuBoostMode);
                 return result::InvalidParameters;
         }
         return {};

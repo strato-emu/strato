@@ -78,13 +78,13 @@ namespace skyline::gpu {
             AChoreographer_postFrameCallback64(AChoreographer_getInstance(), reinterpret_cast<AChoreographer_frameCallback64>(&ChoreographerCallback), this);
             while (ALooper_pollAll(-1, nullptr, nullptr, nullptr) == ALOOPER_POLL_WAKE && !choreographerStop); // Will block and process callbacks till ALooper_wake() is called with choreographerStop set
         } catch (const signal::SignalException &e) {
-            Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            LOGE("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
                 state.process->Kill(false);
             else
                 std::rethrow_exception(std::current_exception());
         } catch (const std::exception &e) {
-            Logger::Error(e.what());
+            LOGE("{}", e.what());
             if (state.process)
                 state.process->Kill(false);
             else
@@ -242,13 +242,13 @@ namespace skyline::gpu {
                 vsyncEvent->Signal();
             }, [] {});
         } catch (const signal::SignalException &e) {
-            Logger::Error("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
+            LOGE("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
             if (state.process)
                 state.process->Kill(false);
             else
                 std::rethrow_exception(std::current_exception());
         } catch (const std::exception &e) {
-            Logger::Error(e.what());
+            LOGE("{}", e.what());
             if (state.process)
                 state.process->Kill(false);
             else

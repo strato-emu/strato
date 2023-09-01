@@ -16,7 +16,7 @@ namespace skyline::service::ldn {
 
     Result IUserLocalCommunicationService::GetNetworkInfo(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         if (request.outputBuf.at(0).size() != sizeof(NetworkInfo)) {
-            Logger::Error("Invalid input");
+            LOGE("Invalid input");
             return result::InvalidInput;
         }
 

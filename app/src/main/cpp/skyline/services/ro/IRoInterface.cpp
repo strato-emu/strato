@@ -83,7 +83,7 @@ namespace skyline::service::ro {
     }
 
     Result IRoInterface::UnloadModule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        Logger::Error("Module unloading is unimplemented!");
+        LOGE("Module unloading is unimplemented!");
         return {};
     }
 
