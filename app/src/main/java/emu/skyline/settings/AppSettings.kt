@@ -36,5 +36,4 @@ class AppSettings @Inject constructor(@ApplicationContext private val context : 
 
     // Other
     var refreshRequired by sharedPreferences(context, false)
-    var logLevel by sharedPreferences(context, 3)
 }
