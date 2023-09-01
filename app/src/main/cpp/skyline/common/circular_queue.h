@@ -5,7 +5,7 @@
 
 #include <common/trace.h>
 #include <common/spin_lock.h>
-#include <common.h>
+#include <common/span.h>
 
 namespace skyline {
     /**
@@ -48,6 +48,13 @@ namespace skyline {
         }
 
         /**
+         * @return Whether the queue is empty
+         */
+        bool Empty() {
+            return start == end;
+        }
+
+        /**
          * @brief A blocking for-each that runs on every item and waits till new items to run on them as well
          * @param function A function that is called for each item (with the only parameter as a reference to that item)
          * @param preWait An optional function that's called prior to waiting on more items to be queued
@@ -86,7 +93,7 @@ namespace skyline {
             std::scoped_lock comsumptionLock{consumptionMutex};
             auto next{start + 1};
             next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
-            Type item{*next};
+            Type item{std::move(*next)};
             start = next;
 
             consumeCondition.notify_one();
@@ -102,7 +109,7 @@ namespace skyline {
                 if (waitNext) {
                     std::unique_lock consumeLock{consumptionMutex};
 
-                    consumeCondition.wait(consumeLock, [=]() { return waitNext != start || waitEnd != end; });
+                    consumeCondition.wait(consumeLock, [=, this]() { return waitNext != start || waitEnd != end; });
                     waitNext = nullptr;
                     waitEnd = nullptr;
                 }
@@ -120,7 +127,63 @@ namespace skyline {
                 produceCondition.notify_one();
                 break;
             }
+        }
 
+        void Push(Type &&item) {
+            Type *waitNext{};
+            Type *waitEnd{};
+
+            while (true) {
+                if (waitNext) {
+                    std::unique_lock consumeLock{consumptionMutex};
+
+                    consumeCondition.wait(consumeLock, [=, this]() { return waitNext != start || waitEnd != end; });
+                    waitNext = nullptr;
+                    waitEnd = nullptr;
+                }
+
+                std::scoped_lock lock{productionMutex};
+                auto next{end + 1};
+                next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+                if (next == start) {
+                    waitNext = next;
+                    waitEnd = end;
+                    continue;
+                }
+                *next = std::move(item);
+                end = next;
+                produceCondition.notify_one();
+                break;
+            }
+        }
+
+        template<typename... Args>
+        void Emplace(Args &&... args) {
+            Type *waitNext{};
+            Type *waitEnd{};
+
+            while (true) {
+                if (waitNext) {
+                    std::unique_lock consumeLock{consumptionMutex};
+
+                    consumeCondition.wait(consumeLock, [=, this]() { return waitNext != start || waitEnd != end; });
+                    waitNext = nullptr;
+                    waitEnd = nullptr;
+                }
+
+                std::scoped_lock lock{productionMutex};
+                auto next{end + 1};
+                next = (next == reinterpret_cast<Type *>(vector.end().base())) ? reinterpret_cast<Type *>(vector.begin().base()) : next;
+                if (next == start) {
+                    waitNext = next;
+                    waitEnd = end;
+                    continue;
+                }
+                std::construct_at(next, std::forward<Args>(args)...);
+                end = next;
+                produceCondition.notify_one();
+                break;
+            }
         }
 
         /**
