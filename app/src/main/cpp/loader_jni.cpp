@@ -99,9 +99,9 @@ extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreferenc
         auto nca{skyline::vfs::NCA(backing, keyStore)};
 
         if (nca.header.programId == systemVersionProgramId && nca.romFs != nullptr) {
-            auto controlRomFs = std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs);
-            auto file = controlRomFs->OpenFile("file");
-            SystemVersion systemVersion{};
+            auto controlRomFs{std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs)};
+            auto file{controlRomFs->OpenFile("file")};
+            SystemVersion systemVersion;
             file->Read<SystemVersion>(systemVersion);
             return env->NewStringUTF(reinterpret_cast<char *>(systemVersion.displayVersion));
         }
@@ -110,18 +110,18 @@ extern "C" JNIEXPORT jstring Java_emu_skyline_preference_FirmwareImportPreferenc
     return env->NewStringUTF("");
 }
 
-std::vector<u_char> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile){
+std::vector<skyline::u8> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile){
     constexpr skyline::u32 fontKey{0x06186249};
     constexpr skyline::u32 BFTTFMagic{0x18029a7f};
 
-    auto firstBytes{(bfttfFile->Read<skyline::u32>())};
-    auto firstBytesXor{(firstBytes ^ fontKey)};
+    auto firstBytes{bfttfFile->Read<skyline::u32>()};
+    auto firstBytesXor{firstBytes ^ fontKey};
 
     if (firstBytesXor == BFTTFMagic) {
-        const size_t initialOffset = 8;
+        constexpr size_t initialOffset{8};
         std::vector<skyline::u8> font(bfttfFile->size - initialOffset);
 
-        for (size_t offset = initialOffset; offset < bfttfFile->size; offset+=4) {
+        for (size_t offset = initialOffset; offset < bfttfFile->size; offset += 4) {
             skyline::u32 decodedData{bfttfFile->Read<skyline::u32>(offset) ^ fontKey};
 
             font[offset - 8] = static_cast<skyline::u8>(decodedData >> 0);
@@ -132,6 +132,7 @@ std::vector<u_char> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing>
 
         return font;
     }
+    return {};
 }
 
 extern "C" JNIEXPORT void Java_emu_skyline_preference_FirmwareImportPreference_extractFonts(JNIEnv *env, jobject thiz, jstring systemArchivesPathJstring, jstring keysPathJstring, jstring fontsPath) {
@@ -165,18 +166,20 @@ extern "C" JNIEXPORT void Java_emu_skyline_preference_FirmwareImportPreference_e
         auto nca{skyline::vfs::NCA(backing, keyStore)};
 
         if (nca.header.programId >= firstFontProgramId && nca.header.programId <= lastFontProgramId && nca.romFs != nullptr) {
-            auto controlRomFs = std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs);
+            auto controlRomFs{std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs)};
 
             for (auto fileEntry = controlRomFs->fileMap.begin(); fileEntry != controlRomFs->fileMap.end(); fileEntry++) {
                 auto fileName{fileEntry->first};
-                auto bfttfFile = controlRomFs->OpenFile(fileName);
+                auto bfttfFile{controlRomFs->OpenFile(fileName)};
 
                 auto decodedFont{decodeBfttfFont(bfttfFile)};
+                if (decodedFont.empty())
+                    continue;
 
                 auto ttfFileName{sharedFontFilenameDictionary.at(fileName) + ".ttf"};
-                if (fontsFileSystem->FileExists(ttfFileName)) {
+                if (fontsFileSystem->FileExists(ttfFileName))
                     fontsFileSystem->DeleteFile(ttfFileName);
-                }
+
                 fontsFileSystem->CreateFile(ttfFileName, decodedFont.size());
                 std::shared_ptr<skyline::vfs::Backing> ttfFile{fontsFileSystem->OpenFile(ttfFileName, {true, true, false})};
 
