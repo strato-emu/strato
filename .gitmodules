@@ -46,7 +46,7 @@
 	url = https://github.com/yuzu-emu/sirit
 [submodule "Shader Compiler"]
 	path = app/libraries/shader-compiler
-	url = https://github.com/skyline-emu/shader-compiler.git
+	url = https://github.com/strato-emu/shader-compiler.git
 [submodule "libadrenotools"]
 	path = app/libraries/adrenotools
 	url = https://github.com/bylaws/libadrenotools/
