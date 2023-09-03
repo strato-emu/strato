@@ -49,7 +49,7 @@
     <string name="appearance">外观</string>
     <string name="theme">主题</string>
     <string name="use_material_you">使用您自定义的配色</string>
-    <string name="use_material_you_desc_off">将使用天际线的配色</string>
+    <string name="use_material_you_desc_off">将使用Skyline的配色</string>
     <string name="use_material_you_desc_on">您将使用的素材</string>
     <string name="app_language">应用语言</string>
     <string name="app_language_default">使用系统默认</string>
