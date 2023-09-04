@@ -115,7 +115,7 @@ namespace skyline::kernel {
 
         if (needsReprotection)
             if (mprotect(newDesc.first, newDesc.second.size, !isUnmapping ? PROT_READ | PROT_WRITE | PROT_EXEC : PROT_NONE)) [[unlikely]]
-                Logger::Warn("Reprotection failed: {}", strerror(errno));
+                LOGW("Reprotection failed: {}", strerror(errno));
     }
 
     void MemoryManager::ForeachChunkInRange(span<u8> memory, auto editCallback) {
@@ -229,7 +229,7 @@ namespace skyline::kernel {
             code = codeBase36Bit = AllocateMappedRange(0x78000000, RegionAlignment, 0x8000000, KgslReservedRegionSize, false);
 
             if ((reinterpret_cast<u64>(base.data()) + baseSize) > (1ULL << 36)) {
-                Logger::Warn("Couldn't fit regions into 36 bit AS! Resizing AS to 39 bits!");
+                LOGW("Couldn't fit regions into 36 bit AS! Resizing AS to 39 bits!");
                 addressSpace = span<u8>{reinterpret_cast<u8 *>(0), 1ULL << 39};
             }
         }

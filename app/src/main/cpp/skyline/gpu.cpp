@@ -357,7 +357,7 @@ namespace skyline::gpu {
 
             if (!libvulkanHandle) {
                 char *error = dlerror();
-                Logger::Warn("Failed to load custom Vulkan driver {}/{}: {}", *state.settings->gpuDriver, *state.settings->gpuDriverLibraryName, error ? error : "");
+                LOGW("Failed to load custom Vulkan driver {}/{}: {}", *state.settings->gpuDriver, *state.settings->gpuDriverLibraryName, error ? error : "");
             }
         }
 
@@ -375,7 +375,7 @@ namespace skyline::gpu {
 
             if (!libvulkanHandle) {
                 char *error = dlerror();
-                Logger::Warn("Failed to load builtin Vulkan driver: {}", error ? error : "");
+                LOGW("Failed to load builtin Vulkan driver: {}", error ? error : "");
             }
 
             if (!libvulkanHandle)

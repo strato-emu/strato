@@ -64,7 +64,7 @@ namespace skyline::soc::host1x {
                             SubmitPendingIncrs(); // FIXME: immediately submit the incrs as classes are not yet implemented
                             break;
                         default:
-                            Logger::Warn("Unimplemented syncpoint condition: {}", static_cast<u8>(incrSyncpoint.condition));
+                            LOGW("Unimplemented syncpoint condition: {}", static_cast<u8>(incrSyncpoint.condition));
                             break;
                     }
                     break;

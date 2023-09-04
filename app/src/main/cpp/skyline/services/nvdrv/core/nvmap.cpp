@@ -164,7 +164,7 @@ namespace skyline::service::nvdrv::core {
 
         std::scoped_lock lock(handleDesc->mutex);
         if (--handleDesc->pins < 0) {
-            Logger::Warn("Pin count imbalance detected!");
+            LOGW("Pin count imbalance detected!");
         } else if (!handleDesc->pins) {
             std::scoped_lock queueLock(unmapQueueLock);
 
@@ -184,10 +184,10 @@ namespace skyline::service::nvdrv::core {
 
             if (internalSession) {
                 if (--handleDesc->internalDupes < 0)
-                    Logger::Warn("Internal duplicate count imbalance detected!");
+                    LOGW("Internal duplicate count imbalance detected!");
             } else {
                 if (--handleDesc->dupes < 0) {
-                    Logger::Warn("User duplicate count imbalance detected!");
+                    LOGW("User duplicate count imbalance detected!");
                 } else if (handleDesc->dupes == 0) {
                     // Force unmap the handle
                     if (handleDesc->pinVirtAddress) {

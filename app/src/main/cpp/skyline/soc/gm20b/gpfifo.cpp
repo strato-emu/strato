@@ -109,7 +109,7 @@ namespace skyline::soc::gm20b {
                                                                           });
                     break;
                 default:
-                    Logger::Warn("Called method 0x{:X} out of bounds for engine 0x{:X}, args: 0x{:X}", method, subChannel, *argument);
+                    LOGW("Called method 0x{:X} out of bounds for engine 0x{:X}, args: 0x{:X}", method, subChannel, *argument);
                     break;
             }
         }
@@ -137,7 +137,7 @@ namespace skyline::soc::gm20b {
                 channelCtx.fermi2D.CallMethod(method, argument);
                 break;
             default:
-                Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
+                LOGW("Called method 0x{:X} in unimplemented engine 0x{:X}, args: 0x{:X}", method, subChannel, argument);
                 break;
         }
     }
@@ -157,7 +157,7 @@ namespace skyline::soc::gm20b {
                 channelCtx.maxwellDma.CallMethodBatchNonInc(method, arguments);
                 break;
             default:
-                Logger::Warn("Called method 0x{:X} in unimplemented engine 0x{:X} with batch args", method, subChannel);
+                LOGW("Called method 0x{:X} in unimplemented engine 0x{:X} with batch args", method, subChannel);
                 break;
         }
     }
@@ -169,7 +169,7 @@ namespace skyline::soc::gm20b {
                 case GpEntry::Opcode::Nop:
                     return;
                 default:
-                    Logger::Warn("Unsupported GpEntry control opcode used: {}", static_cast<u8>(gpEntry.opcode));
+                    LOGW("Unsupported GpEntry control opcode used: {}", static_cast<u8>(gpEntry.opcode));
                     return;
             }
         }
@@ -369,7 +369,7 @@ namespace skyline::soc::gm20b {
 
     void ChannelGpfifo::Run() {
         if (int result{pthread_setname_np(pthread_self(), "GPFIFO")})
-            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+            LOGW("Failed to set the thread name: {}", strerror(result));
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);

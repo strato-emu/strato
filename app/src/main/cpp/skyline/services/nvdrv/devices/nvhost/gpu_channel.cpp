@@ -166,12 +166,12 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         std::scoped_lock lock(channelMutex);
         if (!asCtx || !asAllocator) {
-            Logger::Warn("Trying to allocate a channel without a bound address space");
+            LOGW("Trying to allocate a channel without a bound address space");
             return PosixResult::InvalidArgument;
         }
 
         if (channelCtx) {
-            Logger::Warn("Trying to allocate a channel twice!");
+            LOGW("Trying to allocate a channel twice!");
             return PosixResult::FileExists;
         }
 

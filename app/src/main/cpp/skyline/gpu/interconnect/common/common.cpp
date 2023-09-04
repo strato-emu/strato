@@ -26,7 +26,7 @@ namespace skyline::gpu::interconnect {
         auto fullMapping{blockMapping.subspan(address - blockMappingStartAddr)};
 
         if (splitMappingWarn && fullMapping.size() < size)
-            Logger::Warn("Split buffer mappings are not supported");
+            LOGW("Split buffer mappings are not supported");
 
         // Mapping covering just the requested input view (or less in the case of split mappings)
         auto viewMapping{fullMapping.first(std::min(fullMapping.size(), size))};
@@ -49,7 +49,7 @@ namespace skyline::gpu::interconnect {
 
     static void FlushHostCallback() {
         // TODO: here we should trigger `Execute()`, however that doesn't currently work due to Read being called mid-draw and attached objects not handling this case
-        Logger::Warn("GPU dirty buffer reads for attached buffers are unimplemented");
+        LOGW("GPU dirty buffer reads for attached buffers are unimplemented");
     }
 
     void ConstantBuffer::Read(CommandExecutor &executor, span<u8> dstBuffer, size_t srcOffset) {

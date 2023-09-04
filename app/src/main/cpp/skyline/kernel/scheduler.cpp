@@ -274,7 +274,7 @@ namespace skyline::kernel {
                             (*it)->scheduleCondition.notify(); // We need to wake the thread at the front of the queue, if we were at the front previously
                     }
                 } else {
-                    Logger::Warn("T{} was not in C{}'s queue", thread->id, thread->coreId);
+                    LOGW("T{} was not in C{}'s queue", thread->id, thread->coreId);
                 }
             } else {
                 thread->insertThreadOnResume = false;

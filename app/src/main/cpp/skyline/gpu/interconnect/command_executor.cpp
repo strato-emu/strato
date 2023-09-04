@@ -178,13 +178,13 @@ namespace skyline::gpu::interconnect {
         if (void *mod{dlopen("libVkLayer_GLES_RenderDoc.so", RTLD_NOW | RTLD_NOLOAD)}) {
             auto *pfnGetApi{reinterpret_cast<pRENDERDOC_GetAPI>(dlsym(mod, "RENDERDOC_GetAPI"))};
             if (int ret{pfnGetApi(eRENDERDOC_API_Version_1_4_2, (void **)&renderDocApi)}; ret != 1)
-                Logger::Warn("Failed to intialise RenderDoc API: {}", ret);
+                LOGW("Failed to intialise RenderDoc API: {}", ret);
         }
 
         outgoing.Push(&slots.emplace_back(gpu));
 
         if (int result{pthread_setname_np(pthread_self(), "Sky-CmdRecord")})
-            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+            LOGW("Failed to set the thread name: {}", strerror(result));
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);

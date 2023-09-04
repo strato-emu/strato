@@ -48,7 +48,7 @@ namespace skyline::gpu {
 
         std::ifstream stream{path, std::ios::binary};
         if (stream.fail()) {
-            Logger::Warn("Failed to open Vulkan pipeline cache!");
+            LOGW("Failed to open Vulkan pipeline cache!");
             return {gpu.vkDevice, vk::PipelineCacheCreateInfo{}};
         }
 
@@ -59,7 +59,7 @@ namespace skyline::gpu {
         stream.read(reinterpret_cast<char *>(readData.data()), static_cast<std::streamsize>(header.size));
 
         if (header.hash != XXH64(readData.data(), readData.size(), 0)) {
-            Logger::Warn("Ignoring invalid pipeline cache file!");
+            LOGW("Ignoring invalid pipeline cache file!");
             return {gpu.vkDevice, vk::PipelineCacheCreateInfo{}};
         }
 
@@ -79,7 +79,7 @@ namespace skyline::gpu {
         };
         std::ofstream stream{path, std::ios::binary | std::ios::trunc};
         if (stream.fail()) {
-            Logger::Warn("Failed to write Vulkan pipeline cache!");
+            LOGW("Failed to write Vulkan pipeline cache!");
             return;
         }
 

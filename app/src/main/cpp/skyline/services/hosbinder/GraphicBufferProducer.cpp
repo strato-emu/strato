@@ -30,7 +30,7 @@ namespace skyline::service::hosbinder {
     AndroidStatus GraphicBufferProducer::RequestBuffer(i32 slot, GraphicBuffer *&buffer) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            Logger::Warn("#{} was out of range", slot);
+            LOGW("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
@@ -45,13 +45,13 @@ namespace skyline::service::hosbinder {
     AndroidStatus GraphicBufferProducer::SetBufferCount(i32 count) {
         std::scoped_lock lock(mutex);
         if (count >= MaxSlotCount) [[unlikely]] {
-            Logger::Warn("Setting buffer count too high: {} (Max: {})", count, MaxSlotCount);
+            LOGW("Setting buffer count too high: {} (Max: {})", count, MaxSlotCount);
             return AndroidStatus::BadValue;
         }
 
         for (auto it{queue.begin()}; it != queue.end(); it++) {
             if (it->state == BufferState::Dequeued) {
-                Logger::Warn("Cannot set buffer count as #{} is dequeued", std::distance(queue.begin(), it));
+                LOGW("Cannot set buffer count as #{} is dequeued", std::distance(queue.begin(), it));
                 return AndroidStatus::BadValue;
             }
         }
@@ -74,7 +74,7 @@ namespace skyline::service::hosbinder {
                 slot.graphicBuffer = nullptr;
             }
         } else if (preallocatedBufferCount < count) {
-            Logger::Warn("Setting the active slot count ({}) higher than the amount of slots with preallocated buffers ({})", count, preallocatedBufferCount);
+            LOGW("Setting the active slot count ({}) higher than the amount of slots with preallocated buffers ({})", count, preallocatedBufferCount);
         }
 
         activeSlotCount = static_cast<u8>(count);
@@ -85,7 +85,7 @@ namespace skyline::service::hosbinder {
 
     AndroidStatus GraphicBufferProducer::DequeueBuffer(bool async, u32 width, u32 height, AndroidPixelFormat format, u32 usage, i32 &slot, std::optional<AndroidFence> &fence) {
         if ((width && !height) || (!width && height)) {
-            Logger::Warn("Dimensions {}x{} should be uniformly zero or non-zero", width, height);
+            LOGW("Dimensions {}x{} should be uniformly zero or non-zero", width, height);
             return AndroidStatus::BadValue;
         }
 
@@ -111,7 +111,7 @@ namespace skyline::service::hosbinder {
                 slot = static_cast<i32>(std::distance(queue.begin(), buffer));
                 return true;
             } else if (dequeuedSlotCount == queue.size()) {
-                Logger::Warn("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
+                LOGW("Client attempting to dequeue more buffers when all buffers are dequeued by the client: {}", dequeuedSlotCount);
                 slot = InvalidGraphicBufferSlot;
                 return true;
             }
@@ -134,7 +134,7 @@ namespace skyline::service::hosbinder {
             return AndroidStatus::NoMemory;
 
         if (graphicBuffer->format != format || graphicBuffer->width != width || graphicBuffer->height != height || (graphicBuffer->usage & usage) != usage) {
-            Logger::Warn("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, graphicBuffer->width, graphicBuffer->height, ToString(format), ToString(graphicBuffer->format), usage, graphicBuffer->usage);
+            LOGW("Buffer which has been dequeued isn't compatible with the supplied parameters: Dimensions: {}x{}={}x{}, Format: {}={}, Usage: 0x{:X}=0x{:X}", width, height, graphicBuffer->width, graphicBuffer->height, ToString(format), ToString(graphicBuffer->format), usage, graphicBuffer->usage);
             // Nintendo doesn't deallocate the slot which was picked in here and reallocate it as a compatible buffer
             // This is related to the comment above, Nintendo only allocates buffers on the client side
             return AndroidStatus::NoInit;
@@ -150,16 +150,16 @@ namespace skyline::service::hosbinder {
     AndroidStatus GraphicBufferProducer::DetachBuffer(i32 slot) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            Logger::Warn("#{} was out of range", slot);
+            LOGW("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
         auto &bufferSlot{queue[static_cast<size_t>(slot)]};
         if (bufferSlot.state != BufferState::Dequeued) [[unlikely]] {
-            Logger::Warn("#{} was '{}' instead of being dequeued", slot, ToString(bufferSlot.state));
+            LOGW("#{} was '{}' instead of being dequeued", slot, ToString(bufferSlot.state));
             return AndroidStatus::BadValue;
         } else if (!bufferSlot.wasBufferRequested) [[unlikely]] {
-            Logger::Warn("#{} was detached prior to being requested", slot);
+            LOGW("#{} was detached prior to being requested", slot);
             return AndroidStatus::BadValue;
         }
 
@@ -212,7 +212,7 @@ namespace skyline::service::hosbinder {
         }
 
         if (bufferSlot == queue.end()) {
-            Logger::Warn("Could not find any free slots to attach the graphic buffer to");
+            LOGW("Could not find any free slots to attach the graphic buffer to");
             return AndroidStatus::NoMemory;
         }
 
@@ -260,28 +260,28 @@ namespace skyline::service::hosbinder {
                 break;
 
             default:
-                Logger::Warn("{} is not a valid scaling mode", static_cast<u32>(scalingMode));
+                LOGW("{} is not a valid scaling mode", static_cast<u32>(scalingMode));
                 return AndroidStatus::BadValue;
         }
 
         std::unique_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            Logger::Warn("#{} was out of range", slot);
+            LOGW("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 
         auto &buffer{queue[static_cast<size_t>(slot)]};
         if (buffer.state != BufferState::Dequeued) [[unlikely]] {
-            Logger::Warn("#{} was '{}' instead of being dequeued", slot, ToString(buffer.state));
+            LOGW("#{} was '{}' instead of being dequeued", slot, ToString(buffer.state));
             return AndroidStatus::BadValue;
         } else if (!buffer.wasBufferRequested) [[unlikely]] {
-            Logger::Warn("#{} was queued prior to being requested", slot);
+            LOGW("#{} was queued prior to being requested", slot);
             buffer.wasBufferRequested = true; // Switch ignores this and doesn't return an error, certain homebrew ends up depending on this behavior
         }
 
         auto graphicBuffer{*buffer.graphicBuffer};
         if (graphicBuffer.width < (crop.right - crop.left) || graphicBuffer.height < (crop.bottom - crop.top)) [[unlikely]] {
-            Logger::Warn("Crop was out of range for surface buffer: ({}-{})x({}-{}) > {}x{}", crop.left, crop.right, crop.top, crop.bottom, graphicBuffer.width, graphicBuffer.height);
+            LOGW("Crop was out of range for surface buffer: ({}-{})x({}-{}) > {}x{}", crop.left, crop.right, crop.top, crop.bottom, graphicBuffer.width, graphicBuffer.height);
             return AndroidStatus::BadValue;
         }
 
@@ -413,13 +413,13 @@ namespace skyline::service::hosbinder {
     void GraphicBufferProducer::CancelBuffer(i32 slot, const AndroidFence &fence) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= queue.size()) [[unlikely]] {
-            Logger::Warn("#{} was out of range", slot);
+            LOGW("#{} was out of range", slot);
             return;
         }
 
         auto &buffer{queue[static_cast<size_t>(slot)]};
         if (buffer.state != BufferState::Dequeued) [[unlikely]] {
-            Logger::Warn("#{} is not owned by the producer as it is '{}' instead of being dequeued", slot, ToString(buffer.state));
+            LOGW("#{} is not owned by the producer as it is '{}' instead of being dequeued", slot, ToString(buffer.state));
             return;
         }
 
@@ -473,7 +473,7 @@ namespace skyline::service::hosbinder {
             }
 
             default:
-                Logger::Warn("Query not supported: {}", static_cast<u32>(query));
+                LOGW("Query not supported: {}", static_cast<u32>(query));
                 return AndroidStatus::BadValue;
         }
 
@@ -484,7 +484,7 @@ namespace skyline::service::hosbinder {
     AndroidStatus GraphicBufferProducer::Connect(NativeWindowApi api, bool producerControlledByApp, u32 &width, u32 &height, NativeWindowTransform &transformHint, u32 &pendingBufferCount) {
         std::scoped_lock lock(mutex);
         if (connectedApi != NativeWindowApi::None) [[unlikely]] {
-            Logger::Warn("Already connected to API '{}' while connection to '{}' is requested", ToString(connectedApi), ToString(api));
+            LOGW("Already connected to API '{}' while connection to '{}' is requested", ToString(connectedApi), ToString(api));
             return AndroidStatus::BadValue;
         }
 
@@ -496,7 +496,7 @@ namespace skyline::service::hosbinder {
                 break;
 
             default:
-                Logger::Warn("Unknown API: {}", static_cast<u32>(api));
+                LOGW("Unknown API: {}", static_cast<u32>(api));
                 return AndroidStatus::BadValue;
         }
 
@@ -521,12 +521,12 @@ namespace skyline::service::hosbinder {
                 break;
 
             default:
-                Logger::Warn("Unknown API: {}", static_cast<u32>(api));
+                LOGW("Unknown API: {}", static_cast<u32>(api));
                 return AndroidStatus::BadValue;
         }
 
         if (api != connectedApi) {
-            Logger::Warn("Disconnecting from API '{}' while connected to '{}'", ToString(api), ToString(connectedApi));
+            LOGW("Disconnecting from API '{}' while connected to '{}'", ToString(api), ToString(connectedApi));
             return AndroidStatus::BadValue;
         }
 
@@ -546,7 +546,7 @@ namespace skyline::service::hosbinder {
     AndroidStatus GraphicBufferProducer::SetPreallocatedBuffer(i32 slot, const GraphicBuffer *graphicBuffer) {
         std::scoped_lock lock(mutex);
         if (slot < 0 || slot >= MaxSlotCount) [[unlikely]] {
-            Logger::Warn("#{} was out of range", slot);
+            LOGW("#{} was out of range", slot);
             return AndroidStatus::BadValue;
         }
 

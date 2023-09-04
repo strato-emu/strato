@@ -75,7 +75,7 @@ namespace skyline::service::nvdrv {
                 constexpr u32 GetConfigIoctl{0xC183001B};
                 // GetConfig is the only ioctl that's expected to fail with one of these errors in normal use so ignore it
                 if (ioctl != GetConfigIoctl)
-                    Logger::Warn("IOCTL {} failed: 0x{:X}", ioctl, static_cast<i32>(result));
+                    LOGW("IOCTL {} failed: 0x{:X}", ioctl, static_cast<i32>(result));
                 return result;
         }
     }
@@ -141,7 +141,7 @@ namespace skyline::service::nvdrv {
             std::unique_lock lock(deviceMutex);
             devices.erase(fd);
         } catch (const std::out_of_range &) {
-            Logger::Warn("Trying to close invalid fd: {}");
+            LOGW("Trying to close invalid fd: {}", fd);
         }
     }
 

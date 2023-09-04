@@ -23,7 +23,7 @@ namespace skyline::service::audio {
 
         i32 sessionId{state.audio->audioRendererManager->GetSessionId()};
         if (sessionId == -1) {
-            Logger::Warn("Out of audio renderer sessions!");
+            LOGW("Out of audio renderer sessions!");
             return Result{Service::Audio::ResultOutOfSessions};
         }
 
@@ -42,7 +42,7 @@ namespace skyline::service::audio {
         u64 size{};
         auto err{state.audio->audioRendererManager->GetWorkBufferSize(params, size)};
         if (err.IsError())
-            Logger::Warn("Failed to calculate work buffer size");
+            LOGW("Failed to calculate work buffer size");
 
         response.Push<u64>(size);
 

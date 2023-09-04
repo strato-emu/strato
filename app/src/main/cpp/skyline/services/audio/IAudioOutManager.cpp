@@ -26,13 +26,13 @@ namespace skyline::service::audio {
 
         auto &audioOutManager{*state.audio->audioOutManager};
         if (auto result{audioOutManager.LinkToManager()}; result.IsError()) {
-            Logger::Warn("Failed to link Audio Out to manager");
+            LOGW("Failed to link Audio Out to manager");
             return Result{result};
         }
 
         size_t sessionId{};
         if (auto result{audioOutManager.AcquireSessionId(sessionId)}; result.IsError()) {
-            Logger::Warn("Failed to acquire audio session");
+            LOGW("Failed to acquire audio session");
             return Result{result};
         }
 

@@ -12,12 +12,12 @@ namespace skyline::service::fssrv {
         auto size{request.Pop<i64>()};
 
         if (offset < 0) {
-            Logger::Warn("Trying to read a file with a negative offset");
+            LOGW("Trying to read a file with a negative offset");
             return result::InvalidOffset;
         }
 
         if (size < 0) {
-            Logger::Warn("Trying to read a file with a negative size");
+            LOGW("Trying to read a file with a negative size");
             return result::InvalidSize;
         }
 

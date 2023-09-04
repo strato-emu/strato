@@ -113,7 +113,7 @@ namespace skyline::soc::gm20b::engine {
                         break;
                     }
                     default:
-                        Logger::Warn("Unimplemented semaphore operation: 0x{:X}", static_cast<u8>(registers.semaphore->action.operation));
+                        LOGW("Unimplemented semaphore operation: 0x{:X}", static_cast<u8>(registers.semaphore->action.operation));
                         break;
                 }
             })

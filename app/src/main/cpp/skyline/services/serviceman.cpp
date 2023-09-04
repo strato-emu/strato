@@ -286,7 +286,7 @@ namespace skyline::service {
                     }
             }
         } else {
-            Logger::Warn("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
+            LOGW("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
         }
         Logger::Verbose("====IPC End====");
     }

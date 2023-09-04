@@ -17,7 +17,7 @@ namespace skyline::service::audio {
            impl{std::make_shared<AudioCore::AudioOut::Out>(state.audio->audioSystem, *state.audio->audioOutManager, &releaseEventWrapper, sessionId)} {
 
         if (impl->GetSystem().Initialize(std::string{deviceName}, parameters, handle, appletResourceUserId).IsError())
-            Logger::Warn("Failed to initialise Audio Out");
+            LOGW("Failed to initialise Audio Out");
     }
 
     IAudioOut::~IAudioOut() {

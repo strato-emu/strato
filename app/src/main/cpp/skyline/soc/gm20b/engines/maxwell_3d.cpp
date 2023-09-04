@@ -169,7 +169,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                         if (begin.instanceId == Registers::Begin::InstanceId::Subsequent) {
                             if (deferredDraw.drawTopology != begin.op &&
                                 registers.primitiveTopologyControl->override == type::PrimitiveTopologyControl::Override::UseTopologyInBeginMethods)
-                                Logger::Warn("Vertex topology changed partway through instanced draw!");
+                                LOGW("Vertex topology changed partway through instanced draw!");
 
                             deferredDraw.instanceCount++;
                         } else {
@@ -186,12 +186,12 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     // Draws here can be ignored since they're just repeats of the original instanced draw
                     ENGINE_CASE(drawVertexArray, {
                         if (!redundant)
-                            Logger::Warn("Vertex count changed partway through instanced draw!");
+                            LOGW("Vertex count changed partway through instanced draw!");
                         return;
                     })
                     ENGINE_CASE(drawIndexBuffer, {
                         if (!redundant)
-                            Logger::Warn("Index count changed partway through instanced draw!");
+                            LOGW("Index count changed partway through instanced draw!");
                         return;
                     })
 
@@ -395,7 +395,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
 
             ENGINE_STRUCT_CASE(semaphore, info, {
                 if (info.reductionEnable)
-                    Logger::Warn("Semaphore reduction is unimplemented!");
+                    LOGW("Semaphore reduction is unimplemented!");
 
                 switch (info.op) {
                     case type::SemaphoreInfo::Op::Release:
@@ -426,7 +426,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                     }
 
                     default:
-                        Logger::Warn("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(info.op));
+                        LOGW("Unsupported semaphore operation: 0x{:X}", static_cast<u8>(info.op));
                         break;
                 }
             })

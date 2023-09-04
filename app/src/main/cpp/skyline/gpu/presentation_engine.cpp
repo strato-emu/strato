@@ -70,7 +70,7 @@ namespace skyline::gpu {
 
     void PresentationEngine::ChoreographerThread() {
         if (int result{pthread_setname_np(pthread_self(), "Sky-Choreo")})
-            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+            LOGW("Failed to set the thread name: {}", strerror(result));
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
@@ -230,7 +230,7 @@ namespace skyline::gpu {
 
     void PresentationEngine::PresentationThread() {
         if (int result{pthread_setname_np(pthread_self(), "Sky-Present")})
-            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+            LOGW("Failed to set the thread name: {}", strerror(result));
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);

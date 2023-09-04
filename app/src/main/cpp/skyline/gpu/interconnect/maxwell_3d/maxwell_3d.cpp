@@ -233,7 +233,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
                 bool partialClear{!(clearSurface.rEnable && clearSurface.gEnable && clearSurface.bEnable && clearSurface.aEnable)};
                 if (!(view->range.aspectMask & vk::ImageAspectFlagBits::eColor))
-                    Logger::Warn("Colour RT used in clear lacks colour aspect"); // TODO: Drop this check after texman rework
+                    LOGW("Colour RT used in clear lacks colour aspect"); // TODO: Drop this check after texman rework
 
 
                 if (partialClear) {
@@ -271,7 +271,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                 };
 
                 if (!clearAspectMask) {
-                    Logger::Warn("Depth stencil RT used in clear lacks depth or stencil aspects"); // TODO: Drop this check after texman rework
+                    LOGW("Depth stencil RT used in clear lacks depth or stencil aspects"); // TODO: Drop this check after texman rework
                     return;
                 }
 

@@ -146,7 +146,7 @@ namespace skyline::gpu {
             FEAT_SET(vk::PhysicalDeviceUniformBufferStandardLayoutFeatures, uniformBufferStandardLayout, supportsUniformBufferStandardLayout)
         } else {
             enabledFeatures2.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
-            Logger::Warn("Cannot find VK_KHR_uniform_buffer_standard_layout, assuming implicit support");
+            LOGW("Cannot find VK_KHR_uniform_buffer_standard_layout, assuming implicit support");
         }
 
         if (hasPrimitiveTopologyListRestartExt) {

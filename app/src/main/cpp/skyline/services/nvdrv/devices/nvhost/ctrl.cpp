@@ -78,7 +78,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (fence.threshold == 0) {
             // oss-nvjpg waits on syncpoint 0 during initialisation without reserving it, this is technically valid with a zero threshold but could also be a sign of a bug on our side in other cases, hence the warn
             if (!core.syncpointManager.IsSyncpointAllocated(fence.id))
-                Logger::Warn("Tried to wait on an unreserved syncpoint with no threshold");
+                LOGW("Tried to wait on an unreserved syncpoint with no threshold");
 
             return PosixResult::Success;
         }
