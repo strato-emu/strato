@@ -39,7 +39,7 @@ namespace skyline::soc::gm20b::engine {
     void MaxwellDma::DmaCopy() {
         if (registers.launchDma->multiLineEnable) {
             if (registers.launchDma->remapEnable) [[unlikely]] {
-                Logger::Warn("Remapped DMA copies are unimplemented!");
+                LOGW("Remapped DMA copies are unimplemented!");
                 return;
             }
 
@@ -50,7 +50,7 @@ namespace skyline::soc::gm20b::engine {
                 if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::Pitch) [[likely]] {
                     CopyPitchToPitch();
                 } else {
-                    Logger::Warn("BlockLinear to BlockLinear DMA copies are unimplemented!");
+                    LOGW("BlockLinear to BlockLinear DMA copies are unimplemented!");
                 }
             } else if (registers.launchDma->srcMemoryLayout == Registers::LaunchDma::MemoryLayout::BlockLinear) {
                 CopyBlockLinearToPitch();
@@ -77,7 +77,7 @@ namespace skyline::soc::gm20b::engine {
                     for (auto mapping : dstMappings)
                         interconnect.Clear(mapping, *registers.remapConstA);
                 } else {
-                    Logger::Warn("Remapped DMA copies are unimplemented!");
+                    LOGW("Remapped DMA copies are unimplemented!");
                 }
             } else {
                 if (srcMappings.size() != 1 || dstMappings.size() != 1) [[unlikely]]
@@ -239,7 +239,7 @@ namespace skyline::soc::gm20b::engine {
 
     void MaxwellDma::ReleaseSemaphore() {
         if (registers.launchDma->reductionEnable) [[unlikely]]
-            Logger::Warn("Semaphore reduction is unimplemented!");
+            LOGW("Semaphore reduction is unimplemented!");
 
         u64 address{registers.semaphore->address};
         u64 payload{registers.semaphore->payload};

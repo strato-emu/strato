@@ -39,7 +39,7 @@ namespace skyline::applet {
                     if (npad.controllers[0].device) {
                         return npad.controllers[0].device->id;
                     } else {
-                        Logger::Warn("Controller requested but none connected!");
+                        LOGW("Controller requested but none connected!");
                         return input::NpadId::Player1; // Fallback to player 1
                     }
                 }(),
@@ -58,7 +58,7 @@ namespace skyline::applet {
                 handle(arg.as<ControllerSupportArgNew>());
                 break;
             default:
-                Logger::Warn("Unsupported controller applet version {}", static_cast<u32>(version));
+                LOGW("Unsupported controller applet version {}", static_cast<u32>(version));
                 break;
         }
     }
@@ -89,7 +89,7 @@ namespace skyline::applet {
                 normalInputData.pop();
                 break;
             default:
-                Logger::Warn("Controller applet mode {} is unimplemented", static_cast<u32>(argPrivate.mode));
+                LOGW("Controller applet mode {} is unimplemented", static_cast<u32>(argPrivate.mode));
                 normalInputData.pop();
 
                 // Return empty result

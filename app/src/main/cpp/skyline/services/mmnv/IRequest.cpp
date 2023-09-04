@@ -59,7 +59,7 @@ namespace skyline::service::mmnv {
         }
 
         // This doesn't return any errors in HOS
-        Logger::Warn("Tried to set frequency to {} Hz for unregistered module {}", freqHz,  static_cast<u32>(module));
+        LOGW("Tried to set frequency to {} Hz for unregistered module {}", freqHz,  static_cast<u32>(module));
 
         return {};
     }
@@ -77,7 +77,7 @@ namespace skyline::service::mmnv {
         }
 
         // This doesn't return any errors in HOS
-        Logger::Warn("Tried to get frequency of unregistered module {}", static_cast<u32>(module));
+        LOGW("Tried to get frequency of unregistered module {}", static_cast<u32>(module));
         response.Push<u32>(0);
         return {};
     }
@@ -120,7 +120,7 @@ namespace skyline::service::mmnv {
         }
 
         // This doesn't return any errors in HOS
-        Logger::Warn("Tried to set frequency for unregistered request {}", id);
+        LOGW("Tried to set frequency for unregistered request {}", id);
         return {};
     }
 
@@ -138,7 +138,7 @@ namespace skyline::service::mmnv {
         }
 
         // This doesn't return any errors in HOS
-        Logger::Warn("Tried to get frequency of unregistered request {}", id);
+        LOGW("Tried to get frequency of unregistered request {}", id);
         response.Push<u32>(0);
         return {};
     }

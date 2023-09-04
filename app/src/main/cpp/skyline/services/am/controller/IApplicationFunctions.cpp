@@ -200,7 +200,7 @@ namespace skyline::service::am {
 
     Result IApplicationFunctions::GetNotificationStorageChannelEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(notificationStorageChannelEvent)};
-        Logger::Warn("Notification Storage Channel Event Handle: 0x{:X}", handle);
+        LOGW("Notification Storage Channel Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

@@ -27,7 +27,7 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::Kill(bool join, bool all, bool disableCreation) {
-        Logger::Warn("Killing {}{}KProcess{}", join ? "and joining " : "", all ? "all threads in " : "HOS-1 in ", disableCreation ? " with new thread creation disabled" : "");
+        LOGW("Killing {}{}KProcess{}", join ? "and joining " : "", all ? "all threads in " : "HOS-1 in ", disableCreation ? " with new thread creation disabled" : "");
         Logger::EmulationContext.Flush();
         // disableCreation is set only when gracefully exiting, it being false means an exception/crash occurred
         if (!disableCreation)
@@ -355,7 +355,7 @@ namespace skyline::kernel::type {
                     conditionVariable = thread->waitConditionVariable;
                     #ifndef NDEBUG
                     if (conditionVariable != key)
-                        Logger::Warn("Condition variable mismatch: 0x{:X} != 0x{:X}", conditionVariable, key);
+                        LOGW("Condition variable mismatch: {} != {}", conditionVariable, fmt::ptr(key));
                     #endif
 
                     syncWaiters.erase(it);

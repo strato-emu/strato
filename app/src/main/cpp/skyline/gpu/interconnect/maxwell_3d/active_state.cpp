@@ -39,7 +39,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
                 return;
             } else {
-                Logger::Warn("Unmapped vertex buffer: 0x{:X}", engine->vertexStream.location);
+                LOGW("Unmapped vertex buffer: 0x{:X}", engine->vertexStream.location);
             }
         }
 
@@ -137,7 +137,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         view.Update(ctx, engine->indexBuffer.address, size, !estimateSize);
         if (!*view) {
-            Logger::Warn("Unmapped index buffer: 0x{:X}", engine->indexBuffer.address);
+            LOGW("Unmapped index buffer: 0x{:X}", engine->indexBuffer.address);
             return;
         }
 
@@ -212,7 +212,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
                     builder.SetTransformFeedbackBuffer(index, *view);
                     return;
                 } else {
-                    Logger::Warn("Unmapped transform feedback buffer: 0x{:X}", engine->streamOutBuffer.address);
+                    LOGW("Unmapped transform feedback buffer: 0x{:X}", engine->streamOutBuffer.address);
                 }
             }
 
@@ -349,7 +349,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
     void LineWidthState::Flush(InterconnectContext &ctx, StateUpdateBuilder &builder) {
         float width{engine->aliasedLineWidthEnable ? engine->lineWidthAliased : engine->lineWidth};
         if (width != 1.0f && !ctx.gpu.traits.supportsWideLines)
-            Logger::Warn("Wide lines used on guest but unsupported on host!");
+            LOGW("Wide lines used on guest but unsupported on host!");
         else
             builder.SetLineWidth(width);
     }

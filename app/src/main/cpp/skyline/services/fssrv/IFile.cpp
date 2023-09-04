@@ -16,12 +16,12 @@ namespace skyline::service::fssrv {
         auto size{request.Pop<i64>()};
 
         if (offset < 0) {
-            Logger::Warn("Trying to read a file with a negative offset");
+            LOGW("Trying to read a file with a negative offset");
             return result::InvalidOffset;
         }
 
         if (size < 0) {
-            Logger::Warn("Trying to read a file with a negative size");
+            LOGW("Trying to read a file with a negative size");
             return result::InvalidSize;
         }
 
@@ -36,22 +36,22 @@ namespace skyline::service::fssrv {
         auto size{request.Pop<i64>()};
 
         if (offset < 0) {
-            Logger::Warn("Trying to write to a file with a negative offset");
+            LOGW("Trying to write to a file with a negative offset");
             return result::InvalidOffset;
         }
 
         if (size < 0) {
-            Logger::Warn("Trying to write to a file with a negative size");
+            LOGW("Trying to write to a file with a negative size");
             return result::InvalidSize;
         }
 
         if (request.inputBuf.at(0).size() < size) {
-            Logger::Warn("The input buffer is not large enough to fit the requested size");
+            LOGW("The input buffer is not large enough to fit the requested size");
             return result::InvalidSize;
         }
 
         if (backing->Write(request.inputBuf.at(0), static_cast<size_t>(offset)) != size) {
-            Logger::Warn("Failed to write all data to the backing");
+            LOGW("Failed to write all data to the backing");
             return result::UnexpectedFailure;
         }
 

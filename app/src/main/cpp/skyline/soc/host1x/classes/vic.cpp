@@ -8,6 +8,6 @@ namespace skyline::soc::host1x {
         : opDoneCallback(std::move(opDoneCallback)) {}
 
     void VicClass::CallMethod(u32 method, u32 argument) {
-        Logger::Warn("Unknown VIC class method called: 0x{:X} argument: 0x{:X}", method, argument);
+        LOGW("Unknown VIC class method called: 0x{:X} argument: 0x{:X}", method, argument);
     }
 }

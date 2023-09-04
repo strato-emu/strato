@@ -338,12 +338,12 @@ namespace skyline::gpu::interconnect::maxwell3d {
             pushBindings(vk::DescriptorType::eUniformTexelBuffer, stage.info.texture_buffer_descriptors,
                          stageDescInfo.uniformTexelBufferDescTotalCount, stageDescInfo.uniformTexelBufferDescs,
                          [](const auto &, u32) {
-                Logger::Warn("Texture buffer descriptors are not supported");
+                LOGW("Texture buffer descriptors are not supported");
             });
             pushBindings(vk::DescriptorType::eStorageTexelBuffer, stage.info.image_buffer_descriptors,
                          stageDescInfo.storageTexelBufferDescTotalCount, stageDescInfo.storageTexelBufferDescs,
                          [](const auto &, u32) {
-                Logger::Warn("Image buffer descriptors are not supported");
+                LOGW("Image buffer descriptors are not supported");
             });
             descriptorInfo.totalTexelBufferDescCount += stageDescInfo.uniformTexelBufferDescTotalCount + stageDescInfo.storageTexelBufferDescTotalCount;
 
@@ -366,7 +366,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             pushBindings(vk::DescriptorType::eStorageImage, stage.info.image_descriptors,
                          stageDescInfo.storageImageDescTotalCount, stageDescInfo.storageImageDescs,
                          [](const auto &, u16) {
-                Logger::Warn("Image descriptors are not supported");
+                LOGW("Image descriptors are not supported");
             });
             descriptorInfo.totalImageDescCount += stageDescInfo.combinedImageSamplerDescTotalCount + stageDescInfo.storageImageDescTotalCount;
         }
@@ -432,7 +432,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             FORMAT_CASE(B10G11R11, Float, Ufloat, eB10G11R11, Pack32);
 
             default:
-                Logger::Warn("Unimplemented Maxwell3D Vertex Buffer Format: {} | {}", static_cast<u8>(componentBitWidths), static_cast<u8>(numericalType));
+                LOGW("Unimplemented Maxwell3D Vertex Buffer Format: {} | {}", static_cast<u8>(componentBitWidths), static_cast<u8>(numericalType));
                 return vk::Format::eR8G8B8A8Unorm;
         }
 
@@ -470,7 +470,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             case engine::DrawTopology::Patch:
                 return vk::PrimitiveTopology::ePatchList;
             default:
-                Logger::Warn("Unimplemented input assembly topology: {}", static_cast<u8>(topology));
+                LOGW("Unimplemented input assembly topology: {}", static_cast<u8>(topology));
                 return vk::PrimitiveTopology::eTriangleList;
         }
     }
@@ -512,10 +512,10 @@ namespace skyline::gpu::interconnect::maxwell3d {
             if (binding.GetInputRate() == vk::VertexInputRate::eInstance) {
                 if (!gpu.traits.supportsVertexAttributeDivisor)
                     [[unlikely]]
-                        Logger::Warn("Vertex attribute divisor used on guest without host support");
+                        LOGW("Vertex attribute divisor used on guest without host support");
                 else if (!gpu.traits.supportsVertexAttributeZeroDivisor && binding.divisor == 0)
                     [[unlikely]]
-                        Logger::Warn("Vertex attribute zero divisor used on guest without host support");
+                        LOGW("Vertex attribute zero divisor used on guest without host support");
                 else
                     bindingDivisorDescs.push_back({
                                                       .binding = i,
@@ -570,7 +570,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         rasterizationCreateInfo.depthBiasEnable = packedState.depthBiasEnable;
         rasterizationCreateInfo.depthClampEnable = packedState.depthClampEnable;
         if (!gpu.traits.supportsDepthClamp)
-            Logger::Warn("Depth clamp used on guest without host support");
+            LOGW("Depth clamp used on guest without host support");
         rasterizationState.get<vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT>().provokingVertexMode = ConvertProvokingVertex(packedState.provokingVertex);
 
         constexpr vk::PipelineMultisampleStateCreateInfo multisampleState{
@@ -992,7 +992,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             #endif
 
         } catch (const exception &e) {
-            Logger::Warn("Pipeline cache corrupted at: 0x{:X}, error: {}", lastKnownGoodOffset, e.what());
+            LOGW("Pipeline cache corrupted at: 0x{:X}, error: {}", lastKnownGoodOffset, e.what());
             gpu.graphicsPipelineCacheManager->InvalidateAllAfter(static_cast<u64>(lastKnownGoodOffset));
         }
 

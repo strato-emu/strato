@@ -45,7 +45,7 @@ namespace skyline::service::hosbinder {
                 layerStrongReferenceCount = value;
 
             if (layerStrongReferenceCount < 0) {
-                Logger::Warn("Strong reference count is lower than 0: {} + {} = {}", (layerStrongReferenceCount - value), value, layerStrongReferenceCount);
+                LOGW("Strong reference count is lower than 0: {} + {} = {}", (layerStrongReferenceCount - value), value, layerStrongReferenceCount);
                 layerStrongReferenceCount = 0;
             }
 
@@ -55,7 +55,7 @@ namespace skyline::service::hosbinder {
             layerWeakReferenceCount += value;
 
             if (layerWeakReferenceCount < 0) {
-                Logger::Warn("Weak reference count is lower than 0: {} + {} = {}", (layerWeakReferenceCount - value), value, layerWeakReferenceCount);
+                LOGW("Weak reference count is lower than 0: {} + {} = {}", (layerWeakReferenceCount - value), value, layerWeakReferenceCount);
                 layerWeakReferenceCount = 0;
             }
 
@@ -123,7 +123,7 @@ namespace skyline::service::hosbinder {
             layer = std::make_shared<GraphicBufferProducer>(state, nvMap);
         }
         else // Ignore new layer creations if one already exists
-            Logger::Warn("Creation of multiple layers is not supported. Ignoring creation of new layers.");
+            LOGW("Creation of multiple layers is not supported. Ignoring creation of new layers.");
 
         return DefaultLayerId;
     }

@@ -113,7 +113,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         #define FORMAT_CASE_BASE(engineFormat, skFormat, warn) \
                 case engine::ColorTarget::Format::engineFormat:                     \
                     if constexpr (warn)                                             \
-                        Logger::Warn("Partially supported RT format: " #engineFormat " used!"); \
+                        LOGW("Partially supported RT format: " #engineFormat " used!"); \
                     return skyline::gpu::format::skFormat
 
         #define FORMAT_CASE(engineFormat, skFormat) FORMAT_CASE_BASE(engineFormat, skFormat, false)

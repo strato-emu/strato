@@ -67,7 +67,7 @@ namespace skyline::gpu {
         PipelineCacheFileHeader stagingHeader{};
         stagingStream.read(reinterpret_cast<char *>(&stagingHeader), sizeof(PipelineCacheFileHeader));
         if (!stagingHeader.IsValid()) {
-            Logger::Warn("Discarding invalid pipeline cache staging file");
+            LOGW("Discarding invalid pipeline cache staging file");
             return;
         }
 
@@ -91,7 +91,7 @@ namespace skyline::gpu {
         if (didExist) { // If the main file exists then we need to validate it
             std::ifstream mainStream{mainPath, std::ios::binary};
             if (!ValidateHeader(mainStream)) { // Force a recreation of the file if it's invalid
-                Logger::Warn("Discarding invalid pipeline cache main file");
+                LOGW("Discarding invalid pipeline cache main file");
                 std::filesystem::remove(mainPath);
                 didExist = false;
             }

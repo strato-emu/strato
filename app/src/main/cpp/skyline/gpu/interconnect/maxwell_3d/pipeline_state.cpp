@@ -249,7 +249,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
         packedState.rasterizerDiscardEnable = !engine->rasterEnable;
         packedState.SetPolygonMode(engine->frontPolygonMode);
         if (engine->backPolygonMode != engine->frontPolygonMode)
-            Logger::Warn("Non-matching polygon modes!");
+            LOGW("Non-matching polygon modes!");
 
         packedState.SetCullMode(engine->oglCullEnable, engine->oglCullFace);
 

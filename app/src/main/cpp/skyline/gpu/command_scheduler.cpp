@@ -10,7 +10,7 @@
 namespace skyline::gpu {
     void CommandScheduler::WaiterThread() {
         if (int result{pthread_setname_np(pthread_self(), "Sky-CycleWaiter")})
-            Logger::Warn("Failed to set the thread name: {}", strerror(result));
+            LOGW("Failed to set the thread name: {}", strerror(result));
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);

@@ -32,14 +32,14 @@ namespace skyline::service::nvdrv::device::nvhost {
             std::scoped_lock channelLock(gpuCh.channelMutex);
 
             if (gpuCh.asCtx) {
-                Logger::Warn("Attempting to bind multiple ASes to a single GPU channel");
+                LOGW("Attempting to bind multiple ASes to a single GPU channel");
                 return PosixResult::InvalidArgument;
             }
             
             gpuCh.asCtx = asCtx;
             gpuCh.asAllocator = vm.smallPageAllocator;
         } catch (const std::out_of_range &e) {
-            Logger::Warn("Attempting to bind AS to an invalid channel: {}", channelFd);
+            LOGW("Attempting to bind AS to an invalid channel: {}", channelFd);
             return PosixResult::InvalidArgument;
         }
         
@@ -153,7 +153,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         try {
             FreeMappingLocked(offset);
         } catch (const std::out_of_range &e) {
-            Logger::Warn("Couldn't find region to unmap at 0x{:X}", offset);
+            LOGW("Couldn't find region to unmap at 0x{:X}", offset);
         }
 
         return PosixResult::Success;
@@ -176,7 +176,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 auto mapping{mappingMap.at(offset)};
 
                 if (mapping->size < mappingSize) {
-                    Logger::Warn("Cannot remap a partially mapped GPU address space region: 0x{:X}", offset);
+                    LOGW("Cannot remap a partially mapped GPU address space region: 0x{:X}", offset);
                     return PosixResult::InvalidArgument;
                 }
 
@@ -187,7 +187,7 @@ namespace skyline::service::nvdrv::device::nvhost {
 
                 return PosixResult::Success;
             } catch (const std::out_of_range &e) {
-                Logger::Warn("Cannot remap an unmapped GPU address space region: 0x{:X}", offset);
+                LOGW("Cannot remap an unmapped GPU address space region: 0x{:X}", offset);
                 return PosixResult::InvalidArgument;
             }
         }
@@ -329,12 +329,12 @@ namespace skyline::service::nvdrv::device::nvhost {
             auto alloc{allocationMap.upper_bound(virtAddr)};
 
             if (alloc-- == allocationMap.begin() || (virtAddr - alloc->first) + size > alloc->second.size) {
-                Logger::Warn("Cannot remap into an unallocated region!");
+                LOGW("Cannot remap into an unallocated region!");
                 return PosixResult::InvalidArgument;
             }
 
             if (!alloc->second.sparse) {
-                Logger::Warn("Cannot remap a non-sparse mapping!");
+                LOGW("Cannot remap a non-sparse mapping!");
                 return PosixResult::InvalidArgument;
             }
 

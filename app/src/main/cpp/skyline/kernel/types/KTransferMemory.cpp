@@ -17,7 +17,7 @@ namespace skyline::kernel::type {
         originalMapping = oldChunk.second;
 
         if (!originalMapping.state.transferMemoryAllowed) [[unlikely]] {
-            Logger::Warn("Tried to map transfer memory with incompatible state at: 0x{:X} (0x{:X} bytes)", map.data(), map.size());
+            LOGW("Tried to map transfer memory with incompatible state at: {} (0x{:X} bytes)", fmt::ptr(map.data()), map.size());
             return nullptr;
         } else {
             state.process->memory.MapTransferMemory(guest, permission);
@@ -38,7 +38,7 @@ namespace skyline::kernel::type {
                 state.process->memory.MapHeapMemory(map);
                 break;
             default:
-                Logger::Warn("Unmapping KTransferMemory with incompatible state: (0x{:X})", originalMapping.state.value);
+                LOGW("Unmapping KTransferMemory with incompatible state: (0x{:X})", originalMapping.state.value);
         }
         std::memcpy(map.data(), host.data(), map.size());
     }
@@ -46,7 +46,7 @@ namespace skyline::kernel::type {
     KTransferMemory::~KTransferMemory() {
         if (state.process && guest.valid()) {
             if (mmap(guest.data(), guest.size(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS | MAP_POPULATE, -1, 0) == MAP_FAILED) [[unlikely]]
-                Logger::Warn("An error occurred while unmapping transfer memory in guest: {}", strerror(errno));
+                LOGW("An error occurred while unmapping transfer memory in guest: {}", strerror(errno));
 
             switch (originalMapping.state.type) {
                 case memory::MemoryType::CodeMutable:
@@ -56,7 +56,7 @@ namespace skyline::kernel::type {
                     state.process->memory.MapHeapMemory(guest);
                     break;
                 default:
-                    Logger::Warn("Unmapping KTransferMemory with incompatible state: (0x{:X})", originalMapping.state.value);
+                    LOGW("Unmapping KTransferMemory with incompatible state: (0x{:X})", originalMapping.state.value);
             }
             std::memcpy(guest.data(), host.data(), guest.size());
         }

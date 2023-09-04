@@ -165,7 +165,7 @@ namespace skyline::gpu::interconnect {
             auto convertAddressModeWithCheck{[&](TextureSamplerControl::AddressMode mode) {
                 auto vkMode{ConvertSamplerAddressMode(mode)};
                 if (vkMode == vk::SamplerAddressMode::eMirrorClampToEdge && !ctx.gpu.traits.supportsSamplerMirrorClampToEdge) [[unlikely]] {
-                    Logger::Warn("Cannot use Mirror Clamp To Edge as Sampler Address Mode without host GPU support");
+                    LOGW("Cannot use Mirror Clamp To Edge as Sampler Address Mode without host GPU support");
                     return vk::SamplerAddressMode::eClampToEdge; // We use a normal clamp to edge to approximate it
                 }
                 return vkMode;

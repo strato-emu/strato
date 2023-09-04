@@ -23,10 +23,10 @@ namespace skyline::soc::gm20b::engine::fermi2d {
             auto &pixelsFromMemory{*registers.pixelsFromMemory};
 
             if (src.layer != 0 || dst.layer != 0)
-                Logger::Warn("Blits between layers are unimplemented!");
+                LOGW("Blits between layers are unimplemented!");
 
             if (pixelsFromMemory.safeOverlap)
-                Logger::Warn("Safe overlap is unimplemented!");
+                LOGW("Safe overlap is unimplemented!");
 
             auto fixedToFloating{[](i64 value) {
                 constexpr u32 FractionalComponentSize{32};
