@@ -263,7 +263,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
             })
 
             ENGINE_CASE(syncpointAction, {
-                Logger::Debug("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
+                LOGD("Increment syncpoint: {}", static_cast<u16>(syncpointAction.id));
                 channelCtx.executor.AddDeferredAction([=, syncpoints = &this->syncpoints, index = syncpointAction.id]() {
                     syncpoints->at(index).host.Increment();
                 });
@@ -419,7 +419,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                                 break;
 
                             default:
-                                Logger::Debug("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
+                                LOGD("Unsupported semaphore counter type: 0x{:X}", static_cast<u8>(info.counterType));
                                 break;
                         }
                         break;
@@ -472,7 +472,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
         switch (semaphore.info.structureSize) {
             case type::SemaphoreInfo::StructureSize::OneWord:
                 channelCtx.asCtx->gmmu.Write(semaphore.address, static_cast<u32>(result));
-                Logger::Debug("address: 0x{:X} payload: {}", semaphore.address, result);
+                LOGD("address: 0x{:X} payload: {}", semaphore.address, result);
                 break;
 
             case type::SemaphoreInfo::StructureSize::FourWords: {
@@ -480,7 +480,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
                 u64 timestamp{GetGpuTimeTicks()};
                 channelCtx.asCtx->gmmu.Write(semaphore.address + 8, timestamp);
                 channelCtx.asCtx->gmmu.Write(semaphore.address, result);
-                Logger::Debug("address: 0x{:X} payload: {} timestamp: {}", semaphore.address, result, timestamp);
+                LOGD("address: 0x{:X} payload: {} timestamp: {}", semaphore.address, result, timestamp);
 
                 break;
             }

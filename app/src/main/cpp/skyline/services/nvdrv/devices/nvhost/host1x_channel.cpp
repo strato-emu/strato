@@ -17,14 +17,14 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Host1xChannel::SetNvmapFd(In<FileDescriptor> fd) {
-        Logger::Debug("fd: {}", fd);
+        LOGD("fd: {}", fd);
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::Submit(span<SubmitCmdBuf> cmdBufs,
                                       span<SubmitReloc> relocs, span<u32> relocShifts,
                                       span<SubmitSyncpointIncr> syncpointIncrs, span<u32> fenceThresholds) {
-        Logger::Debug("numCmdBufs: {}, numRelocs: {}, numSyncpointIncrs: {}, numFenceThresholds: {}",
+        LOGD("numCmdBufs: {}, numRelocs: {}, numSyncpointIncrs: {}, numFenceThresholds: {}",
                             cmdBufs.size(), relocs.size(), syncpointIncrs.size(), fenceThresholds.size());
 
         if (fenceThresholds.size() > syncpointIncrs.size())
@@ -54,7 +54,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                 throw exception("Invalid handle passed for a command buffer!");
 
             u64 gatherAddress{handleDesc->address + cmdBuf.offset};
-            Logger::Debug("Submit gather, CPU address: 0x{:X}, words: 0x{:X}", gatherAddress, cmdBuf.words);
+            LOGD("Submit gather, CPU address: 0x{:X}, words: 0x{:X}", gatherAddress, cmdBuf.words);
 
             span gather(reinterpret_cast<u32 *>(gatherAddress), cmdBuf.words);
             // Skip submitting the cmdbufs as no functionality is implemented
@@ -65,7 +65,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Host1xChannel::GetSyncpoint(In<u32> channelSyncpointIdx, Out<u32> syncpointId) {
-        Logger::Debug("channelSyncpointIdx: {}", channelSyncpointIdx);
+        LOGD("channelSyncpointIdx: {}", channelSyncpointIdx);
 
         if (channelSyncpointIdx > 0)
             throw exception("Multiple channel syncpoints are unimplemented!");
@@ -74,39 +74,39 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (!id)
             throw exception("Requested syncpoint for a channel with none specified!");
 
-        Logger::Debug("syncpointId: {}", id);
+        LOGD("syncpointId: {}", id);
         syncpointId = id;
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::GetWaitBase(In<core::ChannelType> pChannelType, Out<u32> waitBase) {
-        Logger::Debug("channelType: {}", static_cast<u32>(pChannelType));
+        LOGD("channelType: {}", static_cast<u32>(pChannelType));
         waitBase = 0;
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::SetSubmitTimeout(In<u32> timeout) {
-        Logger::Debug("timeout: {}", timeout);
+        LOGD("timeout: {}", timeout);
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::MapBuffer(u8 compressed, span<BufferHandle> handles) {
-        Logger::Debug("compressed: {}", compressed);
+        LOGD("compressed: {}", compressed);
 
         for (auto &bufferHandle : handles) {
             bufferHandle.address = core.nvMap.PinHandle(bufferHandle.handle);
-            Logger::Debug("handle: {}, address: 0x{:X}", bufferHandle.handle, bufferHandle.address);
+            LOGD("handle: {}, address: 0x{:X}", bufferHandle.handle, bufferHandle.address);
         }
 
         return PosixResult::Success;
     }
 
     PosixResult Host1xChannel::UnmapBuffer(u8 compressed, span<BufferHandle> handles) {
-        Logger::Debug("compressed: {}", compressed);
+        LOGD("compressed: {}", compressed);
 
         for (auto &bufferHandle : handles) {
             core.nvMap.UnpinHandle(bufferHandle.handle);
-            Logger::Debug("handle: {}", bufferHandle.handle);
+            LOGD("handle: {}", bufferHandle.handle);
         }
 
         return PosixResult::Success;

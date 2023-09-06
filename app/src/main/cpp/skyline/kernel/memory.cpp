@@ -292,7 +292,19 @@ namespace skyline::kernel {
         if (codeRegion.size() > code.size()) [[unlikely]]
             throw exception("Code region ({}) is smaller than mapped code size ({})", code.size(), codeRegion.size());
 
-        Logger::Debug("Region Map:\nVMM Base: 0x{:X}\nCode Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nAlias Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nHeap Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nStack Region: 0x{:X} - 0x{:X} (Size: 0x{:X})\nTLS/IO Region: 0x{:X} - 0x{:X} (Size: 0x{:X})", code.data(), code.data(), code.end().base(), code.size(), alias.data(), alias.end().base(), alias.size(), heap.data(), heap.end().base(), heap.size(), stack.data(), stack.end().base(), stack.size(), tlsIo.data(), tlsIo.end().base(), tlsIo.size());
+        LOGD("Region Map:\n"
+             "VMM Base: {}\n"
+             "Code Region: {} - {} (Size: 0x{:X})\n"
+             "Alias Region: {} - {} (Size: 0x{:X})\n"
+             "Heap Region: {} - {} (Size: 0x{:X})\n"
+             "Stack Region: {} - {} (Size: 0x{:X})\n"
+             "TLS/IO Region: {} - {} (Size: 0x{:X})",
+             fmt::ptr(code.data()),
+             fmt::ptr(code.data()), fmt::ptr(code.end().base()), code.size(),
+             fmt::ptr(alias.data()), fmt::ptr(alias.end().base()), alias.size(),
+             fmt::ptr(heap.data()), fmt::ptr(heap.end().base()), heap.size(),
+             fmt::ptr(stack.data()), fmt::ptr(stack.end().base()), stack.size(),
+             fmt::ptr(tlsIo.data()), fmt::ptr(tlsIo.end().base()), tlsIo.size());
     }
 
     span<u8> MemoryManager::CreateMirror(span<u8> mapping) {

@@ -9,7 +9,7 @@ namespace skyline::service::bcat {
     Result IDeliveryCacheDirectoryService::Open(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         const auto dir_name{request.PopString(0x20)};
 
-        Logger::Debug("Directory name = {}", dir_name);
+        LOGD("Directory name = {}", dir_name);
         return {};
     }
 

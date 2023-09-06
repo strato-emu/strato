@@ -28,7 +28,7 @@ namespace skyline::gpu {
             std::string layers;
             for (const auto &instanceLayer : instanceLayers)
                 layers += util::Format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_API_VERSION_MAJOR(instanceLayer.specVersion), VK_API_VERSION_MINOR(instanceLayer.specVersion), VK_API_VERSION_PATCH(instanceLayer.specVersion), VK_API_VERSION_MAJOR(instanceLayer.implementationVersion), VK_API_VERSION_MINOR(instanceLayer.implementationVersion), VK_API_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
-            Logger::Debug("Vulkan Layers:{}", layers);
+            LOGD("Vulkan Layers:{}", layers);
         }
 
         for (const auto &requiredLayer : requiredLayers) {
@@ -49,7 +49,7 @@ namespace skyline::gpu {
             std::string extensions;
             for (const auto &instanceExtension : instanceExtensions)
                 extensions += util::Format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_API_VERSION_MAJOR(instanceExtension.specVersion), VK_API_VERSION_MINOR(instanceExtension.specVersion), VK_API_VERSION_PATCH(instanceExtension.specVersion));
-            Logger::Debug("Vulkan Instance Extensions:{}", extensions);
+            LOGD("Vulkan Instance Extensions:{}", extensions);
         }
 
         for (const auto &requiredExtension : requiredInstanceExtensions) {

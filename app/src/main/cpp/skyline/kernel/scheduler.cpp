@@ -73,14 +73,14 @@ namespace skyline::kernel {
             }
 
             if (optimalCore != currentCore)
-                Logger::Debug("Load Balancing T{}: C{} -> C{}", thread->id, currentCore->id, optimalCore->id);
+                LOGD("Load Balancing T{}: C{} -> C{}", thread->id, currentCore->id, optimalCore->id);
             else
-                Logger::Debug("Load Balancing T{}: C{} (Late)", thread->id, currentCore->id);
+                LOGD("Load Balancing T{}: C{} (Late)", thread->id, currentCore->id);
 
             return *optimalCore;
         }
 
-        Logger::Debug("Load Balancing T{}: C{} (Early)", thread->id, currentCore->id);
+        LOGD("Load Balancing T{}: C{} (Early)", thread->id, currentCore->id);
 
         return *currentCore;
     }

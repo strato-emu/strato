@@ -202,9 +202,9 @@ namespace skyline::service::nvdrv::core {
             // Try to remove the shared ptr to the handle from the map, if nothing else is using the handle
             // then it will now be freed when `h` goes out of scope
             if (TryRemoveHandle(*handleDesc))
-                Logger::Debug("Removed nvmap handle: {}", handle);
+                LOGD("Removed nvmap handle: {}", handle);
             else
-                Logger::Debug("Tried to free nvmap handle: {} but didn't as it still has duplicates", handle);
+                LOGD("Tried to free nvmap handle: {} but didn't as it still has duplicates", handle);
 
             freeInfo = {
                 .address = handleDesc->address,
@@ -217,7 +217,7 @@ namespace skyline::service::nvdrv::core {
 
         // Handle hasn't been freed from memory, set address to 0 to mark that the handle wasn't freed
         if (!hWeak.expired()) {
-            Logger::Debug("nvmap handle: {} wasn't freed as it is still in use", handle);
+            LOGD("nvmap handle: {} wasn't freed as it is still in use", handle);
             freeInfo.address = 0;
         }
 

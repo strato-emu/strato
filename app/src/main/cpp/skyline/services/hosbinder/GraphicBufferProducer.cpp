@@ -38,7 +38,7 @@ namespace skyline::service::hosbinder {
         bufferSlot.wasBufferRequested = true;
         buffer = bufferSlot.graphicBuffer.get();
 
-        Logger::Debug("#{}", slot);
+        LOGD("#{}", slot);
         return AndroidStatus::Ok;
     }
 
@@ -143,7 +143,7 @@ namespace skyline::service::hosbinder {
         buffer->state = BufferState::Dequeued;
         fence = buffer->fence; // We just let the presentation engine return a buffer which is ready to be written into, there is no need for further synchronization
 
-        Logger::Debug("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}, Is Async: {}", slot, width, height, ToString(format), usage, async);
+        LOGD("#{} - Dimensions: {}x{}, Format: {}, Usage: 0x{:X}, Is Async: {}", slot, width, height, ToString(format), usage, async);
         return AndroidStatus::Ok;
     }
 
@@ -171,7 +171,7 @@ namespace skyline::service::hosbinder {
 
         bufferEvent->Signal();
 
-        Logger::Debug("#{}", slot);
+        LOGD("#{}", slot);
         return AndroidStatus::Ok;
     }
 
@@ -197,7 +197,7 @@ namespace skyline::service::hosbinder {
 
         bufferEvent->Signal();
 
-        Logger::Debug("#{}", std::distance(queue.begin(), bufferSlot));
+        LOGD("#{}", std::distance(queue.begin(), bufferSlot));
         return AndroidStatus::Ok;
     }
 
@@ -247,7 +247,7 @@ namespace skyline::service::hosbinder {
         preallocatedBufferCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const auto &slot) { return slot.graphicBuffer && slot.isPreallocated; }));
         activeSlotCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const auto &slot) { return slot.graphicBuffer != nullptr; }));
 
-        Logger::Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+        LOGD("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer.usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         return AndroidStatus::Ok;
     }
 
@@ -392,7 +392,7 @@ namespace skyline::service::hosbinder {
         transformHint = state.gpu->presentation.GetTransformHint();
         pendingBufferCount = GetPendingBufferCount();
 
-        Logger::Debug("#{} - {}Timestamp: {}, Crop: ({}-{})x({}-{}), Scale Mode: {}, Transform: {} [Sticky: {}], Swap Interval: {}, Is Async: {}", slot, isAutoTimestamp ? "Auto " : "", timestamp, crop.left, crop.right, crop.top, crop.bottom, ToString(scalingMode), ToString(transform), ToString(stickyTransform), swapInterval, async);
+        LOGD("#{} - {}Timestamp: {}, Crop: ({}-{})x({}-{}), Scale Mode: {}, Transform: {} [Sticky: {}], Swap Interval: {}, Is Async: {}", slot, isAutoTimestamp ? "Auto " : "", timestamp, crop.left, crop.right, crop.top, crop.bottom, ToString(scalingMode), ToString(transform), ToString(stickyTransform), swapInterval, async);
 
         // We can present with the mutex locked as if the queue ends up waiting for free space then the lock will never be released as the dequeue callback also locks the lock
         lock.unlock();
@@ -429,7 +429,7 @@ namespace skyline::service::hosbinder {
         buffer.frameNumber = 0;
         bufferEvent->Signal();
 
-        Logger::Debug("#{}", slot);
+        LOGD("#{}", slot);
     }
 
     AndroidStatus GraphicBufferProducer::Query(NativeWindowQuery query, u32 &out) {
@@ -477,7 +477,7 @@ namespace skyline::service::hosbinder {
                 return AndroidStatus::BadValue;
         }
 
-        Logger::Debug("{}: {}", ToString(query), out);
+        LOGD("{}: {}", ToString(query), out);
         return AndroidStatus::Ok;
     }
 
@@ -506,7 +506,7 @@ namespace skyline::service::hosbinder {
         transformHint = state.gpu->presentation.GetTransformHint();
         pendingBufferCount = GetPendingBufferCount();
 
-        Logger::Debug("API: {}, Producer Controlled By App: {}, Default Dimensions: {}x{}, Transform Hint: {}, Pending Buffer Count: {}", ToString(api), producerControlledByApp, width, height, ToString(transformHint), pendingBufferCount);
+        LOGD("API: {}, Producer Controlled By App: {}, Default Dimensions: {}x{}, Transform Hint: {}, Pending Buffer Count: {}", ToString(api), producerControlledByApp, width, height, ToString(transformHint), pendingBufferCount);
         return AndroidStatus::Ok;
     }
 
@@ -539,7 +539,7 @@ namespace skyline::service::hosbinder {
             slot.graphicBuffer = nullptr;
         }
 
-        Logger::Debug("API: {}", ToString(api));
+        LOGD("API: {}", ToString(api));
         return AndroidStatus::Ok;
     }
 
@@ -582,9 +582,9 @@ namespace skyline::service::hosbinder {
             defaultFormat = graphicBuffer->format;
             defaultWidth = graphicBuffer->width;
             defaultHeight = graphicBuffer->height;
-            Logger::Debug("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
+            LOGD("#{} - Dimensions: {}x{} [Stride: {}], Format: {}, Layout: {}, {}: {}, Usage: 0x{:X}, NvMap {}: {}, Buffer Start/End: 0x{:X} -> 0x{:X}", slot, surface.width, surface.height, handle.stride, ToString(handle.format), ToString(surface.layout), surface.layout == NvSurfaceLayout::Blocklinear ? "Block Height" : "Pitch", surface.layout == NvSurfaceLayout::Blocklinear ? 1U << surface.blockHeightLog2 : surface.pitch, graphicBuffer->usage, surface.nvmapHandle ? "Handle" : "ID", surface.nvmapHandle ? surface.nvmapHandle : handle.nvmapId, surface.offset, surface.offset + surface.size);
         } else {
-            Logger::Debug("#{} - No GraphicBuffer", slot);
+            LOGD("#{} - No GraphicBuffer", slot);
         }
 
         preallocatedBufferCount = static_cast<u8>(std::count_if(queue.begin(), queue.end(), [](const BufferSlot &slot) { return slot.graphicBuffer && slot.isPreallocated; }));

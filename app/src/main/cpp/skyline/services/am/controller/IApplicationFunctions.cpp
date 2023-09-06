@@ -83,7 +83,7 @@ namespace skyline::service::am {
     Result IApplicationFunctions::GetSaveDataSize(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto saveDataType{request.Pop<u64>()};
         auto userId{request.Pop<account::UserId>()};
-        Logger::Debug("Save data type: {}, UserId: {:016X}{:016X}", saveDataType, userId.upper, userId.lower);
+        LOGD("Save data type: {}, UserId: {:016X}{:016X}", saveDataType, userId.upper, userId.lower);
 
         // Response values based on Ryujinx stub
         // https://github.com/Ryujinx/Ryujinx/blob/b8556530f2b160db70ff571adf25ae26d4b8f58f/Ryujinx.HLE/HOS/Services/Am/AppletOE/ApplicationProxyService/ApplicationProxy/IApplicationFunctions.cs#L228
@@ -136,7 +136,7 @@ namespace skyline::service::am {
         if (width > MaximumFbWidth || height > MaximumFbHeight || !util::IsAligned(transferMemorySize, RequiredFbAlignment))
             return result::InvalidParameters;
 
-        Logger::Debug("Dimensions: ({}, {}) Transfer Memory Size: {}", width, height, transferMemorySize);
+        LOGD("Dimensions: ({}, {}) Transfer Memory Size: {}", width, height, transferMemorySize);
 
         return {};
     }
@@ -155,13 +155,13 @@ namespace skyline::service::am {
         if (y < 0 || x < 0 || width < 1 || height < 1)
             return result::InvalidParameters;
 
-        Logger::Debug("Position: ({}, {}) Dimensions: ({}, {}) Origin mode: {}", x, y, width, height, static_cast<i32>(originMode));
+        LOGD("Position: ({}, {}) Dimensions: ({}, {}) Origin mode: {}", x, y, width, height, static_cast<i32>(originMode));
         return {};
     }
 
     Result IApplicationFunctions::SetApplicationCopyrightVisibility(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         u8 visiblity{request.Pop<u8>()};
-        Logger::Debug("Visiblity: {}", visiblity);
+        LOGD("Visiblity: {}", visiblity);
         return {};
     }
 
@@ -182,14 +182,14 @@ namespace skyline::service::am {
 
     Result IApplicationFunctions::GetGpuErrorDetectedSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(gpuErrorEvent)};
-        Logger::Debug("GPU Error Event Handle: 0x{:X}", handle);
+        LOGD("GPU Error Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }
 
     Result IApplicationFunctions::GetFriendInvitationStorageChannelEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(friendInvitationStorageChannelEvent)};
-        Logger::Debug("Friend Invitiation Storage Channel Event Handle: 0x{:X}", handle);
+        LOGD("Friend Invitiation Storage Channel Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

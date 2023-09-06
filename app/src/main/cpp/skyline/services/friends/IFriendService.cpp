@@ -10,7 +10,7 @@ namespace skyline::service::friends {
 
     Result IFriendService::GetCompletionEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         KHandle handle{state.process->InsertItem(completionEvent)};
-        Logger::Debug("Friend Completion Event Handle: 0x{:X}", handle);
+        LOGD("Friend Completion Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};

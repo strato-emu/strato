@@ -92,7 +92,7 @@ namespace skyline::applet::swkbd {
             else
                 return configSpan.as<KeyboardConfigVB>();
         }();
-        Logger::Debug("Swkbd Config:\n* KeyboardMode: {}\n* InvalidCharFlags: {:#09b}\n* TextMaxLength: {}\n* TextMinLength: {}\n* PasswordMode: {}\n* InputFormMode: {}\n* IsUseNewLine: {}\n* IsUseTextCheck: {}",
+        LOGD("Swkbd Config:\n* KeyboardMode: {}\n* InvalidCharFlags: {:#09b}\n* TextMaxLength: {}\n* TextMinLength: {}\n* PasswordMode: {}\n* InputFormMode: {}\n* IsUseNewLine: {}\n* IsUseTextCheck: {}",
                       static_cast<u32>(config.commonConfig.keyboardMode),
                       config.commonConfig.invalidCharFlags.raw,
                       config.commonConfig.textMaxLength,
@@ -173,7 +173,7 @@ namespace skyline::applet::swkbd {
                     if (validationResult.result == TextCheckResult::ShowFailureDialog)
                         LOGW("Sending default text despite being rejected by the guest with message: \"{}\"", message);
                     else
-                        Logger::Debug("Guest asked to confirm default text with message: \"{}\"", message);
+                        LOGD("Guest asked to confirm default text with message: \"{}\"", message);
                     PushNormalDataAndSignal(std::make_shared<service::am::ObjIStorage<OutputResult>>(state, manager, OutputResult{CloseResult::Enter, currentText, config.commonConfig.isUseUtf8}));
                 }
             }

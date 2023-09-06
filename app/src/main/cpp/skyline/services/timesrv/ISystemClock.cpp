@@ -62,7 +62,7 @@ namespace skyline::service::timesrv {
         }
 
         auto handle{state.process->InsertItem(operationEvent)};
-        Logger::Debug("ISystemClock Operation Event Handle: 0x{:X}", handle);
+        LOGD("ISystemClock Operation Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

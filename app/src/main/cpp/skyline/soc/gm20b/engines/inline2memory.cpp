@@ -20,7 +20,7 @@ namespace skyline::soc::gm20b::engine {
         if (state.launchDma.completion == RegisterState::DmaCompletionType::ReleaseSemaphore)
             throw exception("Semaphore release on I2M completion is not supported!");
 
-        Logger::Debug("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
+        LOGD("range: 0x{:X} -> 0x{:X}", u64{state.offsetOut}, u64{state.offsetOut} + buffer.size() * 0x4);
         if (state.launchDma.layout == RegisterState::DmaDstMemoryLayout::Pitch) {
             channelCtx.channelSequenceNumber++;
 

@@ -63,7 +63,7 @@ namespace skyline::service::hosbinder {
                 layer.reset();
         }
 
-        Logger::Debug("Reference Change: {} {} reference (S{} W{})", value, isStrong ? "strong" : "weak", layerStrongReferenceCount, layerWeakReferenceCount);
+        LOGD("Reference Change: {} {} reference (S{} W{})", value, isStrong ? "strong" : "weak", layerStrongReferenceCount, layerWeakReferenceCount);
 
         return {};
     }
@@ -79,7 +79,7 @@ namespace skyline::service::hosbinder {
             throw exception("Getting unknown handle from binder object: 0x{:X}", handleId);
 
         KHandle handle{state.process->InsertItem(layer->bufferEvent)};
-        Logger::Debug("Display Buffer Event Handle: 0x{:X}", handle);
+        LOGD("Display Buffer Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
 
         return {};

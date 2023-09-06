@@ -72,7 +72,7 @@ namespace skyline::service::audio {
             return Result{Service::Audio::ResultNotSupported};
 
         auto handle{state.process->InsertItem(renderedEvent)};
-        Logger::Debug("System Event Handle: 0x{:X}", handle);
+        LOGD("System Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

@@ -378,7 +378,7 @@ namespace skyline::soc::gm20b {
             bool channelLocked{};
 
             gpEntries.Process([this, &channelLocked](GpEntry gpEntry) {
-                Logger::Debug("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
+                LOGD("Processing pushbuffer: 0x{:X}, Size: 0x{:X}", gpEntry.Address(), +gpEntry.size);
 
                 if (!channelLocked) {
                     channelCtx.Lock();
@@ -388,7 +388,7 @@ namespace skyline::soc::gm20b {
                 Process(gpEntry);
             }, [this, &channelLocked]() {
                 // If we run out of GpEntries to process ensure we submit any remaining GPU work before waiting for more to arrive
-                Logger::Debug("Finished processing pushbuffer batch");
+                LOGD("Finished processing pushbuffer batch");
                 if (channelLocked) {
                     channelCtx.executor.Submit();
                     channelCtx.Unlock();
