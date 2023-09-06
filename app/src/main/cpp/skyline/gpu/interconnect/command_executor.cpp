@@ -302,7 +302,7 @@ namespace skyline::gpu::interconnect {
             u32 curCheckpoint{state.gpu->debugTracingBuffer.as<u32>()};
 
             if ((iteration % 1024) == 0)
-                Logger::Info("Current Checkpoint: {}", curCheckpoint);
+                LOGI("Current Checkpoint: {}", curCheckpoint);
 
             while (prevCheckpoint != curCheckpoint) {
                 // Make sure to report an event for every checkpoint inbetween the previous and current values, to ensure the perfetto trace is consistent

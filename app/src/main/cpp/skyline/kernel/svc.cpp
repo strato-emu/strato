@@ -924,7 +924,7 @@ namespace skyline::kernel::svc {
         if (string.back() == '\n')
             string.remove_suffix(1);
 
-        Logger::Info("{}", string);
+        LOGI("{}", string);
         state.ctx->gpr.w0 = Result{};
     }
 

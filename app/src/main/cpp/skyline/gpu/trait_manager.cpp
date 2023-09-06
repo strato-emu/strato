@@ -309,17 +309,17 @@ namespace skyline::gpu {
         auto type{adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), properties.vendorID)};
         if (type == ADRENOTOOLS_BCN_PATCH) {
             if (adrenotools_patch_bcn(reinterpret_cast<void *>(physicalDevice.getDispatcher()->vkGetPhysicalDeviceFormatProperties)))
-                Logger::Info("Applied BCeNabler patch");
+                LOGI("Applied BCeNabler patch");
             else
                 throw exception("Failed to apply BCeNabler patch!");
             bcnSupport.set();
         } else if (type == ADRENOTOOLS_BCN_BLOB) {
-            Logger::Info("BCeNabler skipped, blob BCN support is present");
+            LOGI("BCeNabler skipped, blob BCN support is present");
             bcnSupport.set();
         }
 
         if (adrenotools_validate_gpu_mapping(mapping)) {
-            Logger::Info("Applied GPU memory import patch");
+            LOGI("Applied GPU memory import patch");
             supportsAdrenoDirectMemoryImport = true;
         }
     }
