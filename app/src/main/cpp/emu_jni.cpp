@@ -89,7 +89,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     std::shared_ptr<skyline::Settings> settings{std::make_shared<skyline::AndroidSettings>(env, settingsInstance)};
 
     skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
-    skyline::Logger::EmulationContext.Initialize(publicAppFilesPath + "logs/emulation.log");
+
+    skyline::AsyncLogger::Initialize(*settings->logLevel, publicAppFilesPath + "logs/emulation.log");
 
     auto start{std::chrono::steady_clock::now()};
 
@@ -138,7 +139,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     auto end{std::chrono::steady_clock::now()};
     LOGINF("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
-    skyline::Logger::EmulationContext.Finalize();
+    skyline::AsyncLogger::Finalize(true);
     close(romFd);
 }
 
