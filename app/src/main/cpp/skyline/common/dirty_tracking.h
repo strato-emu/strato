@@ -5,7 +5,6 @@
 
 #include "base.h"
 #include "exception.h"
-#include "logger.h"
 #include "span.h"
 
 namespace skyline::dirty {

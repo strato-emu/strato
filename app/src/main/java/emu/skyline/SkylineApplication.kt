@@ -20,8 +20,6 @@ fun Context.getPublicFilesDir() : File = getExternalFilesDir(null) ?: filesDir
 
 @HiltAndroidApp
 class SkylineApplication : Application() {
-    private external fun initializeLog(appFilesPath : String, logLevel : Int)
-
     init {
         instance = this
     }

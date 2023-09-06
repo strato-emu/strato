@@ -2,6 +2,7 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <range/v3/algorithm.hpp>
+#include <fstream>
 #include "pipeline_state_bundle.h"
 
 namespace skyline::gpu::interconnect {

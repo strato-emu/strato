@@ -18,6 +18,7 @@ namespace skyline::input {
     void Input::UpdateThread() {
         if (int result{pthread_setname_np(pthread_self(), "Sky-Input")})
             LOGW("Failed to set the thread name: {}", strerror(result));
+        AsyncLogger::UpdateTag();
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);

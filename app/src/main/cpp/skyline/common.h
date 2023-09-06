@@ -20,7 +20,6 @@
 #include <common/exception.h>
 #include <common/span.h>
 #include <common/result.h>
-#include <common/logger.h>
 #include <logger/logger.h>
 
 namespace skyline {

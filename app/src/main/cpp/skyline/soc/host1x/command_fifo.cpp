@@ -116,6 +116,7 @@ namespace skyline::soc::host1x {
     void ChannelCommandFifo::Run() {
         if (int result{pthread_setname_np(pthread_self(), "ChannelCmdFifo")})
             LOGW("Failed to set the thread name: {}", strerror(result));
+        AsyncLogger::UpdateTag();
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);
@@ -128,18 +129,15 @@ namespace skyline::soc::host1x {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 LOGE("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
-                Logger::EmulationContext.Flush();
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
             }
         } catch (const exception &e) {
             LOGENF("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
-            Logger::EmulationContext.Flush();
             signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         } catch (const std::exception &e) {
             LOGE("{}", e.what());
-            Logger::EmulationContext.Flush();
             signal::BlockSignal({SIGINT});
             state.process->Kill(false);
         }

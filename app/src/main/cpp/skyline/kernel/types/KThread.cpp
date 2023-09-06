@@ -42,7 +42,7 @@ namespace skyline::kernel::type {
 
         if (int result{pthread_setname_np(pthread, fmt::format("HOS-{}", id).c_str())})
             LOGW("Failed to set the thread name: {}", strerror(result));
-        Logger::UpdateTag();
+        AsyncLogger::UpdateTag();
 
         if (!ctx.tpidrroEl0)
             ctx.tpidrroEl0 = parent->AllocateTlsSlot();
@@ -66,7 +66,7 @@ namespace skyline::kernel::type {
             if (threadName[0] != 'H' || threadName[1] != 'O' || threadName[2] != 'S' || threadName[3] != '-') {
                 if (int result{pthread_setname_np(pthread, threadName.data())})
                     LOGW("Failed to set the thread name: {}", strerror(result));
-                Logger::UpdateTag();
+                AsyncLogger::UpdateTag();
             }
 
             return;
@@ -183,7 +183,6 @@ namespace skyline::kernel::type {
             __builtin_unreachable();
         } catch (const std::exception &e) {
             LOGE("{}", e.what());
-            Logger::EmulationContext.Flush();
             if (id) {
                 signal::BlockSignal({SIGINT});
                 state.process->Kill(false);
@@ -193,7 +192,6 @@ namespace skyline::kernel::type {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 LOGE("{}", e.what());
-                Logger::EmulationContext.Flush();
                 if (id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);

@@ -689,7 +689,7 @@ namespace skyline::kernel::svc {
         i64 timeout{static_cast<i64>(state.ctx->gpr.x3)};
         if (waitHandles.size() == 1) {
             LOGD("Waiting on 0x{:X} for {}ns", waitHandles[0], timeout);
-        } else if (Logger::LogLevel::Debug <= Logger::configLevel) {
+        } else if (AsyncLogger::CheckLogLevel(AsyncLogger::LogLevel::Debug)) {
             std::string handleString;
             for (const auto &handle : waitHandles)
                 handleString += fmt::format("* 0x{:X}\n", handle);

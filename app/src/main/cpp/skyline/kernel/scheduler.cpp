@@ -117,7 +117,6 @@ namespace skyline::kernel {
         for (auto &residentThread : core.queue) {
             if (residentThread == thread) {
                 LOGE("T{} already exists in C{}", thread->id, core.id);
-                Logger::EmulationContext.Flush();
             }
         }
         #endif

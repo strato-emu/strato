@@ -55,17 +55,6 @@ static std::string GetTimeZoneName() {
     return "GMT";
 }
 
-extern "C" JNIEXPORT void Java_emu_skyline_SkylineApplication_initializeLog(
-    JNIEnv *env,
-    jobject,
-    jstring publicAppFilesPathJstring,
-    jint logLevel
-) {
-    skyline::JniString publicAppFilesPath(env, publicAppFilesPathJstring);
-    skyline::Logger::configLevel = static_cast<skyline::Logger::LogLevel>(logLevel);
-    skyline::Logger::LoaderContext.Initialize(publicAppFilesPath + "logs/loader.log");
-}
-
 extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     JNIEnv *env,
     jobject instance,

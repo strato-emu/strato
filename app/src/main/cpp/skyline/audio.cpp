@@ -10,19 +10,19 @@
 
 namespace AudioCore::Log {
     void Debug(const std::string &message) {
-        skyline::Logger::Write(skyline::Logger::LogLevel::Debug, message);
+        skyline::AsyncLogger::LogAsync(skyline::AsyncLogger::LogLevel::Debug, std::move(const_cast<std::string &>(message)));
     }
 
     void Info(const std::string &message) {
-        skyline::Logger::Write(skyline::Logger::LogLevel::Info, message);
+        skyline::AsyncLogger::LogAsync(skyline::AsyncLogger::LogLevel::Info, std::move(const_cast<std::string &>(message)));
     }
 
     void Warn(const std::string &message) {
-        skyline::Logger::Write(skyline::Logger::LogLevel::Warn, message);
+        skyline::AsyncLogger::LogAsync(skyline::AsyncLogger::LogLevel::Warning, std::move(const_cast<std::string &>(message)));
     }
 
     void Error(const std::string &message) {
-        skyline::Logger::Write(skyline::Logger::LogLevel::Error, message);
+        skyline::AsyncLogger::LogAsync(skyline::AsyncLogger::LogLevel::Error, std::move(const_cast<std::string &>(message)));
     }
 }
 

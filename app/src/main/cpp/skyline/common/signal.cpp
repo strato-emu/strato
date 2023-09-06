@@ -16,7 +16,6 @@ namespace skyline::signal {
 
     void SleepTillExit() {
         // We don't want to actually exit the process ourselves as it'll automatically be restarted gracefully due to a timeout after being unable to exit within a fixed duration
-        Logger::EmulationContext.TryFlush(); // We want to attempt to flush logs before exiting
         while (true)
             sleep(std::numeric_limits<int>::max()); // We just trigger the timeout wait by sleeping forever
     }
@@ -100,8 +99,6 @@ namespace skyline::signal {
         context->uc_mcontext.pc = reinterpret_cast<u64>(&ExceptionThrow);
 
         std::set_terminate(TerminateHandler);
-
-        Logger::EmulationContext.TryFlush(); // We want to attempt to flush all logs in case exception handling fails and infloops
     }
 
     template<typename Signature>
