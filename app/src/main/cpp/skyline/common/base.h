@@ -4,10 +4,7 @@
 #pragma once
 
 #include <cstdint>
-#include <stdexcept>
 #include <variant>
-#include <bitset>
-#include "format.h"
 
 namespace skyline {
     using u128 = __uint128_t; //!< Unsigned 128-bit integer
@@ -35,32 +32,6 @@ namespace skyline {
         constexpr size_t PageSizeBits{12}; //!< log2(PageSize)
 
         static_assert(PageSize == PAGE_SIZE);
-    }
-
-    namespace util {
-        /**
-         * @brief A way to implicitly cast all pointers to uintptr_t, this is used for {fmt} as we use 0x{:X} to print pointers
-         * @note There's the exception of signed char pointers as they represent C Strings
-         * @note This does not cover std::shared_ptr or std::unique_ptr and those will have to be explicitly casted to uintptr_t or passed through fmt::ptr
-         */
-        template<typename T>
-        constexpr auto FmtCast(T object) {
-            if constexpr (std::is_pointer<T>::value)
-                if constexpr (std::is_same<char, typename std::remove_cv<typename std::remove_pointer<T>::type>::type>::value)
-                    return reinterpret_cast<typename std::common_type<char *, T>::type>(object);
-                else
-                    return reinterpret_cast<const uintptr_t>(object);
-            else
-                return object;
-        }
-
-        /**
-         * @brief {fmt}::format but with FmtCast built into it
-         */
-        template<typename S, typename... Args>
-        constexpr auto Format(S formatString, Args &&... args) {
-            return fmt::format(fmt::runtime(formatString), FmtCast(args)...);
-        }
     }
 
     /**

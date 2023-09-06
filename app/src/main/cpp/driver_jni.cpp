@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <vulkan/vulkan_raii.hpp>
 #include <adrenotools/driver.h>
+#include "skyline/common/format.h"
 #include "skyline/common/signal.h"
 #include "skyline/common/utils.h"
 
@@ -20,7 +21,7 @@ extern "C" JNIEXPORT jobjectArray JNICALL Java_emu_skyline_utils_GpuDriverHelper
     auto properties{deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties};
 
     auto driverId{vk::to_string(deviceProperties2.get<vk::PhysicalDeviceDriverProperties>().driverID)};
-    auto driverVersion{skyline::util::Format("{}.{}.{}", VK_API_VERSION_MAJOR(properties.driverVersion), VK_API_VERSION_MINOR(properties.driverVersion), VK_API_VERSION_PATCH(properties.driverVersion))};
+    auto driverVersion{fmt::format("{}.{}.{}", VK_API_VERSION_MAJOR(properties.driverVersion), VK_API_VERSION_MINOR(properties.driverVersion), VK_API_VERSION_PATCH(properties.driverVersion))};
 
     auto array = env->NewObjectArray(2, env->FindClass("java/lang/String"), nullptr);
     env->SetObjectArrayElement(array, 0, env->NewStringUTF(driverId.c_str()));

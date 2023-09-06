@@ -3,9 +3,10 @@
 #include <limits>
 #include <perfetto.h>
 #include "base.h"
+#include "format.h"
 
 #define TRACE_EVENT_FMT(category, formatString, ...) TRACE_EVENT(category, nullptr, [&](perfetto::EventContext ctx) { \
-    ctx.event()->set_name(skyline::util::Format(formatString, __VA_ARGS__));                                          \
+    ctx.event()->set_name(fmt::format(formatString, __VA_ARGS__));                                                    \
 })
 
 PERFETTO_DEFINE_CATEGORIES(
