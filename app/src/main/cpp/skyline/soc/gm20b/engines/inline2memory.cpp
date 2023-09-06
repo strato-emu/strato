@@ -93,7 +93,7 @@ namespace skyline::soc::gm20b::engine {
     Inline2Memory::Inline2Memory(const DeviceState &state, ChannelContext &channelCtx) : backend{state, channelCtx} {}
 
     __attribute__((always_inline)) void Inline2Memory::CallMethod(u32 method, u32 argument) {
-        Logger::Verbose("Called method in I2M: 0x{:X} args: 0x{:X}", method, argument);
+        LOGV("Called method in I2M: 0x{:X} args: 0x{:X}", method, argument);
 
         HandleMethod(method, argument);
     }

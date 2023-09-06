@@ -76,7 +76,7 @@ namespace skyline::soc::gm20b::engine::fermi2d {
     }
 
     __attribute__((always_inline)) void Fermi2D::CallMethod(u32 method, u32 argument) {
-        Logger::Verbose("Called method in Fermi 2D: 0x{:X} args: 0x{:X}", method, argument);
+        LOGV("Called method in Fermi 2D: 0x{:X} args: 0x{:X}", method, argument);
 
         HandleMethod(method, argument);
     }

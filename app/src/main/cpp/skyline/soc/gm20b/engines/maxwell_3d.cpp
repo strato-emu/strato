@@ -500,7 +500,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
     }
 
     __attribute__((always_inline)) void Maxwell3D::CallMethod(u32 method, u32 argument) {
-        Logger::Verbose("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
+        LOGV("Called method in Maxwell 3D: 0x{:X} args: 0x{:X}", method, argument);
 
         HandleMethod(method, argument);
     }
