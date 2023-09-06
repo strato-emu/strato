@@ -64,13 +64,13 @@ namespace skyline::kernel {
                 name = nacp->GetApplicationName(nacp->GetFirstSupportedTitleLanguage());
             if (publisher.empty())
                 publisher = nacp->GetApplicationPublisher(nacp->GetFirstSupportedTitleLanguage());
-            Logger::InfoNoPrefix(R"(Starting "{}" ({}) v{} by "{}")", name, nacp->GetSaveDataOwnerId(), nacp->GetApplicationVersion(), publisher);
+            LOGINF(R"(Starting "{}" ({}) v{} by "{}")", name, nacp->GetSaveDataOwnerId(), nacp->GetApplicationVersion(), publisher);
         }
 
         process->InitializeHeapTls();
         auto thread{process->CreateThread(entry)};
         if (thread) {
-            Logger::Info("Starting main HOS thread");
+            LOGI("Starting main HOS thread");
             Logger::EmulationContext.Flush();
             thread->Start(true);
             process->Kill(true, true, true);

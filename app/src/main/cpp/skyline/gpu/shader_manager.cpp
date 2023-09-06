@@ -54,7 +54,7 @@ namespace skyline::gpu {
         auto &replacementMap{spv ? hostShaderReplacements : guestShaderReplacements};
         auto it{replacementMap.find(hash)};
         if (it != replacementMap.end()) {
-            Logger::Info("Replacing shader with hash: 0x{:X}", hash);
+            LOGI("Replacing shader with hash: 0x{:X}", hash);
             return it->second;
         }
 

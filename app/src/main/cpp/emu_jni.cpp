@@ -136,7 +136,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
     InputWeak.reset();
 
     auto end{std::chrono::steady_clock::now()};
-    skyline::Logger::Write(skyline::Logger::LogLevel::Info, fmt::format("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()));
+    LOGINF("Emulation has ended in {}ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 
     skyline::Logger::EmulationContext.Finalize();
     close(romFd);

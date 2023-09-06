@@ -51,7 +51,7 @@ namespace skyline::service::socket {
         auto service{request.inputBuf.at(1).as_string(true)};
 
         if (!(*state.settings->isInternetEnabled)) {
-            Logger::Info("Internet access disabled, DNS Blocked: {}", hostname);
+            LOGI("Internet access disabled, DNS Blocked: {}", hostname);
             return {0, -1};
         }
 
@@ -126,7 +126,7 @@ namespace skyline::service::socket {
 
                         char addrStringBuf[64]{};
                         inet_ntop(AF_INET, &addr.sin_addr, addrStringBuf, std::size(addrStringBuf));
-                        Logger::Info("Resolved host '{}' to IPv4 address {}", host, addrStringBuf);
+                        LOGI("Resolved host '{}' to IPv4 address {}", host, addrStringBuf);
                         break;
                     }
                     case AF_INET6: {
@@ -149,7 +149,7 @@ namespace skyline::service::socket {
 
                         char addrStringBuf[64]{};
                         inet_ntop(AF_INET6, &addr.sin6_addr, addrStringBuf, std::size(addrStringBuf));
-                        Logger::Info("Resolved host '{}' to IPv6 address {}", host, addrStringBuf);
+                        LOGI("Resolved host '{}' to IPv6 address {}", host, addrStringBuf);
                         break;
                     }
                     default:

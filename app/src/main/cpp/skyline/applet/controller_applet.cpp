@@ -20,7 +20,7 @@ namespace skyline::applet {
     void ControllerApplet::HandleShowControllerSupport(input::NpadStyleSet styleSet, ControllerAppletVersion version, span<u8> arg) {
         // Generic macro due to both versions of arguments sharing the same fields but having different layouts
         auto handle{[&](auto controllerSupportModeArg) {
-            Logger::InfoNoPrefix("Controller Support: "
+            LOGINF("Controller Support: "
                                  "Player Count: {} - {}, "
                                  "Take Over Connection: {}, Left Justify: {}, Dual Joy-Con Allowed: {}, Single Mode Enabled: {}, "
                                  "Identification Color Enabled: {}, Explain Text Enabled: {}",

@@ -16,7 +16,7 @@ namespace skyline::service::am {
           messageEvent(std::make_shared<type::KEvent>(state, false)),
           defaultDisplayResolutionChangeEvent(std::make_shared<type::KEvent>(state, false)) {
         operationMode = static_cast<OperationMode>(*state.settings->isDocked);
-        Logger::Info("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
+        LOGI("Switch to mode: {}", static_cast<bool>(operationMode) ? "Docked" : "Handheld");
         QueueMessage(Message::FocusStateChange);
     }
 
@@ -90,7 +90,7 @@ namespace skyline::service::am {
             case CpuBoostMode::Normal:
             case CpuBoostMode::FastLoad:
             case CpuBoostMode::PowerSaving:
-                Logger::Info("Set CPU boost mode to {}", ToString(cpuBoostMode));
+                LOGI("Set CPU boost mode to {}", ToString(cpuBoostMode));
                 return {};
             default:
                 LOGE("Unknown CPU boost mode value: 0x{:X}", cpuBoostMode);

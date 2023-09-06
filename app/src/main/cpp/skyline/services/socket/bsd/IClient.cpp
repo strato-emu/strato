@@ -21,7 +21,7 @@ namespace skyline::service::socket {
         i32 type{request.Pop<i32>()};
         i32 protocol{request.Pop<i32>()};
         i32 fd{::socket(domain, type, protocol)};
-        Logger::Info("File Descriptor {} with Domain {}, Type {}, Protocol {}", fd, domain, type, protocol);
+        LOGI("File Descriptor {} with Domain {}, Type {}, Protocol {}", fd, domain, type, protocol);
         if (fd == -1)
             LOGE("Error creating socket: {}", strerror(errno));
         return PushBsdResult(response, fd, 0);

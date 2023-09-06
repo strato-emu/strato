@@ -976,7 +976,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
             }
 
             gpu.graphicsPipelineAssembler->WaitIdle();
-            Logger::Info("Loaded {} graphics pipelines in {}ms", map.size(), (util::GetTimeNs() - startTime) / constant::NsInMillisecond);
+            LOGI("Loaded {} graphics pipelines in {}ms", map.size(), (util::GetTimeNs() - startTime) / constant::NsInMillisecond);
 
             gpu.graphicsPipelineAssembler->SavePipelineCache();
 

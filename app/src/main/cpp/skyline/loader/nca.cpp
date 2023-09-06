@@ -28,7 +28,7 @@ namespace skyline::loader {
         u8 *base{loadInfo.base};
         void *entry{loadInfo.entry};
 
-        Logger::Info("Loaded 'rtld.nso' at 0x{:X} (.text @ 0x{:X})", base, entry);
+        LOGI("Loaded 'rtld.nso' at {} (.text @ {})", fmt::ptr(base), entry);
 
         for (const auto &nso : {"main", "subsdk0", "subsdk1", "subsdk2", "subsdk3", "subsdk4", "subsdk5", "subsdk6", "subsdk7", "sdk"}) {
             if (exeFs->FileExists(nso))
@@ -37,7 +37,7 @@ namespace skyline::loader {
                 continue;
 
             loadInfo = NsoLoader::LoadNso(loader, nsoFile, process, state, offset, nso + std::string(".nso"), true);
-            Logger::Info("Loaded '{}.nso' at 0x{:X} (.text @ 0x{:X})", nso, base + offset, loadInfo.entry);
+            LOGI("Loaded '{}.nso' at {} (.text @ {})", nso, fmt::ptr(base + offset), loadInfo.entry);
             offset += loadInfo.size;
         }
 

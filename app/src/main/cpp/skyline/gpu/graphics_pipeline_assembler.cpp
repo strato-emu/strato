@@ -86,7 +86,7 @@ namespace skyline::gpu {
         stream.write(reinterpret_cast<char *>(&header), sizeof(PipelineCacheFileDataHeader));
         stream.write(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(data.size()));
 
-        Logger::Info("Wrote Vulkan pipeline cache to {} (size: 0x{:X} bytes)", path.string(), data.size());
+        LOGI("Wrote Vulkan pipeline cache to {} (size: 0x{:X} bytes)", path.string(), data.size());
     }
 
     GraphicsPipelineAssembler::GraphicsPipelineAssembler(GPU &gpu, std::string_view pipelineCacheDir)
