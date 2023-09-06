@@ -696,7 +696,7 @@ namespace skyline::kernel::svc {
             LOGD("Waiting on handles:\n{}Timeout: {}ns", handleString, timeout);
         }
 
-        TRACE_EVENT_FMT("kernel", waitHandles.size() == 1 ? "WaitSynchronization 0x{:X}" : "WaitSynchronizationMultiple 0x{:X}", waitHandles[0]);
+        TRACE_EVENT_FMT("kernel", fmt::runtime(waitHandles.size() == 1 ? "WaitSynchronization 0x{:X}" : "WaitSynchronizationMultiple 0x{:X}"), waitHandles[0]);
 
         std::unique_lock lock(type::KSyncObject::syncObjectMutex);
         if (state.thread->cancelSync) {

@@ -4,7 +4,7 @@
 #pragma once
 
 #include <vector>
-#include "base.h"
+#include "format.h"
 
 namespace skyline {
     /**
@@ -18,9 +18,9 @@ namespace skyline {
          * @return A vector of all frames on the caller's stack
          * @note This cannot be inlined because it depends on having one stack frame itself consistently
          */
-        static std::vector<void*> GetStackFrames() __attribute__((noinline));
+        static std::vector<void *> GetStackFrames() __attribute__((noinline));
 
-        template<typename S, typename... Args>
-        exception(const S &formatStr, Args &&... args) : runtime_error(util::Format(formatStr, args...)), frames(GetStackFrames()) {}
+        template<typename... Args>
+        exception(fmt::format_string<Args...> formatStr, Args &&... args) : runtime_error(fmt::format(formatStr, std::forward<Args>(args)...)), frames(GetStackFrames()) {}
     };
 }

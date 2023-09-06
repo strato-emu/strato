@@ -129,7 +129,7 @@ namespace skyline::kernel::type {
     constexpr u32 HandleWaitersBit{1UL << 30}; //!< A bit which denotes if a mutex psuedo-handle has waiters or not
 
     Result KProcess::MutexLock(const std::shared_ptr<KThread> &thread, u32 *mutex, KHandle ownerHandle, KHandle tag, bool failOnOutdated) {
-        TRACE_EVENT_FMT("kernel", "MutexLock 0x{:X} @ 0x{:X}", mutex, thread->id);
+        TRACE_EVENT_FMT("kernel", "MutexLock {} @ 0x{:X}", fmt::ptr(mutex), thread->id);
 
         std::shared_ptr<KThread> owner;
         try {
@@ -171,7 +171,7 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::MutexUnlock(u32 *mutex) {
-        TRACE_EVENT_FMT("kernel", "MutexUnlock 0x{:X}", mutex);
+        TRACE_EVENT_FMT("kernel", "MutexUnlock {}", fmt::ptr(mutex));
 
         std::scoped_lock lock{state.thread->waiterMutex};
         auto &waiters{state.thread->waiters};
@@ -233,7 +233,7 @@ namespace skyline::kernel::type {
     }
 
     Result KProcess::ConditionVariableWait(u32 *key, u32 *mutex, KHandle tag, i64 timeout) {
-        TRACE_EVENT_FMT("kernel", "ConditionVariableWait 0x{:X} (0x{:X})", key, mutex);
+        TRACE_EVENT_FMT("kernel", "ConditionVariableWait {} ({})", fmt::ptr(key), fmt::ptr(mutex));
 
         {
             // Update all waiter information
@@ -336,7 +336,7 @@ namespace skyline::kernel::type {
     }
 
     void KProcess::ConditionVariableSignal(u32 *key, i32 amount) {
-        TRACE_EVENT_FMT("kernel", "ConditionVariableSignal 0x{:X}", key);
+        TRACE_EVENT_FMT("kernel", "ConditionVariableSignal {}", fmt::ptr(key));
 
         i32 waiterCount{amount};
         while (amount <= 0 || waiterCount) {
@@ -408,7 +408,7 @@ namespace skyline::kernel::type {
     }
 
     Result KProcess::WaitForAddress(u32 *address, u32 value, i64 timeout, ArbitrationType type) {
-        TRACE_EVENT_FMT("kernel", "WaitForAddress 0x{:X}", address);
+        TRACE_EVENT_FMT("kernel", "WaitForAddress {}", fmt::ptr(address));
 
         {
             std::scoped_lock lock{syncWaiterMutex};
@@ -476,7 +476,7 @@ namespace skyline::kernel::type {
     }
 
     Result KProcess::SignalToAddress(u32 *address, u32 value, i32 amount, SignalType type) {
-        TRACE_EVENT_FMT("kernel", "SignalToAddress 0x{:X}", address);
+        TRACE_EVENT_FMT("kernel", "SignalToAddress {}", fmt::ptr(address));
 
         std::scoped_lock lock{syncWaiterMutex};
         auto queue{syncWaiters.equal_range(address)};

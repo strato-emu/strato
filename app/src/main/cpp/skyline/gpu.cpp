@@ -27,7 +27,7 @@ namespace skyline::gpu {
         if (AsyncLogger::CheckLogLevel(AsyncLogger::LogLevel::Debug)) {
             std::string layers;
             for (const auto &instanceLayer : instanceLayers)
-                layers += util::Format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_API_VERSION_MAJOR(instanceLayer.specVersion), VK_API_VERSION_MINOR(instanceLayer.specVersion), VK_API_VERSION_PATCH(instanceLayer.specVersion), VK_API_VERSION_MAJOR(instanceLayer.implementationVersion), VK_API_VERSION_MINOR(instanceLayer.implementationVersion), VK_API_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
+                layers += fmt::format("\n* {} (Sv{}.{}.{}, Iv{}.{}.{}) - {}", instanceLayer.layerName, VK_API_VERSION_MAJOR(instanceLayer.specVersion), VK_API_VERSION_MINOR(instanceLayer.specVersion), VK_API_VERSION_PATCH(instanceLayer.specVersion), VK_API_VERSION_MAJOR(instanceLayer.implementationVersion), VK_API_VERSION_MINOR(instanceLayer.implementationVersion), VK_API_VERSION_PATCH(instanceLayer.implementationVersion), instanceLayer.description);
             LOGD("Vulkan Layers:{}", layers);
         }
 
@@ -48,7 +48,7 @@ namespace skyline::gpu {
         if (AsyncLogger::CheckLogLevel(AsyncLogger::LogLevel::Debug)) {
             std::string extensions;
             for (const auto &instanceExtension : instanceExtensions)
-                extensions += util::Format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_API_VERSION_MAJOR(instanceExtension.specVersion), VK_API_VERSION_MINOR(instanceExtension.specVersion), VK_API_VERSION_PATCH(instanceExtension.specVersion));
+                extensions += fmt::format("\n* {} (v{}.{}.{})", instanceExtension.extensionName, VK_API_VERSION_MAJOR(instanceExtension.specVersion), VK_API_VERSION_MINOR(instanceExtension.specVersion), VK_API_VERSION_PATCH(instanceExtension.specVersion));
             LOGD("Vulkan Instance Extensions:{}", extensions);
         }
 
@@ -201,7 +201,7 @@ namespace skyline::gpu {
 
         auto logLevel{severityLookup.at(static_cast<size_t>(std::countr_zero(static_cast<u32>(flags))))};
         if (AsyncLogger::CheckLogLevel(logLevel))
-            AsyncLogger::LogAsync(logLevel, util::Format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
+            AsyncLogger::LogAsync(logLevel, fmt::format("Vk{}:{}[0x{:X}]:I{}:L{}: {}", layerPrefix, vk::to_string(vk::DebugReportObjectTypeEXT(objectType)), object, messageCode, location, message));
 
         return VK_FALSE;
     }
@@ -316,12 +316,12 @@ namespace skyline::gpu {
         if (AsyncLogger::CheckLogLevel(AsyncLogger::LogLevel::Info)) {
             std::string extensionString;
             for (const auto &extension : deviceExtensions)
-                extensionString += util::Format("\n* {} (v{}.{}.{})", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
+                extensionString += fmt::format("\n* {} (v{}.{}.{})", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
 
             std::string queueString;
             u32 familyIndex{};
             for (const auto &queueFamily : queueFamilies)
-                queueString += util::Format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
+                queueString += fmt::format("\n* {}x{}{}{}{}{}: TSB{} MIG({}x{}x{}){}", queueFamily.queueCount, queueFamily.queueFlags & vk::QueueFlagBits::eGraphics ? 'G' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eCompute ? 'C' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eTransfer ? 'T' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eSparseBinding ? 'S' : '-', queueFamily.queueFlags & vk::QueueFlagBits::eProtected ? 'P' : '-', queueFamily.timestampValidBits, queueFamily.minImageTransferGranularity.width, queueFamily.minImageTransferGranularity.height, queueFamily.minImageTransferGranularity.depth, familyIndex++ == vkQueueFamilyIndex ? " <--" : "");
 
             auto properties{deviceProperties2.get<vk::PhysicalDeviceProperties2>().properties};
             LOGI("Vulkan Device:\nName: {}\nType: {}\nDriver ID: {}\nVulkan Version: {}.{}.{}\nDriver Version: {}.{}.{}\nQueues:{}\nExtensions:{}\nTraits:{}\nQuirks:{}",

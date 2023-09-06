@@ -22,11 +22,11 @@ namespace skyline::kernel::type {
 
     u8 *KMemory::Map(span<u8> map, memory::Permission permission) {
         if (!state.process->memory.AddressSpaceContains(map)) [[unlikely]]
-            throw exception("KMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
+            throw exception("KMemory allocation isn't inside guest address space: {} - {}", fmt::ptr(map.data()), fmt::ptr(map.end().base()));
         if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size())) [[unlikely]]
-            throw exception("KMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size());
+            throw exception("KMemory mapping isn't page-aligned: {} - {} (0x{:X})", fmt::ptr(map.data()), fmt::ptr(map.end().base()), map.size());
         if (guest.valid()) [[unlikely]]
-            throw exception("Mapping KMemory multiple times on guest is not supported: Requested Mapping: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
+            throw exception("Mapping KMemory multiple times on guest is not supported: Requested Mapping: {} - {} (0x{:X}), Current Mapping: {} - {} (0x{:X})", fmt::ptr(map.data()), fmt::ptr(map.end().base()), map.size(), fmt::ptr(guest.data()), fmt::ptr(guest.end().base()), guest.size());
 
         if (mmap(map.data(), map.size(), permission.Get() ? PROT_READ | PROT_WRITE : PROT_NONE, MAP_SHARED | (map.data() ? MAP_FIXED : 0), fileDescriptor, 0) == MAP_FAILED) [[unlikely]]
             throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
@@ -37,11 +37,11 @@ namespace skyline::kernel::type {
 
     void KMemory::Unmap(span<u8> map) {
         if (!state.process->memory.AddressSpaceContains(map)) [[unlikely]]
-            throw exception("KMemory allocation isn't inside guest address space: 0x{:X} - 0x{:X}", map.data(), map.end().base());
+            throw exception("KMemory allocation isn't inside guest address space: {} - {}", fmt::ptr(map.data()), fmt::ptr(map.end().base()));
         if (!util::IsPageAligned(map.data()) || !util::IsPageAligned(map.size())) [[unlikely]]
-            throw exception("KMemory mapping isn't page-aligned: 0x{:X} - 0x{:X} ({} bytes)", map.data(), map.end().base(), map.size());
+            throw exception("KMemory mapping isn't page-aligned: {} - {} ({} bytes)", fmt::ptr(map.data()), fmt::ptr(map.end().base()), map.size());
         if (guest.data() != map.data() && guest.size() != map.size()) [[unlikely]]
-            throw exception("Unmapping KMemory partially is not supported: Requested Unmap: 0x{:X} - 0x{:X} (0x{:X}), Current Mapping: 0x{:X} - 0x{:X} (0x{:X})", map.data(), map.end().base(), map.size(), guest.data(), guest.end().base(), guest.size());
+            throw exception("Unmapping KMemory partially is not supported: Requested Unmap: {} - {} (0x{:X}), Current Mapping: {} - {} (0x{:X})", fmt::ptr(map.data()), fmt::ptr(map.end().base()), map.size(), fmt::ptr(guest.data()), fmt::ptr(guest.end().base()), guest.size());
 
         if (mmap(map.data(), map.size(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) == MAP_FAILED) [[unlikely]]
             throw exception("An error occurred while unmapping shared/transfer memory in guest: {}", strerror(errno));

@@ -100,7 +100,7 @@ namespace skyline::gpu::interconnect {
     }
 
     void CommandRecordThread::ProcessSlot(Slot *slot) {
-        TRACE_EVENT_FMT("gpu", "ProcessSlot: 0x{:X}, execution: {}", slot, u64{slot->executionTag});
+        TRACE_EVENT_FMT("gpu", "ProcessSlot: {}, execution: {}", fmt::ptr(slot), u64{slot->executionTag});
         auto &gpu{*state.gpu};
 
         vk::RenderPass lRenderPass;
