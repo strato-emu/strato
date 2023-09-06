@@ -185,6 +185,7 @@ namespace skyline::gpu::interconnect {
 
         if (int result{pthread_setname_np(pthread_self(), "Sky-CmdRecord")})
             LOGW("Failed to set the thread name: {}", strerror(result));
+        AsyncLogger::UpdateTag();
 
         try {
             signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);

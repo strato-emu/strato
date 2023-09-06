@@ -134,7 +134,6 @@ namespace skyline::loader {
         std::memcpy(executableBase + executable.ro.offset, executable.ro.contents.data(), roSize);
         std::memcpy(executableBase + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
 
-        Logger::EmulationContext.Flush();
         return {base, size, executableBase + executable.text.offset};
     }
 

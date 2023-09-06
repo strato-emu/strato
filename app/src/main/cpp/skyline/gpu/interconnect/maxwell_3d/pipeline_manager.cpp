@@ -2,6 +2,7 @@
 // Copyright © 2022 yuzu Team and Contributors (https://github.com/yuzu-emu/)
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <fstream>
 #include <gpu/texture/texture.h>
 #include <gpu/interconnect/command_executor.h>
 #include <gpu/interconnect/common/pipeline.inc>

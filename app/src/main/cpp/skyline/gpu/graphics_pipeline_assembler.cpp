@@ -2,6 +2,7 @@
 // Copyright © 2022 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
 #include <boost/functional/hash.hpp>
+#include <fstream>
 #include <filesystem>
 #include <gpu.h>
 #include "graphics_pipeline_assembler.h"

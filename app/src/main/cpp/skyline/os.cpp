@@ -71,7 +71,6 @@ namespace skyline::kernel {
         auto thread{process->CreateThread(entry)};
         if (thread) {
             LOGI("Starting main HOS thread");
-            Logger::EmulationContext.Flush();
             thread->Start(true);
             process->Kill(true, true, true);
         }

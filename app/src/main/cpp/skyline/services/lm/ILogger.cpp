@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include "ILogger.h"
+#include "logger/logger.h"
 
 namespace skyline::service::lm {
     ILogger::ILogger(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
@@ -85,17 +86,17 @@ namespace skyline::service::lm {
             break;
         }
 
-        Logger::LogLevel hostLevel{[&data]() {
+        AsyncLogger::LogLevel hostLevel{[&data]() {
             switch (data.level) {
                 case LogLevel::Trace:
-                    return Logger::LogLevel::Debug;
+                    return AsyncLogger::LogLevel::Debug;
                 case LogLevel::Info:
-                    return Logger::LogLevel::Info;
+                    return AsyncLogger::LogLevel::Info;
                 case LogLevel::Warning:
-                    return Logger::LogLevel::Warn;
+                    return AsyncLogger::LogLevel::Warning;
                 case LogLevel::Error:
                 case LogLevel::Critical:
-                    return Logger::LogLevel::Error;
+                    return AsyncLogger::LogLevel::Error;
             }
         }()};
 
@@ -122,7 +123,8 @@ namespace skyline::service::lm {
         if (logMessage.dropCount)
             message << " (Dropped Messages: " << logMessage.time << ')';
 
-        Logger::Write(hostLevel, message.str());
+        if (AsyncLogger::CheckLogLevel(hostLevel))
+            AsyncLogger::LogAsync(hostLevel, message.str());
 
         return {};
     }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright © 2020 Skyline Team and Contributors (https://github.com/skyline-emu/)
 
+#include <fstream>
 #include <cxxabi.h>
 #include <unistd.h>
 #include "common/signal.h"
@@ -41,14 +42,11 @@ namespace skyline::nce {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 LOGENF("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace(e.frames));
-                Logger::EmulationContext.Flush();
 
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);
                 }
-            } else {
-                Logger::EmulationContext.Flush();
             }
 
             abi::__cxa_end_catch(); // We call this prior to the longjmp to cause the exception object to be destroyed
@@ -63,7 +61,6 @@ namespace skyline::nce {
             std::longjmp(state.thread->originalCtx, true);
         } catch (const exception &e) {
             LOGENF("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
-            Logger::EmulationContext.Flush();
 
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
@@ -77,8 +74,6 @@ namespace skyline::nce {
                 LOGENF("{} (SVC: {})\nStack Trace:{}", e.what(), svc.name, state.loader->GetStackTrace());
             else
                 LOGENF("{} (SVC: 0x{:X})\nStack Trace:{}", e.what(), svcId, state.loader->GetStackTrace());
-
-            Logger::EmulationContext.Flush();
 
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
@@ -124,21 +119,17 @@ namespace skyline::nce {
         } catch (const signal::SignalException &e) {
             if (e.signal != SIGINT) {
                 LOGENF("{} (Hook: {})\nStack Trace:{}", e.what(), hookedSymbol.prettyName, state.loader->GetStackTrace(e.frames));
-                Logger::EmulationContext.Flush();
 
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
                     state.process->Kill(false);
                 }
-            } else {
-                Logger::EmulationContext.Flush();
             }
 
             abi::__cxa_end_catch();
             std::longjmp(state.thread->originalCtx, true);
         } catch (const exception &e) {
             LOGENF("{}\nStack Trace:{}", e.what(), state.loader->GetStackTrace(e.frames));
-            Logger::EmulationContext.Flush();
 
             if (state.thread->id) {
                 signal::BlockSignal({SIGINT});
@@ -149,7 +140,6 @@ namespace skyline::nce {
             std::longjmp(state.thread->originalCtx, true);
         } catch (const std::exception &e) {
             LOGENF("{} (Hook: {})\nStack Trace:{}", e.what(), hookedSymbol.prettyName, state.loader->GetStackTrace());
-            Logger::EmulationContext.Flush();
         }
     }
 
@@ -176,7 +166,6 @@ namespace skyline::nce {
                     cpuContext += fmt::format("\n  X{:<2}: 0x{:<16X} X{:<2}: 0x{:X}", index, mctx.regs[index], index + 1, mctx.regs[index + 1]);
 
                 LOGE("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
-                Logger::EmulationContext.Flush();
 
                 if (state.thread->id) {
                     signal::BlockSignal({SIGINT});
