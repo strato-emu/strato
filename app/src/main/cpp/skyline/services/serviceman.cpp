@@ -212,8 +212,8 @@ namespace skyline::service {
     void ServiceManager::SyncRequestHandler(KHandle handle) {
         TRACE_EVENT("kernel", "ServiceManager::SyncRequestHandler");
         auto session{state.process->GetHandle<type::KSession>(handle)};
-        Logger::Verbose("----IPC Start----");
-        Logger::Verbose("Handle is 0x{:X}", handle);
+        LOGV("----IPC Start----");
+        LOGV("Handle is 0x{:X}", handle);
 
         if (session->isOpen) {
             ipc::IpcRequest request(session->isDomain, state);
@@ -288,6 +288,6 @@ namespace skyline::service {
         } else {
             LOGW("svcSendSyncRequest called on closed handle: 0x{:X}", handle);
         }
-        Logger::Verbose("====IPC End====");
+        LOGV("====IPC End====");
     }
 }

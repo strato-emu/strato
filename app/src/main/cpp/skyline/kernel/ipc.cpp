@@ -30,7 +30,7 @@ namespace skyline::kernel::ipc {
             auto bufX{reinterpret_cast<BufferDescriptorX *>(pointer)};
             if (bufX->Pointer()) {
                 inputBuf.emplace_back(bufX->Pointer(), static_cast<u16>(bufX->size));
-                Logger::Verbose("Buf X #{}: 0x{:X}, 0x{:X}, #{}", index, bufX->Pointer(), static_cast<u16>(bufX->size), static_cast<u16>(bufX->Counter()));
+                LOGV("Buf X #{}: {}, 0x{:X}, #{}", index, fmt::ptr(bufX->Pointer()), static_cast<u16>(bufX->size), static_cast<u16>(bufX->Counter()));
             }
             pointer += sizeof(BufferDescriptorX);
         }
@@ -39,7 +39,7 @@ namespace skyline::kernel::ipc {
             auto bufA{reinterpret_cast<BufferDescriptorABW *>(pointer)};
             if (bufA->Pointer()) {
                 inputBuf.emplace_back(bufA->Pointer(), bufA->Size());
-                Logger::Verbose("Buf A #{}: 0x{:X}, 0x{:X}", index, bufA->Pointer(), static_cast<u64>(bufA->Size()));
+                LOGV("Buf A #{}: {}, 0x{:X}", index, fmt::ptr(bufA->Pointer()), static_cast<u64>(bufA->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -48,7 +48,7 @@ namespace skyline::kernel::ipc {
             auto bufB{reinterpret_cast<BufferDescriptorABW *>(pointer)};
             if (bufB->Pointer()) {
                 outputBuf.emplace_back(bufB->Pointer(), bufB->Size());
-                Logger::Verbose("Buf B #{}: 0x{:X}, 0x{:X}", index, bufB->Pointer(), static_cast<u64>(bufB->Size()));
+                LOGV("Buf B #{}: {}, 0x{:X}", index, fmt::ptr(bufB->Pointer()), static_cast<u64>(bufB->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -58,7 +58,7 @@ namespace skyline::kernel::ipc {
             if (bufW->Pointer()) {
                 outputBuf.emplace_back(bufW->Pointer(), bufW->Size());
                 outputBuf.emplace_back(bufW->Pointer(), bufW->Size());
-                Logger::Verbose("Buf W #{}: 0x{:X}, 0x{:X}", index, bufW->Pointer(), static_cast<u16>(bufW->Size()));
+                LOGV("Buf W #{}: {}, 0x{:X}", index, fmt::ptr(bufW->Pointer()), static_cast<u16>(bufW->Size()));
             }
             pointer += sizeof(BufferDescriptorABW);
         }
@@ -106,30 +106,30 @@ namespace skyline::kernel::ipc {
             auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
             if (bufC->address) {
                 outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
-                Logger::Verbose("Buf C: 0x{:X}, 0x{:X}", bufC->Pointer(), static_cast<u16>(bufC->size));
+                LOGV("Buf C: {}, 0x{:X}", fmt::ptr(bufC->Pointer()), static_cast<u16>(bufC->size));
             }
         } else if (header->cFlag > BufferCFlag::SingleDescriptor) {
             for (u8 index{}; (static_cast<u8>(header->cFlag) - 2) > index; index++) { // (cFlag - 2) C descriptors are present
                 auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};
                 if (bufC->address) {
                     outputBuf.emplace_back(bufC->Pointer(), static_cast<u16>(bufC->size));
-                    Logger::Verbose("Buf C #{}: 0x{:X}, 0x{:X}", index, bufC->Pointer(), static_cast<u16>(bufC->size));
+                    LOGV("Buf C #{}: {}, 0x{:X}", index, fmt::ptr(bufC->Pointer()), static_cast<u16>(bufC->size));
                 }
                 bufCPointer += sizeof(BufferDescriptorC);
             }
         }
 
         if (header->type == CommandType::Request || header->type == CommandType::RequestWithContext) {
-            Logger::Verbose("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), static_cast<u64>(cmdArgSz));
+            LOGV("Header: Input No: {}, Output No: {}, Raw Size: {}", inputBuf.size(), outputBuf.size(), static_cast<u64>(cmdArgSz));
             if (header->handleDesc)
-                Logger::Verbose("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", static_cast<bool>(handleDesc->sendPid), static_cast<u32>(handleDesc->copyCount), static_cast<u32>(handleDesc->moveCount));
+                LOGV("Handle Descriptor: Send PID: {}, Copy Count: {}, Move Count: {}", static_cast<bool>(handleDesc->sendPid), static_cast<u32>(handleDesc->copyCount), static_cast<u32>(handleDesc->moveCount));
             if (isDomain)
-                Logger::Verbose("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->inputCount, domain->objectId);
+                LOGV("Domain Header: Command: {}, Input Object Count: {}, Object ID: 0x{:X}", domain->command, domain->inputCount, domain->objectId);
 
             if (isTipc)
-                Logger::Verbose("TIPC Command ID: 0x{:X}", static_cast<u16>(header->type));
+                LOGV("TIPC Command ID: 0x{:X}", static_cast<u16>(header->type));
             else
-                Logger::Verbose("Command ID: 0x{:X}", static_cast<u32>(payload->value));
+                LOGV("Command ID: 0x{:X}", static_cast<u32>(payload->value));
         }
     }
 
@@ -197,6 +197,6 @@ namespace skyline::kernel::ipc {
             }
         }
 
-        Logger::Verbose("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(errorCode), copyHandles.size(), moveHandles.size());
+        LOGV("Output: Raw Size: {}, Result: 0x{:X}, Copy Handles: {}, Move Handles: {}", static_cast<u32>(header->rawSize), static_cast<u32>(errorCode), copyHandles.size(), moveHandles.size());
     }
 }
