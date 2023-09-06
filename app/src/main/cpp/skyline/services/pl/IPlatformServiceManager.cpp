@@ -8,7 +8,7 @@ namespace skyline::service::pl {
     IPlatformServiceManager::IPlatformServiceManager(const DeviceState &state, ServiceManager &manager, SharedFontCore &core) : BaseService(state, manager), core(core) {}
 
     Result IPlatformServiceManager::RequestLoad(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        Logger::Debug("Requested a shared font to be loaded: {}", request.Pop<u32>());
+        LOGD("Requested a shared font to be loaded: {}", request.Pop<u32>());
         return {};
     }
 

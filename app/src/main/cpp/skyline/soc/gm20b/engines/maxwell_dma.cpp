@@ -60,7 +60,7 @@ namespace skyline::soc::gm20b::engine {
         } else {
             // 1D copy
             // TODO: implement swizzled 1D copies based on VMM 'kind'
-            Logger::Debug("src: 0x{:X} dst: 0x{:X} size: 0x{:X}", u64{*registers.offsetIn}, u64{*registers.offsetOut}, *registers.lineLengthIn);
+            LOGD("src: 0x{:X} dst: 0x{:X} size: 0x{:X}", u64{*registers.offsetIn}, u64{*registers.offsetOut}, *registers.lineLengthIn);
 
             size_t dstBpp{registers.launchDma->remapEnable ? static_cast<size_t>(registers.remapComponents->NumDstComponents() * registers.remapComponents->ComponentSize()) : 1};
 
@@ -182,7 +182,7 @@ namespace skyline::soc::gm20b::engine {
             }
         }};
 
-        Logger::Debug("{}x{}x{}@0x{:X} -> {}x{}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, srcDimensions.depth, srcLayerAddress, dstDimensions.width, dstDimensions.height, dstDimensions.depth, u64{*registers.offsetOut});
+        LOGD("{}x{}x{}@0x{:X} -> {}x{}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, srcDimensions.depth, srcLayerAddress, dstDimensions.width, dstDimensions.height, dstDimensions.depth, u64{*registers.offsetOut});
 
         if (srcMappings.size() != 1 || dstMappings.size() != 1) [[unlikely]]
             HandleSplitCopy(srcMappings, dstMappings, srcLayerStride, dstSize, copyFunc);
@@ -209,7 +209,7 @@ namespace skyline::soc::gm20b::engine {
         // Get destination address
         auto dstMappings{channelCtx.asCtx->gmmu.TranslateRange(*registers.offsetOut, dstLayerStride)};
 
-        Logger::Debug("{}x{}x{}@0x{:X} -> {}x{}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, srcDimensions.depth, u64{*registers.offsetIn}, dstDimensions.width, dstDimensions.height, dstDimensions.depth, dstLayerAddress);
+        LOGD("{}x{}x{}@0x{:X} -> {}x{}x{}@0x{:X}", srcDimensions.width, srcDimensions.height, srcDimensions.depth, u64{*registers.offsetIn}, dstDimensions.width, dstDimensions.height, dstDimensions.depth, dstLayerAddress);
 
         auto copyFunc{[&](u8 *src, u8 *dst) {
             if ((util::AlignDown(srcDimensions.width, 64) != util::AlignDown(dstDimensions.width, 64))
@@ -246,14 +246,14 @@ namespace skyline::soc::gm20b::engine {
         switch (registers.launchDma->semaphoreType) {
             case Registers::LaunchDma::SemaphoreType::ReleaseOneWordSemaphore:
                 channelCtx.asCtx->gmmu.Write(address, payload);
-                Logger::Debug("address: 0x{:X} payload: {}", address, payload);
+                LOGD("address: 0x{:X} payload: {}", address, payload);
                 break;
             case Registers::LaunchDma::SemaphoreType::ReleaseFourWordSemaphore: {
                 // Write timestamp first to ensure correct ordering
                 u64 timestamp{GetGpuTimeTicks()};
                 channelCtx.asCtx->gmmu.Write(address + 8, timestamp);
                 channelCtx.asCtx->gmmu.Write(address, payload);
-                Logger::Debug("address: 0x{:X} payload: {} timestamp: {}", address, payload, timestamp);
+                LOGD("address: 0x{:X} payload: {} timestamp: {}", address, payload, timestamp);
                 break;
             }
             default:

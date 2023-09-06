@@ -10,7 +10,7 @@ namespace skyline::service::psm {
 
     Result IPsmSession::BindStateChangeEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(stateChangeEvent)};
-        Logger::Debug("Bind State Change Event Handle: 0x{:X}", handle);
+        LOGD("Bind State Change Event Handle: 0x{:X}", handle);
         response.copyHandles.push_back(handle);
         return {};
     }

@@ -47,7 +47,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::AllocSpace(In<u32> pages, In<u32> pageSize, In<MappingFlags> flags, InOut<u64> offset) {
-        Logger::Debug("pages: 0x{:X}, pageSize: 0x{:X}, flags: ( fixed: {}, sparse: {} ), offset: 0x{:X}",
+        LOGD("pages: 0x{:X}, pageSize: 0x{:X}, flags: ( fixed: {}, sparse: {} ), offset: 0x{:X}",
                             pages, pageSize, flags.fixed, flags.sparse, offset);
 
         std::scoped_lock lock(mutex);
@@ -109,7 +109,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::FreeSpace(In<u64> offset, In<u32> pages, In<u32> pageSize) {
-        Logger::Debug("offset: 0x{:X}, pages: 0x{:X}, pageSize: 0x{:X}", offset, pages, pageSize);
+        LOGD("offset: 0x{:X}, pages: 0x{:X}, pageSize: 0x{:X}", offset, pages, pageSize);
 
         std::scoped_lock lock(mutex);
 
@@ -143,7 +143,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult AsGpu::UnmapBuffer(In<u64> offset) {
-        Logger::Debug("offset: 0x{:X}", offset);
+        LOGD("offset: 0x{:X}", offset);
 
         std::scoped_lock lock(mutex);
 
@@ -162,7 +162,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     PosixResult AsGpu::MapBufferEx(In<MappingFlags> flags, In<u32> kind,
                                    In<core::NvMap::Handle::Id> handle, In<u64> bufferOffset,
                                    In<u64> mappingSize, InOut<u64> offset) {
-        Logger::Debug("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}",
+        LOGD("flags: ( fixed: {}, remap: {} ), kind: {}, handle: {}, bufferOffset: 0x{:X}, mappingSize: 0x{:X}, offset: 0x{:X}",
                             flags.fixed, flags.remap, kind, handle, bufferOffset, mappingSize, offset);
 
         std::scoped_lock lock(mutex);
@@ -234,7 +234,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             mappingMap[offset] = mapping;
         }
 
-        Logger::Debug("Mapped to 0x{:X}", offset);
+        LOGD("Mapped to 0x{:X}", offset);
 
         return PosixResult::Success;
     }
@@ -275,7 +275,7 @@ namespace skyline::service::nvdrv::device::nvhost {
         if (vm.initialised)
             throw exception("Cannot initialise an address space twice!");
 
-        Logger::Debug("bigPageSize: 0x{:X}, asFd: {}, flags: 0x{:X}, vaRangeStart: 0x{:X}, vaRangeEnd: 0x{:X}, vaRangeSplit: 0x{:X}",
+        LOGD("bigPageSize: 0x{:X}, asFd: {}, flags: 0x{:X}, vaRangeStart: 0x{:X}, vaRangeEnd: 0x{:X}, vaRangeSplit: 0x{:X}",
                             bigPageSize, asFd, flags, vaRangeStart, vaRangeEnd, vaRangeSplit);
 
         if (bigPageSize) {

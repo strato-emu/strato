@@ -100,7 +100,7 @@ namespace skyline::kernel::ipc {
         payloadOffset = cmdArg;
 
         if (!isTipc && payload->magic != util::MakeMagic<u32>("SFCI") && (header->type != CommandType::Control && header->type != CommandType::ControlWithContext && header->type != CommandType::Close) && (!domain || domain->command != DomainCommand::CloseVHandle)) // SFCI is the magic in received IPC messages
-            Logger::Debug("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
+            LOGD("Unexpected Magic in PayloadHeader: 0x{:X}", static_cast<u32>(payload->magic));
 
         if (header->cFlag == BufferCFlag::SingleDescriptor) {
             auto bufC{reinterpret_cast<BufferDescriptorC *>(bufCPointer)};

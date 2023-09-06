@@ -122,7 +122,7 @@ namespace skyline::soc::host1x {
             signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
 
             gatherQueue.Process([this](span<u32> gather) {
-                Logger::Debug("Processing pushbuffer: 0x{:X}, size: 0x{:X}", gather.data(), gather.size());
+                LOGD("Processing pushbuffer: {}, size: 0x{:X}", fmt::ptr(gather.data()), gather.size());
                 Process(gather);
             }, [] {});
         } catch (const signal::SignalException &e) {

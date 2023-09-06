@@ -35,7 +35,7 @@ namespace skyline::soc::host1x {
                 u32 syncpointId{incrQueue.front()};
                 incrQueue.pop();
 
-                Logger::Debug("Increment syncpoint: {}", syncpointId);
+                LOGD("Increment syncpoint: {}", syncpointId);
                 syncpoints.at(syncpointId).Increment();
             }
         }
@@ -55,11 +55,11 @@ namespace skyline::soc::host1x {
 
                     switch (incrSyncpoint.condition) {
                         case IncrementSyncpointMethod::Condition::Immediate:
-                            Logger::Debug("Increment syncpoint: {}", incrSyncpoint.index);
+                            LOGD("Increment syncpoint: {}", incrSyncpoint.index);
                             syncpoints.at(incrSyncpoint.index).Increment();
                             break;
                         case IncrementSyncpointMethod::Condition::OpDone:
-                            Logger::Debug("Queue syncpoint for OpDone: {}", incrSyncpoint.index);
+                            LOGD("Queue syncpoint for OpDone: {}", incrSyncpoint.index);
                             AddIncr(incrSyncpoint.index);
                             SubmitPendingIncrs(); // FIXME: immediately submit the incrs as classes are not yet implemented
                             break;

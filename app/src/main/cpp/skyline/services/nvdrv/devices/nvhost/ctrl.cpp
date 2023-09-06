@@ -68,7 +68,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointWaitEventImpl(In<Fence> fence, In<i32> timeout, InOut<SyncpointEventValue> value, bool allocate) {
-        Logger::Debug("fence: ( id: {}, threshold: {} ), timeout: {}, value: {}, allocate: {}",
+        LOGD("fence: ( id: {}, threshold: {} ), timeout: {}, value: {}, allocate: {}",
                             fence.id, fence.threshold, timeout, value.val, allocate);
 
         if (fence.id >= soc::host1x::SyncpointCount)
@@ -119,7 +119,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             return PosixResult::InvalidArgument;
 
         if (!event->IsInUse()) {
-            Logger::Debug("Waiting on syncpoint event: {} with fence: ({}, {})", slot, fence.id, fence.threshold);
+            LOGD("Waiting on syncpoint event: {} with fence: ({}, {})", slot, fence.id, fence.threshold);
             event->RegisterWaiter(state.soc->host1x, fence);
 
             value.val = 0;
@@ -157,7 +157,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointClearEventWait(In<SyncpointEventValue> value) {
-        Logger::Debug("slot: {}", value.slot);
+        LOGD("slot: {}", value.slot);
 
         u16 slot{value.slot};
         if (slot >= SyncpointEventCount)
@@ -170,7 +170,7 @@ namespace skyline::service::nvdrv::device::nvhost {
             return PosixResult::InvalidArgument;
 
         if (event->state.exchange(SyncpointEvent::State::Cancelling) == SyncpointEvent::State::Waiting) {
-            Logger::Debug("Cancelling waiting syncpoint event: {}", slot);
+            LOGD("Cancelling waiting syncpoint event: {}", slot);
             event->Cancel(state.soc->host1x);
             core.syncpointManager.UpdateMin(event->fence.id);
         }
@@ -190,7 +190,7 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointAllocateEvent(In<u32> slot) {
-        Logger::Debug("slot: {}", slot);
+        LOGD("slot: {}", slot);
 
         if (slot >= SyncpointEventCount)
             return PosixResult::InvalidArgument;
@@ -208,14 +208,14 @@ namespace skyline::service::nvdrv::device::nvhost {
     }
 
     PosixResult Ctrl::SyncpointFreeEvent(In<u32> slot) {
-        Logger::Debug("slot: {}", slot);
+        LOGD("slot: {}", slot);
 
         std::scoped_lock lock{syncpointEventMutex};
         return SyncpointFreeEventLocked(slot);
     }
 
     PosixResult Ctrl::SyncpointFreeEventBatch(In<u64> bitmask) {
-        Logger::Debug("bitmask: 0x{:X}", bitmask);
+        LOGD("bitmask: 0x{:X}", bitmask);
 
         auto err{PosixResult::Success};
 

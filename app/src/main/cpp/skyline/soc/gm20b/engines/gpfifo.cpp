@@ -11,20 +11,20 @@ namespace skyline::soc::gm20b::engine {
     GPFIFO::GPFIFO(host1x::SyncpointSet &syncpoints, ChannelContext &channelCtx) : syncpoints(syncpoints), channelCtx(channelCtx) {}
 
     void GPFIFO::CallMethod(u32 method, u32 argument) {
-        Logger::Debug("Called method in GPFIFO: 0x{:X} args: 0x{:X}", method, argument);
+        LOGD("Called method in GPFIFO: 0x{:X} args: 0x{:X}", method, argument);
 
         registers.raw[method] = argument;
 
         switch (method) {
             ENGINE_STRUCT_CASE(syncpoint, action, {
                 if (action.operation == Registers::Syncpoint::Operation::Incr) {
-                    Logger::Debug("Increment syncpoint: {}", +action.index);
+                    LOGD("Increment syncpoint: {}", +action.index);
                     channelCtx.executor.AddDeferredAction([=, syncpoints = &this->syncpoints, index = action.index]() {
                         syncpoints->at(index).host.Increment();
                     });
                     syncpoints.at(action.index).guest.Increment();
                 } else if (action.operation == Registers::Syncpoint::Operation::Wait) {
-                    Logger::Debug("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint->payload);
+                    LOGD("Wait syncpoint: {}, thresh: {}", +action.index, registers.syncpoint->payload);
 
                     // Wait forever for another channel to increment
 
@@ -40,7 +40,7 @@ namespace skyline::soc::gm20b::engine {
 
                 switch (action.operation) {
                     case Registers::Semaphore::Operation::Acquire:
-                        Logger::Debug("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
+                        LOGD("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
                         channelCtx.executor.Submit();
                         channelCtx.Unlock();
 
@@ -60,10 +60,10 @@ namespace skyline::soc::gm20b::engine {
                             channelCtx.asCtx->gmmu.Write(address, payload);
                         });
 
-                        Logger::Debug("SemaphoreRelease: address: 0x{:X} payload: {}", address, registers.semaphore->payload);
+                        LOGD("SemaphoreRelease: address: 0x{:X} payload: {}", address, registers.semaphore->payload);
                         break;
                     case Registers::Semaphore::Operation::AcqGeq    :
-                        Logger::Debug("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
+                        LOGD("Acquire semaphore: 0x{:X} payload: {}", address, registers.semaphore->payload);
                         channelCtx.executor.Submit();
                         channelCtx.Unlock();
 
@@ -106,7 +106,7 @@ namespace skyline::soc::gm20b::engine {
                                     return (origVal == 0 || origVal > payload) ? payload : origVal - 1;
                             }
                         }(registers.semaphore->action.reduction, origVal, registers.semaphore->payload, isSigned)};
-                        Logger::Debug("SemaphoreReduction: address: 0x{:X} op: {} payload: {} original value: {} reduced value: {}",
+                        LOGD("SemaphoreReduction: address: 0x{:X} op: {} payload: {} original value: {} reduced value: {}",
                                       address, static_cast<u8>(registers.semaphore->action.reduction), registers.semaphore->payload, origVal, val);
 
                         channelCtx.asCtx->gmmu.Write(address, val);

@@ -120,7 +120,7 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         SettingsWeak = settings;
         jvmManager->InitializeControllers();
 
-        skyline::Logger::DebugNoPrefix("Launching ROM {}", skyline::JniString(env, romUriJstring));
+        LOGDNF("Launching ROM {}", skyline::JniString(env, romUriJstring));
 
         os->Execute(romFd, static_cast<skyline::loader::RomFormat>(romType));
     } catch (std::exception &e) {

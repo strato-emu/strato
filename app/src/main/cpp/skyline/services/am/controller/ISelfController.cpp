@@ -29,7 +29,7 @@ namespace skyline::service::am {
         libraryAppletLaunchableEvent->Signal();
 
         KHandle handle{state.process->InsertItem(libraryAppletLaunchableEvent)};
-        Logger::Debug("Library Applet Launchable Event Handle: 0x{:X}", handle);
+        LOGD("Library Applet Launchable Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};
@@ -65,14 +65,14 @@ namespace skyline::service::am {
 
     Result ISelfController::CreateManagedDisplayLayer(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto layerId{hosbinder->CreateLayer(hosbinder::DisplayId::Default)};
-        Logger::Debug("Creating Managed Layer #{} on 'Default' Display", layerId);
+        LOGD("Creating Managed Layer #{} on 'Default' Display", layerId);
         response.Push(layerId);
         return {};
     }
 
     Result ISelfController::SetIdleTimeDetectionExtension(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         idleTimeDetectionExtension = request.Pop<u32>();
-        Logger::Debug("Setting Idle Time Detection Extension: 0x{:X}", idleTimeDetectionExtension);
+        LOGD("Setting Idle Time Detection Extension: 0x{:X}", idleTimeDetectionExtension);
         return {};
     }
 
@@ -89,7 +89,7 @@ namespace skyline::service::am {
 
     Result ISelfController::GetAccumulatedSuspendedTickChangedEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(accumulatedSuspendedTickChangedEvent)};
-        Logger::Debug("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
+        LOGD("Accumulated Suspended Tick Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};
@@ -97,7 +97,7 @@ namespace skyline::service::am {
 
     Result ISelfController::SetAlbumImageTakenNotificationEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto albumImageTakenNotificationEnabled{request.Pop<u8>()};;
-        Logger::Debug("Setting Album Image Taken Notification Enabled: {}", albumImageTakenNotificationEnabled);
+        LOGD("Setting Album Image Taken Notification Enabled: {}", albumImageTakenNotificationEnabled);
         return {};
     }
 

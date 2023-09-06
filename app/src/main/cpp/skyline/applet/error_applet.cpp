@@ -18,7 +18,7 @@ namespace skyline::applet {
 
         errorStorage = PopNormalInput();
         auto errorCommonHeader{errorStorage->GetSpan().as<ErrorCommonHeader>()};
-        Logger::Debug("ErrorApplet: version: 0x{:X}, type: 0x{:X}", commonArg.apiVersion, errorCommonHeader.type);
+        LOGD("ErrorApplet: version: 0x{:X}, type: 0x{:X}", commonArg.apiVersion, errorCommonHeader.type);
 
         switch (errorCommonHeader.type) {
             case ErrorType::ErrorCommonArg:

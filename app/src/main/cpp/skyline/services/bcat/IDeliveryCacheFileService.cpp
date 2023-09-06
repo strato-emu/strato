@@ -10,7 +10,7 @@ namespace skyline::service::bcat {
         const auto dir_name{request.PopString(0x20)};
         const auto file_name{request.PopString(0x20)};
 
-        Logger::Debug("Directory name = {}, File name = {}", dir_name, file_name);
+        LOGD("Directory name = {}, File name = {}", dir_name, file_name);
         return {};
     }
 

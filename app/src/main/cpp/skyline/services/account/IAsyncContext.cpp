@@ -9,7 +9,7 @@ namespace skyline::service::account {
 
     Result IAsyncContext::GetSystemEvent(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto handle{state.process->InsertItem(systemEvent)};
-        Logger::Debug("System Event Handle: 0x{:X}", handle);
+        LOGD("System Event Handle: 0x{:X}", handle);
 
         response.copyHandles.push_back(handle);
         return {};
