@@ -290,6 +290,21 @@ namespace skyline::service::hid {
         return {};
     }
 
+    Result IHidServer::ActivateConsoleSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto appletResourceUserId{request.Pop<u64>()};
+        return {};
+    }
+
+    Result IHidServer::InitializeSevenSixAxisSensor(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        auto appletResourceUserId{request.Pop<u64>()};
+        auto transferMemory1Size{request.Pop<u64>()};
+        auto transferMemory2Size{request.Pop<u64>()};
+        auto transferMemory1Handle{state.process->GetHandle<kernel::type::KTransferMemory>(request.copyHandles.at(0))};
+        auto transferMemory2Handle{state.process->GetHandle<kernel::type::KTransferMemory>(request.copyHandles.at(1))};
+
+        return {};
+    }
+
     Result IHidServer::ResetSevenSixAxisSensorTimestamp(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         auto appletResourceUserId{request.Pop<u64>()};
         return {};
