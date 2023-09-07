@@ -11,15 +11,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.Preference.SummaryProvider
-import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.R
 import emu.skyline.fragments.IndeterminateProgressDialogFragment
 import emu.skyline.getPublicFilesDir
 import emu.skyline.settings.SettingsActivity
 import emu.skyline.utils.ZipUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FilenameFilter
+import java.io.IOException
 
 class FirmwareImportPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
     private class Firmware(val valid : Boolean, val version : String)
@@ -51,12 +54,14 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
                     } else {
                         firmwarePath.deleteRecursively()
                         cacheFirmwareDir.copyRecursively(firmwarePath, true)
-                        PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, firmware.version).apply()
+                        persistString(firmware.version)
                         extractFonts(firmwarePath.path, keysPath, fontsPath)
-                        notifyChanged()
+                        CoroutineScope(Dispatchers.Main).launch {
+                            notifyChanged()
+                        }
                         R.string.import_firmware_success
                     }
-                } catch (e : Exception) {
+                } catch (e : IOException) {
                     messageToShow = R.string.error
                 } finally {
                     cacheFirmwareDir.deleteRecursively()
@@ -75,7 +80,12 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
         isEnabled = keysDir.exists() && keysDir.listFiles()?.isNotEmpty() == true
 
         summaryProvider = SummaryProvider<FirmwareImportPreference> { preference ->
-            getFirmwareStringRes(preference)
+            val defaultString = if (preference.isEnabled)
+                context.getString(R.string.firmware_not_installed)
+            else
+                context.getString(R.string.firmware_keys_needed)
+
+            getPersistedString(defaultString)
         }
     }
 
@@ -98,23 +108,6 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
         } else Firmware(false, "")
     }
 
-    private fun getFirmwareStringRes(preference : Preference) : String {
-        if (!preference.isEnabled) {
-            return context.getString(R.string.firmware_keys_needed)
-        }
-
-        val noFirmwareInstalled = context.getString(R.string.firmware_not_installed)
-        val storedString = getPersistedString((noFirmwareInstalled))
-        val firmwarePathEmpty = !firmwarePath.exists() || firmwarePath.listFiles()?.isEmpty() == true
-
-        return if (storedString == noFirmwareInstalled && !firmwarePathEmpty)
-            fetchFirmwareVersion(firmwarePath.path, keysPath)
-        else if (storedString != noFirmwareInstalled && firmwarePathEmpty)
-            noFirmwareInstalled
-        else
-            storedString
-    }
-
     private external fun fetchFirmwareVersion(systemArchivesPath : String, keysPath : String) : String
-    private external fun extractFonts(systemArchivesPath : String, keysPath : String, fontsPath: String)
+    private external fun extractFonts(systemArchivesPath : String, keysPath : String, fontsPath : String)
 }
