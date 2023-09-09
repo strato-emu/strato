@@ -5,6 +5,7 @@
 
 package emu.skyline
 
+import android.app.Dialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ShortcutInfo
@@ -18,7 +19,10 @@ import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.color.DynamicColorsOptions
 import com.google.android.material.snackbar.Snackbar
 import emu.skyline.data.AppItem
 import emu.skyline.data.AppItemTag
@@ -27,6 +31,7 @@ import emu.skyline.loader.LoaderResult
 import emu.skyline.settings.SettingsActivity
 import emu.skyline.utils.SaveManagementUtils
 import emu.skyline.utils.serializable
+
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
@@ -47,6 +52,7 @@ class AppDialog : BottomSheetDialogFragment() {
     }
 
     private lateinit var binding : AppDialogBinding
+    private lateinit var contentTheme : DynamicColorsOptions
 
     private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
 
@@ -58,6 +64,7 @@ class AppDialog : BottomSheetDialogFragment() {
 
     override fun onCreate(savedInstanceState : Bundle?) {
         super.onCreate(savedInstanceState)
+        contentTheme = DynamicColorsOptions.Builder().setContentBasedSource(item.bitmapIcon).build()
         documentPicker = SaveManagementUtils.registerDocumentPicker(requireActivity()) {
             val isSaveFileOfThisGame = SaveManagementUtils.saveFolderGameExists(item.titleId)
             binding.deleteSave.isEnabled = isSaveFileOfThisGame
@@ -66,10 +73,24 @@ class AppDialog : BottomSheetDialogFragment() {
         startForResultExportSave = SaveManagementUtils.registerStartForResultExportSave(requireActivity())
     }
 
+    override fun onCreateDialog(savedInstanceState : Bundle?) : Dialog {
+        val context = DynamicColors.wrapContextIfAvailable(
+            requireContext(),
+            contentTheme
+        )
+        return BottomSheetDialog(context, theme)
+    }
+
     /**
      * This inflates the layout of the dialog after initial view creation
      */
-    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) = AppDialogBinding.inflate(inflater).also { binding = it }.root
+    override fun onCreateView(inflater : LayoutInflater, container : ViewGroup?, savedInstanceState : Bundle?) : View? {
+        val context = DynamicColors.wrapContextIfAvailable(
+            requireContext(),
+            contentTheme
+        )
+        return AppDialogBinding.inflate(inflater.cloneInContext(context)).also { binding = it }.root
+    }
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
