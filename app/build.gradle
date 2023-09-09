@@ -15,7 +15,7 @@ idea.module {
 
 android {
     namespace 'emu.skyline'
-    compileSdk 33
+    compileSdk 34
 
     var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true")
 
@@ -23,7 +23,7 @@ android {
         applicationId "skyline.emu"
 
         minSdk 29
-        targetSdk 33
+        targetSdk 34
 
         versionCode 3
         versionName "0.0.3"
