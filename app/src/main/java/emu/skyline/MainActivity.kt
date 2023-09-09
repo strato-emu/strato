@@ -113,8 +113,8 @@ class MainActivity : AppCompatActivity() {
         setupAppList()
 
         binding.swipeRefreshLayout.apply {
-            setProgressBackgroundColorSchemeColor(obtainStyledAttributes(intArrayOf(R.attr.colorSurfaceVariant)).use { it.getColor(0, Color.BLACK) })
-            setColorSchemeColors(obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.WHITE) })
+            setProgressBackgroundColorSchemeColor(obtainStyledAttributes(intArrayOf(com.google.android.material.R.attr.colorSurfaceVariant)).use { it.getColor(0, Color.BLACK) })
+            setColorSchemeColors(obtainStyledAttributes(intArrayOf(androidx.appcompat.R.attr.colorPrimary)).use { it.getColor(0, Color.WHITE) })
             post { setDistanceToTriggerSync(binding.swipeRefreshLayout.height / 3) }
             setOnRefreshListener { loadRoms(false) }
         }

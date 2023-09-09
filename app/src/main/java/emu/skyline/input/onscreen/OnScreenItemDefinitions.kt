@@ -94,7 +94,7 @@ open class JoystickButton(
     override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) = Unit
 
     private val activationRadiusPaint = Paint().apply {
-        color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.RED) }
+        color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(androidx.appcompat.R.attr.colorPrimary)).use { it.getColor(0, Color.RED) }
         alpha = 64
     }
 

@@ -47,7 +47,7 @@ abstract class OnScreenButton(
     init {
         if (disabledSelectionPaint == null) {
             disabledSelectionPaint = Paint().apply {
-                color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorTertiary)).use { it.getColor(0, Color.GREEN) }
+                color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(com.google.android.material.R.attr.colorTertiary)).use { it.getColor(0, Color.GREEN) }
                 style = Paint.Style.STROKE
                 strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, onScreenControllerView.context.resources.displayMetrics)
             }
