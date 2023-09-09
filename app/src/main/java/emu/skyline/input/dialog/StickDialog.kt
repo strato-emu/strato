@@ -136,11 +136,11 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 stageAnimation?.let {
                                     handler.postDelayed(it, 750)
                                 }
-                            }?.start()
+                            }.start()
                         }
 
                         handler.postDelayed(runnable, 300)
-                    }?.start()
+                    }.start()
                 }
             }
 
@@ -166,11 +166,11 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                                 stageAnimation?.let {
                                     handler.postDelayed(it, 750)
                                 }
-                            }?.start()
+                            }.start()
                         }
 
                         handler.postDelayed(runnable, 300)
-                    }?.start()
+                    }.start()
                 }
             }
 
@@ -200,7 +200,7 @@ class StickDialog @JvmOverloads constructor(val item : ControllerStickViewItem? 
                         }
 
                         handler.postDelayed(runnable, 300)
-                    }?.start()
+                    }.start()
                 }
             }
 
