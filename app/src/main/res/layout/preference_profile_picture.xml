@@ -27,7 +27,7 @@
             android:ellipsize="marquee"
             android:singleLine="true"
             android:textAppearance="?android:attr/textAppearanceListItem"
-            tools:text="Profile picture" />
+            tools:text="@string/profile_picture" />
 
         <TextView
             android:id="@android:id/summary"
@@ -40,7 +40,7 @@
             android:maxLines="10"
             android:textAlignment="viewStart"
             android:textColor="?android:attr/textColorSecondary"
-            tools:text="No picture selected" />
+            tools:text="@string/profile_picture_not_selected" />
 
     </RelativeLayout>
 
