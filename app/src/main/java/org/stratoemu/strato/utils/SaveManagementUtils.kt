@@ -28,6 +28,7 @@ import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FilenameFilter
+import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
@@ -170,8 +171,8 @@ interface SaveManagementUtils {
 
             val filterTitleId = FilenameFilter { _, dirName -> dirName.matches(Regex("^0100[\\dA-Fa-f]{12}$")) }
 
-            try {
-                CoroutineScope(Dispatchers.IO).launch {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
                     ZipUtils.unzip(inputZip, cacheSaveDir)
                     cacheSaveDir.list(filterTitleId)?.forEach { savePath ->
                         File(savesFolder, savePath).deleteRecursively()
@@ -187,11 +188,13 @@ interface SaveManagementUtils {
                         onImportComplete()
                         Toast.makeText(context, R.string.save_file_imported_ok, Toast.LENGTH_LONG).show()
                     }
-
+                } catch (e : IOException) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show()
+                    }
+                } finally {
                     cacheSaveDir.deleteRecursively()
                 }
-            } catch (e : Exception) {
-                Toast.makeText(context, R.string.error, Toast.LENGTH_LONG).show()
             }
         }
 
