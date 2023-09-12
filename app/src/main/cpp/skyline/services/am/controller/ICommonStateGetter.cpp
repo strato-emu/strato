@@ -66,7 +66,7 @@ namespace skyline::service::am {
     }
 
     Result ICommonStateGetter::SetLcdBacklighOffEnabled(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        bool lcdBacklighOffEnabled{request.Pop<bool>()};
+        auto lcdBacklighOffEnabled{request.Pop<u8>()};
         return {};
     }
 
