@@ -28,19 +28,17 @@ namespace skyline::service::pctl {
     }
 
     Result IParentalControlService::ConfirmStereoVisionRestrictionConfigurable(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (stereoVisionRestrictionConfigurable) {
+        if (stereoVisionRestrictionConfigurable)
             return {};
-        } else {
+        else
             return result::StereoVisionRestrictionConfigurableDisabled;
-        }
     }
 
     Result IParentalControlService::GetStereoVisionRestriction(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         bool stereoVisionRestrictionTemp{false};
 
-        if (stereoVisionRestrictionConfigurable) {
+        if (stereoVisionRestrictionConfigurable)
             stereoVisionRestrictionTemp = stereoVisionRestriction;
-        }
 
         response.Push<u8>(stereoVisionRestrictionTemp);
 
@@ -50,9 +48,8 @@ namespace skyline::service::pctl {
     Result IParentalControlService::SetStereoVisionRestriction(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
         bool stereoVisionRestrictionTemp{request.Pop<bool>()};
 
-        if (!featuresRestriction && stereoVisionRestrictionConfigurable) {
+        if (!featuresRestriction && stereoVisionRestrictionConfigurable)
             stereoVisionRestriction = stereoVisionRestrictionTemp;
-        }
 
         return {};
     }
@@ -63,13 +60,12 @@ namespace skyline::service::pctl {
     }
 
     Result IParentalControlService::IsStereoVisionPermitted(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        bool isStereoVisionPermitted = false;
+        bool isStereoVisionPermitted{false};
 
-        Result resultCode = IsStereoVisionPermittedImpl();
+        Result resultCode{IsStereoVisionPermittedImpl()};
 
-        if (resultCode == Result{}) {
+        if (resultCode == Result{})
             isStereoVisionPermitted = true;
-        }
 
         response.Push<u8>(isStereoVisionPermitted);
 
@@ -77,10 +73,9 @@ namespace skyline::service::pctl {
     }
 
     Result IParentalControlService::IsStereoVisionPermittedImpl() {
-        if (stereoVisionRestrictionConfigurable && stereoVisionRestriction) {
+        if (stereoVisionRestrictionConfigurable && stereoVisionRestriction)
             return result::StereoVisionDenied;
-        } else {
+        else
             return {};
-        }
     }
 }

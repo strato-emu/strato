@@ -18,11 +18,12 @@ namespace skyline::service::pctl {
      */
     class IParentalControlService : public BaseService {
       private:
-        bool featuresRestriction = false;
-        bool stereoVisionRestrictionConfigurable = true;
-        bool stereoVisionRestriction = false;
+        bool featuresRestriction{false};
+        bool stereoVisionRestrictionConfigurable{true};
+        bool stereoVisionRestriction{false};
 
         Result IsStereoVisionPermittedImpl();
+
       public:
         IParentalControlService(const DeviceState &state, ServiceManager &manager);
 
