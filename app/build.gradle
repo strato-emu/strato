@@ -50,7 +50,7 @@ android {
     }
 
     /* JVM Bytecode Options */
-    def javaVersion = JavaVersion.VERSION_1_8
+    def javaVersion = JavaVersion.VERSION_17
     kotlinOptions {
         jvmTarget = javaVersion.toString()
         freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
