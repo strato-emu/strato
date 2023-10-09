@@ -33,5 +33,6 @@
     <style name="AppTheme" parent="BaseAppTheme">
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowLightStatusBar">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 </resources>
