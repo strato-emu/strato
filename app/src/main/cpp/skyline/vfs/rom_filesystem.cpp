@@ -28,25 +28,27 @@ namespace skyline::vfs {
     }
 
     void RomFileSystem::TraverseDirectory(u32 offset, const std::string &path) {
-        auto entry{backing->Read<RomFsDirectoryEntry>(header.dirMetaTableOffset + offset)};
+        RomFsDirectoryEntry entry;
+        do {
+            entry = backing->Read<RomFsDirectoryEntry>(header.dirMetaTableOffset + offset);
 
-        std::string childPath(path);
-        if (entry.nameSize) {
-            std::vector<char> name(entry.nameSize);
-            backing->Read(span(name), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry));
-            childPath = path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize);
-        }
+            std::string childPath(path);
+            if (entry.nameSize) {
+                std::vector<char> name(entry.nameSize);
+                backing->Read(span(name), header.dirMetaTableOffset + offset + sizeof(RomFsDirectoryEntry));
+                childPath = path + (path.empty() ? "" : "/") + std::string(name.data(), entry.nameSize);
+            }
 
-        directoryMap.emplace(childPath, entry);
+            directoryMap.emplace(childPath, entry);
 
-        if (entry.fileOffset != constant::RomFsEmptyEntry)
-            TraverseFiles(entry.fileOffset, childPath);
+            if (entry.fileOffset != constant::RomFsEmptyEntry)
+                TraverseFiles(entry.fileOffset, childPath);
 
-        if (entry.childOffset != constant::RomFsEmptyEntry)
-            TraverseDirectory(entry.childOffset, childPath);
+            if (entry.childOffset != constant::RomFsEmptyEntry)
+                TraverseDirectory(entry.childOffset, childPath);
 
-        if (entry.siblingOffset != constant::RomFsEmptyEntry)
-            TraverseDirectory(entry.siblingOffset, path);
+            offset = entry.siblingOffset;
+        } while (entry.siblingOffset != constant::RomFsEmptyEntry);
     }
 
     std::shared_ptr<Backing> RomFileSystem::OpenFileImpl(const std::string &path, Backing::Mode mode) {
