@@ -15,7 +15,7 @@ idea.module {
 
 android {
     namespace 'emu.skyline'
-    compileSdk 33
+    compileSdk 34
 
     var isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_SKYLINE_SIGNED") == "true")
 
@@ -23,7 +23,7 @@ android {
         applicationId "skyline.emu"
 
         minSdk 29
-        targetSdk 33
+        targetSdk 34
 
         versionCode 3
         versionName "0.0.3"
@@ -112,14 +112,14 @@ android {
     productFlavors {
         full {
             dimension = "version"
-            manifestPlaceholders += [appLabel: "Skyline"]
+            manifestPlaceholders += [appLabel: "Strato"]
         }
 
         dev {
             dimension = "version"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            manifestPlaceholders += [appLabel: "Skyline Dev"]
+            manifestPlaceholders += [appLabel: "Strato Dev"]
         }
     }
 
@@ -133,7 +133,7 @@ android {
     }
 
     /* NDK and CMake */
-    ndkVersion '25.0.8775105'
+    ndkVersion '26.1.10909125'
     externalNativeBuild {
         cmake {
             version '3.22.1+'
