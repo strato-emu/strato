@@ -21,8 +21,6 @@ namespace skyline::input {
         AsyncLogger::UpdateTag();
 
         try {
-            signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
-
             struct UpdateCallback {
                 std::chrono::milliseconds period;
                 std::chrono::steady_clock::time_point next;

@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <unwind.h>
 #include <fcntl.h>
+#include <cxxabi.h>
 #include "signal.h"
 
 namespace skyline::signal {
@@ -73,7 +74,7 @@ namespace skyline::signal {
                 "MOV LR, %x1\n\t"
                 "MOV FP, %x2\n\t" // The stack frame of the calling function should be set
                 "BR %x3"
-            : : "r"(frame + 1), "r"(frame->lr), "r"(frame->next), "r"(&ExceptionThrow));
+                : : "r"(frame + 1), "r"(frame->lr), "r"(frame->next), "r"(&ExceptionThrow));
 
             __builtin_unreachable();
         } else {
@@ -126,19 +127,24 @@ namespace skyline::signal {
         TlsRestorer = function;
     }
 
-    struct DefaultSignalHandler {
-        void (*function)(int, struct siginfo *, void *){};
+    using sa_sigaction = void (*)(int, siginfo *, void *);
 
+    /**
+     * @brief A signal handler wrapper which restores the previous signal handler for the signal
+     */
+    struct DefaultSignalHandler {
         ~DefaultSignalHandler();
+
+        sa_sigaction function{};
     };
 
-    std::array<DefaultSignalHandler, NSIG> DefaultSignalHandlers;
+    static std::array<DefaultSignalHandler, NSIG> DefaultHandlers{}; //!< Signal handlers for signals in host code
 
     DefaultSignalHandler::~DefaultSignalHandler() {
         if (function) {
-            int signal{static_cast<int>(this - DefaultSignalHandlers.data())};
+            int signal = static_cast<int>(std::distance(DefaultHandlers.data(), this));
 
-            struct sigaction oldAction;
+            struct sigaction oldAction{};
             Sigaction(signal, nullptr, &oldAction);
 
             struct sigaction action{
@@ -149,50 +155,168 @@ namespace skyline::signal {
         }
     }
 
-    thread_local std::array<SignalHandler, NSIG> ThreadSignalHandlers{};
+    static std::array<GuestSignalAction, NSIG> GuestHandlers{}; //!< Signal handlers for signals in guest code
 
-    __attribute__((no_stack_protector)) // Stack protector stores data in TLS at the function epilogue and verifies it at the prolog, we cannot allow writes to guest TLS and may switch to an alternative TLS during the signal handler and have disabled the stack protector as a result
-    void ThreadSignalHandler(int signal, siginfo *info, ucontext *context) {
-        void *tls{}; // The TLS value prior to being restored if it is
+    /**
+     * @brief A signal handler for handling signals coming from guest code
+     * @note As this handler might be called from guest code, it needs to restore the host TLS before executing any host code
+     * @details Stack protector is disabled as it stores data in TLS at the function epilogue and verifies it at the prolog, we cannot allow writes to guest TLS prior to restoring it
+     */
+    void __attribute__((no_stack_protector)) GuestSafeSignalHandler(int signum, siginfo *info, ucontext *context) {
+        void *tls{}; // The TLS value prior to being restored, if it is
         if (TlsRestorer)
             tls = TlsRestorer();
 
-        auto handler{ThreadSignalHandlers.at(static_cast<size_t>(signal))};
-        if (handler) {
-            handler(signal, info, context, &tls);
+        // If the TLS was restored, the signal happened in guest code
+        if (tls != nullptr) {
+            if (auto guestHandler = GuestHandlers[static_cast<size_t>(signum)])
+                guestHandler(signum, info, context, &tls);
+            else
+                LOGWNF("Unhandled guest signal {}, PC: 0x{:x}, Fault address: 0x{:x}", signum, context->uc_mcontext.pc, context->uc_mcontext.fault_address);
         } else {
-            auto defaultHandler{DefaultSignalHandlers.at(static_cast<size_t>(signal)).function};
-            if (defaultHandler)
-                defaultHandler(signal, info, context);
+            if (auto defaultHandler = DefaultHandlers[static_cast<size_t>(signum)].function)
+                defaultHandler(signum, info, context);
+            else
+                LOGWNF("Unhandled host signal {}, PC: 0x{:x}, Fault address: 0x{:x}", signum, context->uc_mcontext.pc, context->uc_mcontext.fault_address);
         }
 
         if (tls)
             asm volatile("MSR TPIDR_EL0, %x0"::"r"(tls));
     }
 
-    void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function, bool syscallRestart) {
-        static std::array<std::once_flag, NSIG> signalHandlerOnce{};
+    /**
+     * @brief Installs the guest safe signal handler for the given signals
+     */
+    void InstallSignalHandler(std::initializer_list<int> signals, bool syscallRestart) {
+        static std::array<std::once_flag, NSIG> once{};
 
         struct sigaction action{
-            .sa_sigaction = reinterpret_cast<void (*)(int, siginfo *, void *)>(ThreadSignalHandler),
-            .sa_flags = SA_SIGINFO | SA_EXPOSE_TAGBITS | (syscallRestart ? SA_RESTART : 0) | SA_ONSTACK,
+            .sa_sigaction = reinterpret_cast<sa_sigaction>(GuestSafeSignalHandler),
+            .sa_flags = SA_SIGINFO | SA_EXPOSE_TAGBITS | SA_RESTART | SA_ONSTACK,
         };
 
         for (int signal : signals) {
-            std::call_once(signalHandlerOnce[static_cast<size_t>(signal)], [signal, &action]() {
-                struct sigaction oldAction;
+            std::call_once(once[static_cast<size_t>(signal)], [&] {
+                struct sigaction oldAction{};
                 Sigaction(signal, &action, &oldAction);
-                if (oldAction.sa_flags) {
-                    oldAction.sa_flags &= ~SA_UNSUPPORTED; // Mask out kernel not supporting old sigaction() bits
-                    oldAction.sa_flags |= SA_SIGINFO | SA_EXPOSE_TAGBITS | SA_RESTART | SA_ONSTACK; // Intentionally ignore these flags for the comparison
-                    if (oldAction.sa_flags != (action.sa_flags | SA_RESTART))
-                        throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldAction.sa_flags, action.sa_flags);
+
+                auto oldFlags = oldAction.sa_flags;
+                if (oldFlags) {
+                    oldFlags &= ~SA_UNSUPPORTED; // Mask out kernel not supporting old sigaction() bits
+                    oldFlags |= SA_SIGINFO | SA_EXPOSE_TAGBITS | SA_RESTART | SA_ONSTACK; // Intentionally ignore these flags for the comparison
+                    if (oldFlags != (action.sa_flags | SA_RESTART))
+                        throw exception("Old sigaction flags aren't equivalent to the replaced signal: {:#b} | {:#b}", oldFlags, action.sa_flags);
                 }
 
-                DefaultSignalHandlers.at(static_cast<size_t>(signal)).function = (oldAction.sa_flags & SA_SIGINFO) ? oldAction.sa_sigaction : reinterpret_cast<void (*)(int, struct siginfo *, void *)>(oldAction.sa_handler);
+                // Save the old handler for the signal, ignore SIG_IGN and SIG_DFL
+                if (oldAction.sa_flags & SA_SIGINFO)
+                    DefaultHandlers[static_cast<size_t>(signal)].function = oldAction.sa_sigaction;
+                else if (oldAction.sa_handler != SIG_IGN && oldAction.sa_handler != SIG_DFL)
+                    DefaultHandlers[static_cast<size_t>(signal)].function = reinterpret_cast<sa_sigaction>(oldAction.sa_handler);
             });
-            ThreadSignalHandlers.at(static_cast<size_t>(signal)) = function;
         }
+    }
+
+    /**
+     * @brief Checks if sigchain is hooking sigaction for the given signal
+     * @return True if sigchain is hooking sigaction for the given signal
+     */
+    static bool IsSigchainHooked(int signum) {
+        struct sigaction action{}, rawAction{};
+        sigaction(signum, nullptr, &action);
+        Sigaction(signum, nullptr, &rawAction);
+
+        return action.sa_sigaction != rawAction.sa_sigaction;
+    }
+
+    void SetGuestSignalHandler(std::initializer_list<int> signals, GuestSignalAction function, bool syscallRestart) {
+        InstallSignalHandler(signals, syscallRestart);
+
+        for (int signal : signals)
+            GuestHandlers[static_cast<size_t>(signal)] = function;
+    }
+
+    void SetHostSignalHandler(std::initializer_list<int> signals, SignalAction function, bool syscallRestart) {
+        for (int signal : signals) {
+            struct sigaction action{
+                .sa_sigaction = reinterpret_cast<sa_sigaction>(function),
+                .sa_flags = SA_SIGINFO | SA_EXPOSE_TAGBITS | SA_ONSTACK | (syscallRestart ? SA_RESTART : 0),
+            };
+
+            // If a guest handler exists for the signal, we need to chain it after it
+            // We also need to check that sigchain is not hooking sigaction for the given signal or we'd end up overriding it
+            if (GuestHandlers[static_cast<size_t>(signal)] && !IsSigchainHooked(signal))
+                DefaultHandlers[static_cast<size_t>(signal)].function = reinterpret_cast<sa_sigaction>(function);
+            else
+                sigaction(signal, &action, nullptr);
+        }
+    }
+
+    std::string SignalHandlersSummary() {
+        auto resolveHandlerAddress = [](void *addr) -> std::string {
+            Dl_info info{};
+            if (dladdr(addr, &info) == 0)
+                return fmt::format("{} (?)", fmt::ptr(addr));
+
+            // Use the the symbol name if available
+            if (info.dli_sname != nullptr) {
+                // Try to demangle the symbol name as it may be a C++ symbol, otherwise use as is
+                int status{};
+                char *demangled{abi::__cxa_demangle(info.dli_sname, nullptr, nullptr, &status)};
+                if (status == 0) {
+                    std::string symbol{demangled};
+                    free(demangled);
+                    // Omit the function arguments
+                    return fmt::format("{}", symbol.substr(0, symbol.find_first_of('(')));
+                } else {
+                    return fmt::format("{}", info.dli_sname);
+                }
+            }
+
+            // Discard the full path from dli_fname and only keep the filename
+            std::string_view filename{info.dli_fname};
+            if (auto pos = filename.find_last_of('/'); pos != std::string_view::npos)
+                filename = filename.substr(pos + 1);
+
+            // If symbol name is not available use the shared object filename + offset
+            return fmt::format("{}+{}", filename, reinterpret_cast<uintptr_t>(addr) - reinterpret_cast<uintptr_t>(info.dli_fbase));
+        };
+
+        std::string out = "Signal Handlers:\n";
+
+        for (int signum = 1; signum < NSIG; signum++) {
+            // Get the handler via our Sigaction proxy first
+            struct sigaction action{};
+            Sigaction(signum, nullptr, &action);
+            // Ignore default handlers
+            if (action.sa_handler == SIG_DFL || action.sa_handler == SIG_IGN)
+                continue;
+            std::string handler = resolveHandlerAddress(reinterpret_cast<void *>(action.sa_sigaction));
+
+            // Get the handler via glibc sigaction as it might be different because of sigchain
+            action = {};
+            sigaction(signum, nullptr, &action);
+            std::string chainedHandler = resolveHandlerAddress(reinterpret_cast<void *>(action.sa_sigaction));
+
+            out += fmt::format("* Signal: {:2}, Handler: {}", signum, handler);
+
+            // Print the guest handler if set
+            if (auto guestHandler = GuestHandlers[static_cast<size_t>(signum)])
+                out += fmt::format("\n              Guest Handler: {}", resolveHandlerAddress(reinterpret_cast<void *>(guestHandler)));
+
+            // Print the default handler that is called for host signals
+            if (auto defaultHandler = DefaultHandlers[static_cast<size_t>(signum)].function) {
+                out += fmt::format("\n              Default Handler: {}", resolveHandlerAddress(reinterpret_cast<void *>(defaultHandler)));
+            }
+
+            // If the handler retrieved via sigaction is different to the one retrieved via our proxy, it's been chained by sigchain
+            if (handler != chainedHandler)
+                out += fmt::format(" -> Chained Handler: {}", chainedHandler);
+
+            out += '\n';
+        }
+
+        return out;
     }
 
     void Sigprocmask(int how, const sigset_t &set, sigset_t *oldSet) {

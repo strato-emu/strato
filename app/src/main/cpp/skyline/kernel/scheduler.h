@@ -72,8 +72,8 @@ namespace skyline {
 
           public:
             static constexpr std::chrono::milliseconds PreemptiveTimeslice{10}; //!< The duration of time a preemptive thread can run before yielding
-            inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a non-cooperative yield in running threads
-            inline static int PreemptionSignal{SIGRTMIN + 1}; //!< The signal used to cause a preemptive yield in running threads
+            inline static int YieldSignal{SIGRTMIN}; //!< The signal used to cause a non-cooperative yield in running threads (41)
+            inline static int PreemptionSignal{SIGRTMIN + 1}; //!< The signal used to cause a preemptive yield in running threads (42)
             inline static thread_local bool YieldPending{}; //!< A flag denoting if a yield is pending on this thread, it's checked prior to entering guest code as signals cannot interrupt host code
 
             Scheduler(const DeviceState &state);
@@ -81,7 +81,12 @@ namespace skyline {
             /**
              * @brief A signal handler designed to cause a non-cooperative yield for preemption and higher priority threads being inserted
              */
-            static void SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
+            static void GuestSignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls);
+
+            /**
+             * @brief A signal handler for scheduling guest threads not currently running guest code
+             */
+            static void HostSignalHandler(int signal, siginfo *info, ucontext *ctx);
 
             /**
              * @brief Checks all cores and determines the core where the supplied thread should be scheduled the earliest
