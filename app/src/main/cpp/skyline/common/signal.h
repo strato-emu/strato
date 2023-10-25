@@ -75,19 +75,35 @@ namespace skyline::signal {
      */
     void SetTlsRestorer(void *(*function)());
 
-    using SignalHandler = void (*)(int, struct siginfo *, ucontext *, void **);
+    /**
+     * @brief Signature of a sa_sigaction callback
+     */
+    using SignalAction = void (*)(int signum, siginfo *info, ucontext *context);
 
     /**
-     * @brief A wrapper around Sigaction to make it easy to set a sigaction signal handler for multiple signals and also allow for thread-local signal handlers
-     * @param function A sa_action callback with a pointer to the old TLS (If present) as the 4th argument
-     * @param syscallRestart If a system call running during the signal will be seamlessly restarted or return an error (Corresponds to SA_RESTART)
-     * @note If 'nullptr' is written into the 4th argument then the old TLS won't be restored or it'll be set to any non-null value written into it
+     * @brief Signature of a guest signal handler
+     * @note The 4th argument points to the guest TLS, set it to 'nullptr' to avoid restoring the guest TLS and keep the host TLS (e.g. long jumps to host code)
      */
-    void SetSignalHandler(std::initializer_list<int> signals, SignalHandler function, bool syscallRestart = true);
+    using GuestSignalAction = void (*)(int signum, siginfo *info, ucontext *context, void **tls);
 
-    inline void SetSignalHandler(std::initializer_list<int> signals, void (*function)(int, struct siginfo *, ucontext *), bool syscallRestart = true) {
-        SetSignalHandler(signals, reinterpret_cast<SignalHandler>(function), syscallRestart);
-    }
+    /**
+     * @brief Sets signal handlers for the given signals coming from guest code
+     * @param function A sa_sigaction callback with a pointer to the guest TLS as the 4th argument
+     * @param syscallRestart If a system call running during the signal will be seamlessly restarted or return an error (Corresponds to SA_RESTART)
+     */
+    void SetGuestSignalHandler(std::initializer_list<int> signals, GuestSignalAction function, bool syscallRestart = true);
+
+    /**
+     * @brief Sets signal handlers for the given signals coming from host code
+     * @param function A sa_sigaction callback
+     * @param syscallRestart If a system call running during the signal will be seamlessly restarted or return an error (Corresponds to SA_RESTART)
+     */
+    void SetHostSignalHandler(std::initializer_list<int> signals, SignalAction function, bool syscallRestart = true);
+
+    /**
+     * @brief Returns a human-readable string containing information about signal handlers currently registered for all signals that aren't default handled or ignored
+     */
+    std::string PrintSignalHandlers();
 
     /**
      * @brief Our delegator for sigprocmask, required due to libsigchain hooking this

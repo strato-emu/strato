@@ -188,8 +188,6 @@ namespace skyline::gpu::interconnect {
         AsyncLogger::UpdateTag();
 
         try {
-            signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, signal::ExceptionalSignalHandler);
-
             incoming.Process([this, renderDocApi, &gpu](Slot *slot) {
                 idle = false;
                 VkInstance instance{*gpu.vkInstance};
@@ -244,8 +242,6 @@ namespace skyline::gpu::interconnect {
     }
 
     void ExecutionWaiterThread::Run() {
-        signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
-
         // Enable turbo clocks to begin with if requested
         if (*state.settings->forceMaxGpuClocks)
             adrenotools_set_turbo(true);

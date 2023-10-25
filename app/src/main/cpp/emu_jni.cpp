@@ -94,6 +94,8 @@ extern "C" JNIEXPORT void Java_emu_skyline_EmulationActivity_executeApplication(
         skyline::JniString nativeLibraryPath(env, nativeLibraryPathJstring);
         skyline::JniString privateAppFilesPath{env, privateAppFilesPathJstring};
 
+        // Host signal handlers need to be set before NCE is initialized, this is the only place where we can do that
+        skyline::signal::SetHostSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, skyline::signal::ExceptionalSignalHandler);
         auto os{std::make_shared<skyline::kernel::OS>(
             jvmManager,
             settings,

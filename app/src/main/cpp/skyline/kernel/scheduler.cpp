@@ -10,24 +10,28 @@
 namespace skyline::kernel {
     Scheduler::CoreContext::CoreContext(u8 id, i8 preemptionPriority) : id(id), preemptionPriority(preemptionPriority) {}
 
-    Scheduler::Scheduler(const DeviceState &state) : state(state) {}
+    Scheduler::Scheduler(const DeviceState &state) : state(state) {
+        // Don't restart syscalls: we want futexes to fail and their predicates rechecked
+        signal::SetGuestSignalHandler({Scheduler::YieldSignal, Scheduler::PreemptionSignal}, Scheduler::GuestSignalHandler, false);
+        signal::SetHostSignalHandler({Scheduler::YieldSignal, Scheduler::PreemptionSignal}, Scheduler::HostSignalHandler, false);
+    }
 
-    void Scheduler::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
-        if (*tls) {
-            TRACE_EVENT_END("guest");
-            {
-                TRACE_EVENT_FMT("scheduler", "{} Signal", signal == PreemptionSignal ? "Preemption" : "Yield");
-                const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
-                if (signal == PreemptionSignal)
-                    state.thread->isPreempted = false;
-                state.scheduler->Rotate(false);
-                YieldPending = false;
-                state.scheduler->WaitSchedule();
-            }
-            TRACE_EVENT_BEGIN("guest", "Guest");
-        } else {
-            YieldPending = true;
+    void Scheduler::GuestSignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
+        TRACE_EVENT_END("guest");
+        {
+            TRACE_EVENT_FMT("scheduler", "{} Signal", signal == PreemptionSignal ? "Preemption" : "Yield");
+            const auto &state{*reinterpret_cast<nce::ThreadContext *>(*tls)->state};
+            if (signal == PreemptionSignal)
+                state.thread->isPreempted = false;
+            state.scheduler->Rotate(false);
+            YieldPending = false;
+            state.scheduler->WaitSchedule();
         }
+        TRACE_EVENT_BEGIN("guest", "Guest");
+    }
+
+    void Scheduler::HostSignalHandler(int signal, siginfo *info, ucontext *ctx) {
+        YieldPending = true;
     }
 
     Scheduler::CoreContext &Scheduler::GetOptimalCoreForThread(const std::shared_ptr<type::KThread> &thread) {

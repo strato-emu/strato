@@ -80,9 +80,6 @@ namespace skyline::kernel::type {
         if (timer_create(CLOCK_THREAD_CPUTIME_ID, &event, &preemptionTimer))
             throw exception("timer_create has failed with '{}'", strerror(errno));
 
-        signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
-        signal::SetSignalHandler({Scheduler::YieldSignal, Scheduler::PreemptionSignal}, Scheduler::SignalHandler, false); // We want futexes to fail and their predicates rechecked
-
         {
             std::scoped_lock lock{statusMutex};
             ready = true;

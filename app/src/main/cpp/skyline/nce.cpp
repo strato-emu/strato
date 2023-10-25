@@ -144,84 +144,78 @@ namespace skyline::nce {
     }
 
     void NCE::SignalHandler(int signal, siginfo *info, ucontext *ctx, void **tls) {
-        if (*tls) { // If TLS was restored then this occurred in guest code
-            auto &mctx{ctx->uc_mcontext};
-            const auto &state{*reinterpret_cast<ThreadContext *>(*tls)->state};
+        auto &mctx{ctx->uc_mcontext};
+        const auto &state{*reinterpret_cast<ThreadContext *>(*tls)->state};
 
-            if (signal == SIGSEGV)
-                // If we get a guest access violation then we want to handle any accesses that may be from a trapped region
-                if (state.nce->TrapHandler(reinterpret_cast<u8 *>(info->si_addr), true))
-                    return;
+        if (signal == SIGSEGV)
+            // If we get a guest access violation then we want to handle any accesses that may be from a trapped region
+            if (state.nce->TrapHandler(reinterpret_cast<u8 *>(info->si_addr), true))
+                return;
 
-            if (signal != SIGINT) {
-                signal::StackFrame topFrame{.lr = reinterpret_cast<void *>(ctx->uc_mcontext.pc), .next = reinterpret_cast<signal::StackFrame *>(ctx->uc_mcontext.regs[29])};
-                std::string trace{state.loader->GetStackTrace(&topFrame)};
+        if (signal != SIGINT) {
+            signal::StackFrame topFrame{.lr = reinterpret_cast<void *>(ctx->uc_mcontext.pc), .next = reinterpret_cast<signal::StackFrame *>(ctx->uc_mcontext.regs[29])};
+            std::string trace{state.loader->GetStackTrace(&topFrame)};
 
-                std::string cpuContext;
-                if (mctx.fault_address)
-                    cpuContext += fmt::format("\n  Fault Address: 0x{:X}", mctx.fault_address);
-                if (mctx.sp)
-                    cpuContext += fmt::format("\n  Stack Pointer: 0x{:X}", mctx.sp);
-                for (size_t index{}; index < (sizeof(mcontext_t::regs) / sizeof(u64)); index += 2)
-                    cpuContext += fmt::format("\n  X{:<2}: 0x{:<16X} X{:<2}: 0x{:X}", index, mctx.regs[index], index + 1, mctx.regs[index + 1]);
+            std::string cpuContext;
+            if (mctx.fault_address)
+                cpuContext += fmt::format("\n  Fault Address: 0x{:X}", mctx.fault_address);
+            if (mctx.sp)
+                cpuContext += fmt::format("\n  Stack Pointer: 0x{:X}", mctx.sp);
+            for (size_t index{}; index < (sizeof(mcontext_t::regs) / sizeof(u64)); index += 2)
+                cpuContext += fmt::format("\n  X{:<2}: 0x{:<16X} X{:<2}: 0x{:X}", index, mctx.regs[index], index + 1, mctx.regs[index + 1]);
 
-                LOGE("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
+            LOGE("Thread #{} has crashed due to signal: {}\nStack Trace:{}\nCPU Context:{}", state.thread->id, strsignal(signal), trace, cpuContext);
 
-                if (state.thread->id) {
-                    signal::BlockSignal({SIGINT});
-                    state.process->Kill(false);
-                }
+            if (state.thread->id) {
+                signal::BlockSignal({SIGINT});
+                state.process->Kill(false);
             }
-
-            mctx.pc = reinterpret_cast<u64>(&std::longjmp);
-            mctx.regs[0] = reinterpret_cast<u64>(state.thread->originalCtx);
-            mctx.regs[1] = true;
-
-            *tls = nullptr;
-        } else { // If TLS wasn't restored then this occurred in host code
-            HostSignalHandler(signal, info, ctx);
         }
+
+        mctx.pc = reinterpret_cast<u64>(&std::longjmp);
+        mctx.regs[0] = reinterpret_cast<u64>(state.thread->originalCtx);
+        mctx.regs[1] = true;
+
+        *tls = nullptr;
     }
 
     static NCE *staticNce{nullptr}; //!< A static instance of NCE for use in the signal handler
 
     void NCE::HostSignalHandler(int signal, siginfo *info, ucontext *ctx) {
-        if (signal == SIGSEGV) {
-            if (staticNce && staticNce->TrapHandler(reinterpret_cast<u8 *>(info->si_addr), true))
-                return;
+        if (staticNce && staticNce->TrapHandler(reinterpret_cast<u8 *>(info->si_addr), true))
+            return;
 
-            bool runningUnderDebugger{[]() {
-                static std::ifstream status("/proc/self/status");
-                status.seekg(0);
+        bool runningUnderDebugger{[]() {
+            static std::ifstream status("/proc/self/status");
+            status.seekg(0);
 
-                constexpr std::string_view TracerPidTag{"TracerPid:"};
-                for (std::string line; std::getline(status, line);) {
-                    if (line.starts_with(TracerPidTag)) {
-                        line = line.substr(TracerPidTag.size());
+            constexpr std::string_view TracerPidTag{"TracerPid:"};
+            for (std::string line; std::getline(status, line);) {
+                if (line.starts_with(TracerPidTag)) {
+                    line = line.substr(TracerPidTag.size());
 
-                        for (char character : line)
-                            if (std::isspace(character))
-                                continue;
-                            else
-                                return character != '0';
+                    for (char character : line)
+                        if (std::isspace(character))
+                            continue;
+                        else
+                            return character != '0';
 
-                        return false;
-                    }
+                    return false;
                 }
-
-                return false;
-            }()};
-
-            if (runningUnderDebugger) {
-                /* Variables for debugger, these are meant to be read and utilized by the debugger to break in user code with all registers intact */
-                void *pc{reinterpret_cast<void *>(ctx->uc_mcontext.pc)}; // Use 'p pc' to get the value of this and 'breakpoint set -t current -a ${value of pc}' to break in user code
-                bool shouldReturn{true}; // Set this to false to throw an exception instead of returning
-
-                raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
-
-                if (shouldReturn)
-                    return;
             }
+
+            return false;
+        }()};
+
+        if (runningUnderDebugger) {
+            /* Variables for debugger, these are meant to be read and utilized by the debugger to break in user code with all registers intact */
+            void *pc{reinterpret_cast<void *>(ctx->uc_mcontext.pc)}; // Use 'p pc' to get the value of this and 'breakpoint set -t current -a ${value of pc}' to break in user code
+            bool shouldReturn{true}; // Set this to false to throw an exception instead of returning
+
+            raise(SIGTRAP); // Notify the debugger if we've got a SIGSEGV as the debugger doesn't catch them by default as they might be hooked
+
+            if (shouldReturn)
+                return;
         }
 
         signal::ExceptionalSignalHandler(signal, info, ctx); // Delegate throwing a host exception to the exceptional signal handler
@@ -239,6 +233,8 @@ namespace skyline::nce {
     NCE::NCE(const DeviceState &state) : state(state) {
         signal::SetTlsRestorer(&NceTlsRestorer);
         staticNce = this;
+        signal::SetGuestSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, nce::NCE::SignalHandler);
+        signal::SetHostSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler);
     }
 
     NCE::~NCE() {
@@ -667,7 +663,7 @@ namespace skyline::nce {
             std::scoped_lock lock(trapMutex);
 
             // Retrieve any callbacks for the page that was faulted
-            auto[entries, intervals]{trapMap.GetAlignedRecursiveRange<constant::PageSize>(address)};
+            auto [entries, intervals]{trapMap.GetAlignedRecursiveRange<constant::PageSize>(address)};
             if (entries.empty())
                 return false; // There's no callbacks associated with this page
 

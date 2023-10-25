@@ -119,9 +119,6 @@ namespace skyline::soc::host1x {
         AsyncLogger::UpdateTag();
 
         try {
-            signal::SetSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE}, signal::ExceptionalSignalHandler);
-            signal::SetSignalHandler({SIGSEGV}, nce::NCE::HostSignalHandler); // We may access NCE trapped memory
-
             gatherQueue.Process([this](span<u32> gather) {
                 LOGD("Processing pushbuffer: {}, size: 0x{:X}", fmt::ptr(gather.data()), gather.size());
                 Process(gather);
