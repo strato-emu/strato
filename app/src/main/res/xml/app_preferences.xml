@@ -68,5 +68,11 @@
             android:summaryOff="@string/filter_invalid_files_desc_off"
             android:summaryOn="@string/filter_invalid_files_desc_on"
             app:key="filter_invalid_files" />
+        <emu.skyline.preference.LicensePreference 
+                    app:libraryCopyright="Strato\nVersion 1.0.0" 
+                    app:libraryLicense="@string/About_info" 
+                    app:libraryUrl="https://github.com/strato-emu/strato" 
+                    app:summary="Version 1.0.0" 
+                    app:title="About" />
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
