@@ -5,13 +5,10 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.google.android.material.progressindicator.CircularProgressIndicator
-        android:id="@+id/progress_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_margin="?attr/dialogPreferredPadding"
-        android:indeterminate="true"
-        app:trackCornerRadius="4dp" />
-
+    <com.google.android.material.progressindicator.LinearProgressIndicator 
+        android:paddingTop="10.0dip" 
+        android:paddingBottom="10.0dip" 
+        android:layout_width="fill_parent" 
+        android:layout_height="wrap_content" 
+        android:indeterminate="true" />
 </LinearLayout>
