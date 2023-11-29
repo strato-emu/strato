@@ -43,9 +43,9 @@ namespace skyline::gpu {
         };
         ThreadLocal<CommandPool> pool;
 
-        std::thread waiterThread; //!< A thread that waits on and signals FenceCycle(s) then clears any associated resources
         static constexpr size_t FenceCycleWaitCount{256}; //!< The amount of fence cycles the cycle queue can hold
         CircularQueue<std::shared_ptr<FenceCycle>> cycleQueue{FenceCycleWaitCount}; //!< A circular queue containing all the active cycles that can be waited on
+        std::thread waiterThread; //!< A thread that waits on and signals FenceCycle(s) then clears any associated resources
 
         void WaiterThread();
 
