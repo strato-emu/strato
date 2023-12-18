@@ -8,15 +8,16 @@ layout (push_constant) uniform constants {
 } PC;
 
 void main() {
-	const vec2 lut[6] = vec2[6](
+    const vec2 lut[6] = vec2[6](
         vec2(0, 0),
         vec2(0, 1),
-        vec2(1, 1),
         vec2(1, 1),
         vec2(1, 0),
         vec2(0, 0)
     );
 
-    dstPosition = lut[gl_VertexIndex];
-    gl_Position = vec4(PC.dstOriginClipSpace + PC.dstDimensionsClipSpace * lut[gl_VertexIndex], 0, 1);
+    vec2 vertexPosition = lut[gl_VertexIndex];
+    dstPosition = vertexPosition;
+    gl_Position.xy = PC.dstOriginClipSpace + PC.dstDimensionsClipSpace * vertexPosition;
+    gl_Position.zw = vec2(0, 1);
 }
