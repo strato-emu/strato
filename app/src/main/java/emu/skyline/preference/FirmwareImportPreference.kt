@@ -24,15 +24,20 @@ import java.io.File
 import java.io.FilenameFilter
 import java.io.IOException
 
-class FirmwareImportPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
-    private class Firmware(val valid : Boolean, val version : String)
+class FirmwareImportPreference @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = androidx.preference.R.attr.preferenceStyle
+) : Preference(context, attrs, defStyleAttr) {
 
-    private val firmwarePath = File(context.getPublicFilesDir().canonicalPath + "/switch/nand/system/Contents/registered/")
+    private class Firmware(val valid: Boolean, val version: String)
+
+    private val firmwarePath = File("${context.getPublicFilesDir().canonicalPath}/switch/nand/system/Contents/registered/")
     private val keysPath = "${context.filesDir.canonicalPath}/keys/"
     private val fontsPath = "${context.getPublicFilesDir().canonicalPath}/fonts/"
 
-    private val documentPicker = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { uri ->
+    private val documentPicker = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
             val inputZip = context.contentResolver.openInputStream(uri)
             if (inputZip == null) {
                 Snackbar.make((context as SettingsActivity).binding.root, R.string.error, Snackbar.LENGTH_LONG).show()
@@ -41,31 +46,26 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
 
             val cacheFirmwareDir = File("${context.cacheDir.path}/registered/")
 
-            val task : () -> Unit = {
-                var messageToShow : Int
-
-                try {
-                    // Unzip in cache dir to not delete previous firmware in case the zip given doesn't contain a valid one
-                    ZipUtils.unzip(inputZip, cacheFirmwareDir)
-
+            val task: () -> Unit = {
+                val messageToShow = runCatching {
                     val firmware = isFirmwareValid(cacheFirmwareDir)
-                    messageToShow = if (!firmware.valid) {
+                    if (!firmware.valid) {
                         R.string.import_firmware_invalid_contents
                     } else {
                         firmwarePath.deleteRecursively()
-                        cacheFirmwareDir.copyRecursively(firmwarePath, true)
+                        cacheFirmwareDir.listFiles()?.forEach {
+                            it.copyTo(File(firmwarePath, it.name), overwrite = true)
+                        }
                         persistString(firmware.version)
                         extractFonts(firmwarePath.path, keysPath, fontsPath)
-                        CoroutineScope(Dispatchers.Main).launch {
+                        MainScope().launch {
                             notifyChanged()
                         }
                         R.string.import_firmware_success
                     }
-                } catch (e : IOException) {
-                    messageToShow = R.string.error
-                } finally {
-                    cacheFirmwareDir.deleteRecursively()
-                }
+                }.getOrElse { R.string.error }
+
+                cacheFirmwareDir.deleteRecursively()
 
                 Snackbar.make((context as SettingsActivity).binding.root, messageToShow, Snackbar.LENGTH_LONG).show()
             }
@@ -91,12 +91,7 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
 
     override fun onClick() = documentPicker.launch(arrayOf("application/zip"))
 
-    /**
-     * Checks if the given directory stores a valid firmware. For that, all files must be NCAs and
-     * one of them must store the firmware version.
-     * @return A pair that tells if the firmware is valid, and if so, which firmware version it is
-     */
-    private fun isFirmwareValid(cacheFirmwareDir : File) : Firmware {
+    private fun isFirmwareValid(cacheFirmwareDir: File): Firmware {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
 
         val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
@@ -108,6 +103,6 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
         } else Firmware(false, "")
     }
 
-    private external fun fetchFirmwareVersion(systemArchivesPath : String, keysPath : String) : String
-    private external fun extractFonts(systemArchivesPath : String, keysPath : String, fontsPath : String)
+    private external fun fetchFirmwareVersion(systemArchivesPath: String, keysPath: String): String
+    private external fun extractFonts(systemArchivesPath: String, keysPath: String, fontsPath: String)
 }
