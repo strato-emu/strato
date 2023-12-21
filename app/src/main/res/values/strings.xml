@@ -69,6 +69,7 @@
     <string name="select_action_desc_off">Game information will only be shown on long-clicking a game</string>
     <string name="filter_invalid_files_desc_off">Show files that have been parsed as invalid</string>
     <string name="filter_invalid_files_desc_on">Hide files that have been parsed as invalid</string>
+    <string name="filter_invalid_files">Hide Invalid Files</string>
     <!-- Settings - Game -->
     <string name="game">Game</string>
     <string name="use_custom_settings">Enable Custom Settings</string>
