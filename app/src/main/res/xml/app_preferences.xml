@@ -67,6 +67,7 @@
             android:defaultValue="false"
             android:summaryOff="@string/filter_invalid_files_desc_off"
             android:summaryOn="@string/filter_invalid_files_desc_on"
-            app:key="filter_invalid_files" />
+            app:key="filter_invalid_files"
+            app:title="@string/filter_invalid_files"/>
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>
