@@ -4,6 +4,7 @@
     <string name="error">Ha ocurrido un error</string>
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="emulator">Emulador</string>
+    <string name="enabled">Habilitado</string>
     <!-- Toolbar Main -->
     <string name="settings">Ajustes</string>
     <string name="share_logs">Compartir registros</string>
@@ -18,10 +19,17 @@
     <string name="no_rom">No se encontraron ROMs</string>
     <string name="pin">Fijar</string>
     <string name="play">Jugar</string>
+    <string name="save_management">Opciones de partidas guardadas</string>
+    <string name="delete_save">Eliminar partida guardada</string>
+    <string name="import_save">Importar</string>
+    <string name="export_save">Exportar</string>
     <string name="searching_roms">Buscando ROMs</string>
     <string name="invalid_file">Archivo no válido</string>
     <string name="missing_title_key">Faltan las title keys</string>
     <string name="incomplete_prod_keys">No se encontraron las product keys </string>
+    <!-- Picture-In-Picture -->
+    <string name="pause">Pausa</string>
+    <string name="mute">Silencio</string>
     <!-- Settings - Content -->
     <string name="content">Contenido</string>
     <string name="open_data_directory">Ver directorio interno</string>
@@ -29,7 +37,7 @@
     <string name="open_data_directory_failed">No se encontró un explorador de archivos externo para abrir el directorio interno de Skyline</string>
     <string name="search_location">Directorio de búsqueda</string>
     <!-- Settings - Keys -->
-    <string name="keys">Archivos de llaves (keys)</string>
+    <string name="keys">Llaves (keys)</string>
     <string name="prod_keys">Production Keys</string>
     <string name="title_keys">Title Keys</string>
     <string name="import_keys_success">Las keys fueron importadas exitosamente </string>
@@ -37,21 +45,36 @@
     <string name="import_keys_invalid_keys">Las keys que intentaste importar son inválidas </string>
     <string name="import_keys_delete_previous_failed">Error al intentar eliminar las keys instaladas actualmente</string>
     <string name="import_keys_move_failed">Error al intentar mover las keys al directorio interno</string>
+    <!-- Settings - Firmware -->
+    <string name="firmware">Firmware</string>
+    <string name="import_firmware_in_progress">Instalando firmware</string>
+    <string name="import_firmware_success">Se ha importado el firmware exitosamente</string>
+    <string name="import_firmware_failure">Falló la instalación del firmware</string>
+    <string name="import_firmware_invalid_contents">El archivo proporcionado no contiene un firmware válido</string>
+    <string name="firmware_keys_needed">Se requieren llaves válidas para instalar el firmware</string>
+    <string name="firmware_not_installed">No se ha instalado un firmware</string>
     <!-- Settings - Appearance -->
     <string name="appearance">Apariencia</string>
     <string name="theme">Tema</string>
+    <string name="use_material_you">Usar Material You</string>
+    <string name="use_material_you_desc_off">Se usarán los colores de Skyline</string>
+    <string name="use_material_you_desc_on">Se usará Material You</string>
     <string name="app_language">Idioma de la aplicación</string>
     <string name="app_language_default">Usar idioma del sistema</string>
     <string name="layout_type">Tipo de vista de juegos</string>
     <string name="sort_apps_by">Ordenar juegos por</string>
     <string name="select_action">Mostrar siempre información del juego</string>
-    <string name="select_action_desc_on">La información del juego se mostrará al seleccionar un juego</string>
+    <string name="select_action_desc_on">Al seleccionar un juego, se mostrará su información</string>
     <string name="select_action_desc_off">La información del juego solo se mostrará al mantener presionado un juego</string>
+    <string name="filter_invalid_files_desc_off">Mostrar archivos que se detectaron como inválidos</string>
+    <string name="filter_invalid_files_desc_on">Ocultar archivos que se detectaron como inválidos</string>
     <!-- Settings - Game -->
     <string name="game">Juego</string>
     <string name="use_custom_settings">Activar ajustes personalizados</string>
     <string name="use_custom_settings_desc_on">Los ajustes personalizados están activados para este juego</string>
     <string name="use_custom_settings_desc_off">Los ajustes personalizados están desactivados para este juego</string>
+    <string name="export_custom_settings">Exportar ajustes personalizados a texto</string>
+    <string name="export_custom_settings_desc">Genera un texto con tus ajustes actuales para compartir en línea</string>
     <string name="reset_custom_settings">Restablecer ajustes personalizados</string>
     <string name="reset_custom_settings_desc">Restablece los ajustes personalizados a los valores predeterminados</string>
     <string name="reset_settings_warning">¿Seguro que quieres restablecer todos los ajustes a los valores predeterminados? <b>Se perderá la configuración actual</b></string>
@@ -62,24 +85,31 @@
     <string name="system">Sistema</string>
     <string name="use_docked">Usar Modo Dock</string>
     <string name="handheld_enabled">El sistema emulará estar en modo portátil</string>
-    <string name="docked_enabled">El sistema emulará estar en modo dock (colocado en la base)</string>
+    <string name="docked_enabled">El sistema emulará estar en modo dock (modo televisor)</string>
     <string name="username">Nombre de usuario</string>
     <string name="profile_picture">Imagen de perfil</string>
     <string name="system_language">Idioma del sistema</string>
     <string name="system_region">Región del sistema</string>
+    <string name="internet">El sistema será capaz de utilizar internet</string>
     <!-- Settings - Display -->
     <string name="display">Pantalla</string>
     <string name="perf_stats">Mostrar estadísticas de rendimiento</string>
     <string name="perf_stats_desc_off">No se mostrarán las estadísticas de rendimiento</string>
     <string name="perf_stats_desc_on">Se mostrarán las estadisticas de rendimiento en la esquina superior izquierda</string>
     <string name="max_refresh_rate">Usar tasa máxima de refresco de pantalla</string>
-    <string name="max_refresh_rate_enabled">Deja la tasa de refresco en lo más alto posible (romperá la mayoría de los juegos)</string>
-    <string name="max_refresh_rate_disabled">Deja la tasa de refresco de la pantalla en 60hz</string>
+    <string name="max_refresh_rate_enabled">Establece la tasa de refresco a lo más alto posible (romperá la mayoría de los juegos)</string>
+    <string name="max_refresh_rate_disabled">Establece la tasa de refresco de la pantalla a 60hz</string>
     <string name="screen_orientation">Orientación de la pantalla</string>
     <string name="aspect_ratio">Relación de Aspecto</string>
     <string name="respect_display_cutout">Respetar recorte de pantalla</string>
-    <string name="respect_display_cutout_enabled">No dibujar elementos de la UI en la parte cortada de la pantalla </string>
-    <string name="respect_display_cutout_disabled">Permite que se puedan dibujar elementos de la UI en el área de recorte</string>
+    <string name="respect_display_cutout_enabled">No dibujar elementos de la interfaz en la parte cortada de la pantalla </string>
+    <string name="respect_display_cutout_disabled">Permite que se puedan dibujar elementos de la interfaz en el área de recorte</string>
+    <string name="enable_foldable_layout">Habilitar interfaz para plegables</string>
+    <string name="enable_foldable_layout_enabled">Los dispositivos plegables mostrarán el juego y los controles por separados</string>
+    <string name="enable_foldable_layout_disabled">Muestra los controles sobre los juegos aún cuando el dispositivo sea plegable</string>
+    <string name="show_pause_button">Mostrar botón de pausa</string>
+    <string name="show_pause_button_disabled">No se mostrará el botón de pausa</string>
+    <string name="show_pause_button_enabled">Se mostrará el botón de pausa</string>
     <!-- Settings - Audio -->
     <string name="audio">Audio</string>
     <string name="disable_audio_output">Desactivar salida de audio</string>
@@ -90,32 +120,34 @@
     <string name="gpu_driver_config">Configuración del driver del GPU</string>
     <string name="gpu_driver_config_desc">Driver activo: %1$s</string>
     <string name="gpu_driver_config_desc_unsupported">Tu dispositivo no soporta drivers personalizados</string>
-    <string name="force_triple_buffering">Forzar Búfer Triple</string>
-    <string name="triple_buffering_enabled">Utiliza al menos tres búfers de \"swapchain\" (Mayor FPS pero más lag de entrada)</string>
-    <string name="triple_buffering_disabled">Utiliza al menos dos búfers de \"swapchain\" (Menor FPS pero menos lag de entrada)</string>
+    <string name="force_triple_buffering">Forzar búfer triple</string>
+    <string name="triple_buffering_enabled">Utiliza al menos tres búfers de \"swapchain\" (Mayor cantidad de FPS pero más lag de entrada)</string>
+    <string name="triple_buffering_disabled">Utiliza al menos dos búfers de \"swapchain\" (Menor cantidad de FPS pero menos lag de entrada)</string>
     <string name="disable_frame_throttling">Desactivar límite de fotogramas</string>
     <string name="disable_frame_throttling_enabled">Permite al juego generar frames (fotogramas) lo más rápido posible (solo para benchmarking)\n\n<b>Nota:</b> Con esto se usa un método alternativo para calcular los FPS, no debe ser comparado con FPS generados por aceleración</string>
     <string name="disable_frame_throttling_disabled">El juego enviará frames (fotogramas) únicamente a la misma tasa de refresco de la pantalla</string>
     <string name="executor_slot_count_scale">Cantidad de lotes de ejecución</string>
     <string name="executor_slot_count_scale_desc">Deslizador que controla el número máximo de ejecuciones simultáneas en el GPU (un valor mas alto puede mejorar el rendimiento pero usará más RAM)</string>
-    <string name="executor_flush_threshold">Límite de Carga de trabajo del Ejecutor</string>
-    <string name="executor_flush_threshold_desc">Controla qué tan frecuentemente se le asigna carga de trabajo al GPU</string>
-    <string name="use_direct_memory_import">Usar Importación de Memoria Directa</string>
+    <string name="executor_flush_threshold">Límite de carga de trabajo del ejecutor</string>
+    <string name="executor_flush_threshold_desc">Controla qué tan frecuentemente se le asigna carga de trabajo a la GPU</string>
+    <string name="use_direct_memory_import">Usar importación de memoria directa</string>
     <string name="use_direct_memory_import_desc">Puede alterar el rendimiento y estabilidad en algunos juegos\n<b>NOTA:</b> Esta opción solo funciona con drivers propietarios de Adreno</string>
-    <string name="force_max_gpu_clocks">Forzar Velocidad Máxima de GPU</string>
+    <string name="force_max_gpu_clocks">Forzar velocidad máxima de GPU</string>
     <string name="force_max_gpu_clocks_desc">Fuerza la GPU a correr a la máxima velocidad de reloj posible (Puede causar calentamiento y uso de batería excesivos) </string>
     <string name="force_max_gpu_clocks_desc_unsupported">Tu dispositivo no permite aumentar la velocidad del GPU</string>
+    <string name="free_guest_texture_memory">Liberar memoria de texturas huéspedes</string>
+    <string name="free_guest_texture_memory_desc">Permite que los datos de textura del programa huésped (juego o aplicación) sean liberados de la memoria cuando no se necesiten (Rara vez podría causar fallas)</string>
     <string name="shader_cache">Desactivar caché de shaders</string>
-    <string name="shader_cache_disabled">No se cargarán los shaders en caché. Podría causar tartamudeo</string>
-    <string name="shader_cache_enabled">Se cargarán los shaders en caché. Podría reducir bastante el tartamudeo </string>
+    <string name="shader_cache_disabled">No se cargarán los shaders en caché. Podría causar interrupciones</string>
+    <string name="shader_cache_enabled">Se cargarán los shaders en caché. Podría reducir bastante las interrupciones </string>
     <!-- Settings - Hacks -->
     <string name="hacks">Hacks</string>
     <string name="enable_fast_gpu_readback">Activar la relectura rápida de GPU</string>
     <string name="enable_fast_gpu_readback_enabled">La relectura rápida de GPU está habilitada (puede afectar algunos juegos pero aumentar el rendimiento en otros)</string>
     <string name="enable_fast_gpu_readback_disabled">La relectura rápida de GPU está deshabilitada (asegura mayor precisión)</string>
     <string name="enable_fast_readback_writes">Activar relectura rápida de escrituras</string>
-    <string name="enable_fast_readback_writes_enabled">Relectura rápida de escrituras está activado</string>
-    <string name="enable_fast_readback_writes_disabled">Relectura rápida de escrituras está desactivado</string>
+    <string name="enable_fast_readback_writes_enabled">La relectura rápida de escrituras está desactivada</string>
+    <string name="enable_fast_readback_writes_disabled">La relectura rápida de escrituras está desactivada</string>
     <string name="disable_subgroup_shuffle">Desactivar operaciones de subgrupos de GPU</string>
     <string name="disable_subgroup_shuffle_enabled">Las operaciones de subgrupos de shaders están desactivadas. Puede causar serios problemas gráficos</string>
     <string name="disable_subgroup_shuffle_disabled">Las operaciones de subgrupos de shaders están activadas. Máxima precisión garantizada</string>
@@ -136,7 +168,7 @@
     <string name="gpu_driver_install_success">El driver de GPU ha sido instalado exitosamente</string>
     <string name="gpu_driver_install_invalid_archive">No se pudo descomprimir el paquete de driver seleccionado</string>
     <string name="gpu_driver_install_missing_metadata">El paquete de driver seleccionado no es válido debido a una falta de metadatos</string>
-    <string name="gpu_driver_install_invalid_metadata">El paquete de driver seleccionado contiene metadatos inválidos, puede estar corrompido</string>
+    <string name="gpu_driver_install_invalid_metadata">El paquete de driver seleccionado contiene metadatos inválidos. Puede estar corrompido</string>
     <string name="gpu_driver_install_unsupported_android_version">Tu dispositivo no cuenta con la mínima versión de Android requerida para el driver seleccionado</string>
     <string name="gpu_driver_install_already_installed">El paquete de driver seleccionado ya está instalado </string>
     <!-- Input -->
@@ -145,15 +177,30 @@
     <string name="osc_enable">Habilita los controles táctiles </string>
     <string name="osc_not_shown">Los controles táctiles no se mostrarán</string>
     <string name="osc_shown">Se mostrarán los controles táctiles </string>
-    <string name="osc_feedback">Habilitar Vibración de Respuesta</string>
+    <string name="osc_feedback">Habilitar respuesta háptica (vibración)</string>
     <string name="osc_feedback_description">Excluye los joysticks y los controles físicos </string>
     <string name="osc_edit">Editar disposición de los controles táctiles </string>
+    <string name="osc_text_color">Color de texto</string>
+    <string name="osc_background_color">Color de fondo</string>
+    <string name="osc_reset">Restablecer botón: %1$s</string>
+    <string name="osc_reset_confirm">¿Estás seguro de que quieres restablecer este botón?</string>
+    <string name="osc_toggle_mode">Modo Interruptor</string>
+    <string name="osc_current_button">Botón actual: %1$s</string>
+    <string name="select_all">Seleccionar todos</string>
+    <string name="osc_scale">Escala</string>
+    <string name="osc_opacity">Opacidad</string>
+    <string name="osc_activation_radius">Radio de activación</string>
+    <string name="button_color">Color de botón</string>
+    <string name="toggle_grid">Activar grilla</string>
     <string name="setup_guide">Guía de configuración</string>
     <string name="setup_guide_description">Mapear secuencialmente cada joystick y botón</string>
     <string name="joystick">Joystick </string>
     <string name="confirm">Confirmar</string>
     <string name="cancel">Cancelar </string>
     <string name="osc_recenter_sticks">Recentrar joysticks al tacto</string>
+    <string name="osc_recenter_sticks_desc">Vuelve a colocar los joysticks en el lugar presionado cuando se toquen</string>
+    <string name="osc_use_stick_regions">Usar regiones de joystick</string>
+    <string name="osc_use_stick_regions_desc">Extiende el área de activación de los joysticks a rectángulos, cubriendo la mitad de la pantalla que les corresponde</string>
     <string name="controller">Control</string>
     <string name="config_controller">Configurar control</string>
     <string name="controller_type">Tipo de control</string>
@@ -193,8 +240,8 @@
     <string name="right_trigger">Gatillo Derecho (ZR)</string>
     <string name="plus_button">Más (+)</string>
     <string name="minus_button">Menos (-)</string>
-    <string name="emu_menu_button">Menu del Emulador</string>
-    <string name="stick_preview">Vista previa del stick</string>
+    <string name="emu_menu_button">Menú del emulador</string>
+    <string name="stick_preview">Vista previa del joystick</string>
     <string name="done">Terminar </string>
     <string name="use_non_stick">Selecciona cualquier botón no mapeado para terminar </string>
     <string name="button">Botón </string>
@@ -205,8 +252,10 @@
     <string name="dpad">Cruz Direccional</string>
     <string name="left_stick">Joystick Izquierdo </string>
     <string name="right_stick">Joystick Derecho </string>
+    <string name="left_stick_button">Botón de Joystick Izquierdo</string>
+    <string name="right_stick_button">Botón de Joystick Derecho</string>
     <string name="face_buttons">Botones de Acción</string>
-    <string name="shoulder_trigger">Botones delantales &amp; Gatillos </string>
+    <string name="shoulder_trigger">Botones Delantales y Gatillos </string>
     <string name="shoulder_rail">Botones a los lados del riel del Joy-Con</string>
     <string name="misc_buttons">Botones miscelaneos</string>
     <!-- Credits -->
@@ -215,7 +264,7 @@
     <string name="licenses">Licencias </string>
     <string name="skyline_license_description">Skyline está licenciado bajo la Licencia Pública de Mozilla 2.0</string>
     <string name="ryujinx_description">Ryujinx ha sido usado como referencia durante el proyecto debido a sus muy precisas implementaciones\n\n<b>Nota: Skyline no está basado en Ryujinx</b></string>
-    <string name="shader_compiler_description">El compilador de shaders de Skyline es una <b>bifurcación</b> del compilador de <i>yuzu</i> con cambios específicos para Skyline mientras que otros cambios son compartidos y ambos se benefician del desarrollo \n\n<b>Nota:</b> El uso en Skyline solo es posible por la excepción otorgada a Skyline por el equipo de <i>yuzu</i></string>
+    <string name="shader_compiler_description">El compilador de shaders de Skyline es una <b>bifurcación</b> del compilador de <i>yuzu</i> con cambios específicos para Skyline mientras que otros cambios son compartidos y ambos se benefician del desarrollo \n\n<b>Nota:</b> Su uso en Skyline solo es posible por la excepción otorgada a Skyline por el equipo de <i>yuzu</i></string>
     <string name="sirit_description">El compilador de shaders interno de Skyline usa Sirit para emitir SPIR-V de una manera eficiente  </string>
     <string name="vkhpp_description">Vulkan-Hpp provee un API de C++ para Vulkan</string>
     <string name="vkma_description">El Asignador de Memoria de Vulkan provee un asignador de memoria de alta calidad con soporte para UMA</string>
@@ -242,7 +291,22 @@
     <!-- Software Keyboard -->
     <string name="input_hint">Introducir Texto</string>
     <!-- Misc -->
+    <string name="compiling_cached_pipelines">Compilando pipelines en caché...</string>
     <!--suppress AndroidLintUnusedResources -->
     <string name="expand_button_title" tools:override="true">Expandir</string>
     <string name="undo">Deshacer</string>
+    <string name="per_game_settings_active_message">La configuración por juego está activada</string>
+    <string name="save_data_manager">Gestionar archivos de guardado</string>
+    <string name="save_data_found">Archivo de guardado encontrado. ¿Qué te gustaría hacer?</string>
+    <string name="save_data_not_found">No se ha encontrado un archivo de guardado. ¿Qué te gustaría hacer?</string>
+    <string name="delete_save_confirmation_message">¿Estás seguro de que quieres eliminar esta partida guardada?</string>
+    <string name="action_irreversible">Esta acción es irreversible</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="save_file_imported_ok">La partida guardada se ha importado correctamente</string>
+    <string name="save_file_invalid_zip_structure">Estructura de directorio del Zip inválida: El nombre de la primera subcarpeta debe ser el Title ID del juego</string>
+    <string name="save_file_share">Compartir archivo de guardado</string>
+    <string name="global_save_data_zip_name">Archivo de guardado de Strato</string>
+    <string name="game_crash">El.juego se detuvo</string>
+    <string name="game_crash_message">Ha ocurrido un error. Consulta el registro para más detalles</string>
 </resources>
