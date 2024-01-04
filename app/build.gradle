@@ -10,7 +10,6 @@ plugins {
 idea.module {
     // These are not viable to index on most systems so exclude them to prevent IDE crashes
     excludeDirs.add(file("libraries/boost"))
-    excludeDirs.add(file("libraries/llvm"))
 }
 
 project.ext.isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_BUILD_SIGNED") == "true")
@@ -118,11 +117,6 @@ android {
     buildFeatures {
         viewBinding true
         buildConfig true
-    }
-
-    /* Linting */
-    lint {
-        disable 'IconLocation'
     }
 
     /* NDK and CMake */
