@@ -178,7 +178,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2'
 
     /* JetBrains */
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     /* Other Java */
     implementation 'info.debatty:java-string-similarity:2.0.0'
