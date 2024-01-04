@@ -645,7 +645,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
         val deviceIds = InputDevice.getDeviceIds()
 
         deviceIds.forEach { deviceId ->
-            InputDevice.getDevice(deviceId).apply {
+            InputDevice.getDevice(deviceId)?.apply {
                 // Verify that the device has gamepad buttons, control sticks, or both.
                 if (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK) {
                     // This device is a game controller.
@@ -689,12 +689,12 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
                 } else {
                     for (id in InputDevice.getDeviceIds()) {
                         val device = InputDevice.getDevice(id)
-                        if (device.descriptor == inputManager.controllers[index]!!.rumbleDeviceDescriptor) {
+                        if (device?.descriptor == inputManager.controllers[index]!!.rumbleDeviceDescriptor) {
                             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                device.vibratorManager.defaultVibrator
+                                device?.vibratorManager!!.defaultVibrator
                             } else {
                                 @Suppress("DEPRECATION")
-                                device.vibrator!!
+                                device?.vibrator!!
                             }
                             vibrators[index] = vibrator
                             return@let vibrator
