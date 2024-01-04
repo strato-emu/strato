@@ -34,10 +34,6 @@
 [submodule "Boost"]
 	path = app/libraries/boost
 	url = https://github.com/strato-emu/boost.git
-[submodule "LLVM"]
-	path = app/libraries/llvm
-	url = https://github.com/llvm/llvm-project.git
-	shallow = true
 [submodule "C++ Range v3"]
 	path = app/libraries/range
 	url = https://github.com/ericniebler/range-v3
