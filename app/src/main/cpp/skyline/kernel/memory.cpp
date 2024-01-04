@@ -540,7 +540,7 @@ namespace skyline::kernel {
         auto dstChunk = chunks.lower_bound(destination.data());
         if (destination.data() < dstChunk->first)
             --dstChunk;
-        while (dstChunk->second.state.value == memory::states::Unmapped)
+        while (dstChunk->second.state == memory::states::Unmapped)
             ++dstChunk;
 
         if ((destination.data() + destination.size()) > dstChunk->first) [[likely]] {
