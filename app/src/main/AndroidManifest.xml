@@ -15,7 +15,6 @@
         android:name=".StratoApplication"
         android:enableOnBackInvokedCallback="true"
         android:allowBackup="true"
-        android:extractNativeLibs="true"
         android:fullBackupContent="@xml/backup_descriptor"
         android:icon="@drawable/logo_skyline"
         android:isGame="true"
