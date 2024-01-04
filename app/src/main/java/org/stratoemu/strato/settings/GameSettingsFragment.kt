@@ -26,7 +26,7 @@ class GameSettingsFragment : PreferenceFragmentCompat() {
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val recyclerView = view.findViewById<View>(R.id.recycler_view)
+        val recyclerView = view.findViewById<View>(androidx.preference.R.id.recycler_view)
         WindowInsetsHelper.setPadding(recyclerView, bottom = true)
 
         (activity as AppCompatActivity).supportActionBar?.subtitle = item.title

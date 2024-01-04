@@ -25,6 +25,7 @@ import org.stratoemu.strato.utils.SwitchColors
 import org.stratoemu.strato.utils.add
 import org.stratoemu.strato.utils.multiply
 import kotlin.math.roundToInt
+import com.google.android.material.R as MaterialR
 
 open class CircularButton(
     onScreenControllerView : OnScreenControllerView,
@@ -94,7 +95,7 @@ open class JoystickButton(
     override fun renderCenteredText(canvas : Canvas, text : String, size : Float, x : Float, y : Float, alpha : Int) = Unit
 
     private val activationRadiusPaint = Paint().apply {
-        color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorPrimary)).use { it.getColor(0, Color.RED) }
+        color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(MaterialR.attr.colorPrimary)).use { it.getColor(0, Color.RED) }
         alpha = 64
     }
 

@@ -17,9 +17,9 @@ import android.graphics.drawable.LayerDrawable
 import android.util.TypedValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.use
-import org.stratoemu.strato.R
 import org.stratoemu.strato.input.ButtonId
 import kotlin.math.roundToInt
+import com.google.android.material.R as MaterialR
 
 /**
  * Converts relative values, such as coordinates and boundaries, to their absolute counterparts, also handles layout modifications like scaling and custom positioning
@@ -47,7 +47,7 @@ abstract class OnScreenButton(
     init {
         if (disabledSelectionPaint == null) {
             disabledSelectionPaint = Paint().apply {
-                color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(R.attr.colorTertiary)).use { it.getColor(0, Color.GREEN) }
+                color = onScreenControllerView.context.obtainStyledAttributes(intArrayOf(MaterialR.attr.colorTertiary)).use { it.getColor(0, Color.GREEN) }
                 style = Paint.Style.STROKE
                 strokeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, onScreenControllerView.context.resources.displayMetrics)
             }
