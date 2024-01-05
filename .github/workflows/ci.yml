@@ -18,7 +18,7 @@ jobs:
       IS_BUILD_SIGNED: ${{ secrets.KEYSTORE != '' }}
       UPLOAD_ARTIFACTS: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci') }}
       CMAKE_VERSION: "3.22.1"
-      NDK_VERSION: "25.0.8775105"
+      NDK_VERSION: "26.1.10909125"
 
     steps:
       - name: Git Checkout
@@ -40,6 +40,12 @@ jobs:
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
             ${{ runner.os }}-gradle-
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Temurin should come pre-installed on GitHub-hosted runners
+          java-version: '17'
 
       - name: Install Ninja Build
         run: |
