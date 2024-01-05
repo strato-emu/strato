@@ -13,7 +13,7 @@ idea.module {
     excludeDirs.add(file("libraries/llvm"))
 }
 
-project.ext.isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_STRATO_SIGNED") == "true")
+project.ext.isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_BUILD_SIGNED") == "true")
 
 android {
     namespace 'org.stratoemu.strato'
