@@ -89,6 +89,8 @@ namespace skyline::loader {
          */
         static ExecutableLoadInfo LoadNso(Loader *loader, const std::shared_ptr<vfs::Backing> &backing, const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, size_t offset = 0, const std::string &name = {}, bool dynamicallyLinked = false);
 
+        static void PrintRoContentsInfo(const std::vector<u8> &contents);
+
         void *LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) override;
     };
 }
