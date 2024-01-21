@@ -19,7 +19,7 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "org.stratoemu.strato"
+        applicationId "org.stratoemu.strato.ea"
 
         minSdk 29
         targetSdk 33
