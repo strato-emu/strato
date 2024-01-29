@@ -133,10 +133,11 @@ namespace skyline::service::nvdrv::device {
         return PosixResult::Success;
     }
 
+// @fmt:off
 #include "deserialisation/macro_def.inc"
     static constexpr u32 NvMapMagic{1};
 
-    IOCTL_HANDLER_FUNC(NvMap, ({
+    IOCTL_HANDLER_FUNC(NvMap,
         IOCTL_CASE_ARGS(INOUT, SIZE(0x8),  MAGIC(NvMapMagic), FUNC(0x1),
                         Create, ARGS(In<u32>, Out<NvMapCore::Handle::Id>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x8),  MAGIC(NvMapMagic), FUNC(0x3),
@@ -149,7 +150,8 @@ namespace skyline::service::nvdrv::device {
                         Param,  ARGS(In<NvMapCore::Handle::Id>, In<HandleParameterType>, Out<u32>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x8),  MAGIC(NvMapMagic), FUNC(0xE),
                         GetId,  ARGS(Out<NvMapCore::Handle::Id>, In<NvMapCore::Handle::Id>))
-    }))
+    )
 #include "deserialisation/macro_undef.inc"
+// @fmt:on
 }
 

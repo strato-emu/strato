@@ -354,10 +354,11 @@ namespace skyline::service::nvdrv::device::nvhost {
         return PosixResult::Success;
     }
 
+// @fmt:off
 #include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 AsGpuMagic{0x41};
 
-    VARIABLE_IOCTL_HANDLER_FUNC(AsGpu, ({
+    VARIABLE_IOCTL_HANDLER_FUNC(AsGpu,
         IOCTL_CASE_ARGS(IN,    SIZE(0x4),  MAGIC(AsGpuMagic), FUNC(0x1),
                         BindChannel,  ARGS(In<FileDescriptor>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(AsGpuMagic), FUNC(0x2),
@@ -372,14 +373,15 @@ namespace skyline::service::nvdrv::device::nvhost {
                         GetVaRegions, ARGS(In<u64>, InOut<u32>, Pad<u32>, Out<std::array<VaRegion, 2>>))
         IOCTL_CASE_ARGS(IN,    SIZE(0x28), MAGIC(AsGpuMagic), FUNC(0x9),
                         AllocAsEx,    ARGS(In<u32>, In<FileDescriptor>, In<u32>, Pad<u32>, In<u64>, In<u64>, In<u64>))
-    }), ({
+    ,
         VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(AsGpuMagic), FUNC(0x14),
                                  Remap, ARGS(AutoSizeSpan<RemapEntry>))
-    }))
+    )
 
-    INLINE_IOCTL_HANDLER_FUNC(Ioctl3, AsGpu, ({
+    INLINE_IOCTL_HANDLER_FUNC(Ioctl3, AsGpu,
         INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x40), MAGIC(AsGpuMagic), FUNC(0x8),
                                GetVaRegions3, ARGS(In<u64>, InOut<u32>, Pad<u32>, Out<std::array<VaRegion, 2>>))
-    }))
+    )
 #include <services/nvdrv/devices/deserialisation/macro_undef.inc>
+// @fmt:on
 }
