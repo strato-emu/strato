@@ -7,7 +7,7 @@
     PosixResult name::type(IoctlDescriptor cmd, span<u8> buffer, span<u8> inlineBuffer) {   \
         using className = name;                                                             \
         switch (cmd.raw) {                                                                  \
-            cases;                                                                          \
+            cases                                                                           \
             default:                                                                        \
                 return PosixResult::InappropriateIoctlForDevice;                            \
         }                                                                                   \
@@ -17,11 +17,11 @@
     PosixResult name::Ioctl(IoctlDescriptor cmd, span<u8> buffer) {      \
         using className = name;                                          \
         switch (cmd.raw) {                                               \
-            cases;                                                       \
+            cases                                                        \
             default:                                                     \
                 cmd.size = 0;                                            \
                 switch (cmd.raw) {                                       \
-                    variableCases;                                       \
+                    variableCases                                        \
                     default:                                             \
                         return PosixResult::InappropriateIoctlForDevice; \
                 }                                                        \
@@ -32,7 +32,7 @@
     PosixResult name::Ioctl(IoctlDescriptor cmd, span<u8> buffer) { \
         using className = name;                                     \
         switch (cmd.raw) {                                          \
-            cases;                                                  \
+            cases                                                   \
             default:                                                \
                 return PosixResult::InappropriateIoctlForDevice;    \
         }                                                           \
