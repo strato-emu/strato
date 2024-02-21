@@ -108,6 +108,9 @@
     <string name="respect_display_cutout">Respect Display Cutout</string>
     <string name="respect_display_cutout_enabled">Do not draw UI elements in the cutout area</string>
     <string name="respect_display_cutout_disabled">Allow UI elements to be drawn in the cutout area</string>
+    <string name="picture_in_picture">Picture In Picture</string>
+    <string name="picture_in_picture_enabled">Minimize window when placed in the background</string>
+    <string name="picture_in_picture_disabled">Minimize window when placed in the background</string>
     <string name="enable_foldable_layout">Enable Foldable Layout</string>
     <string name="enable_foldable_layout_enabled">Folded devices will display game and controller separately</string>
     <string name="enable_foldable_layout_disabled">Display controller over games even when device is folded</string>
