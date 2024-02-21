@@ -28,7 +28,7 @@ namespace skyline::loader {
 
         auto patch{state.nce->GetPatchData(executable.text.contents)};
 
-        span dynsym{reinterpret_cast<Elf64_Sym *>(executable.ro.contents.data() + executable.dynsym.offset), executable.dynsym.size / sizeof(Elf64_Sym)};
+        span dynsym{reinterpret_cast<u8 *>(executable.ro.contents.data() + executable.dynsym.offset), executable.dynsym.size};
         span dynstr{reinterpret_cast<char *>(executable.ro.contents.data() + executable.dynstr.offset), executable.dynstr.size};
 
         // Get patching info for symbols that we want to hook if symbol hooking is enabled
@@ -70,8 +70,8 @@ namespace skyline::loader {
                 .name = name,
                 .patchName = name + ".patch",
                 .hookName = name + ".hook",
-                .symbols = {dynsym.begin(), dynsym.end()},
-                .symbolStrings = {dynstr.begin(), dynstr.end()},
+                .symbols = dynsym,
+                .symbolStrings = dynstr,
             };
             executables.insert(std::upper_bound(executables.begin(), executables.end(), base, [](void *ptr, const ExecutableSymbolicInfo &it) { return ptr < it.patchStart; }), std::move(symbolicInfo));
         }
@@ -87,13 +87,16 @@ namespace skyline::loader {
         return {base, size, executableBase + executable.text.offset};
     }
 
+    template<ElfSymbol ElfSym>
     Loader::SymbolInfo Loader::ResolveSymbol(void *ptr) {
         auto executable{std::lower_bound(executables.begin(), executables.end(), ptr, [](const ExecutableSymbolicInfo &it, void *ptr) { return it.programEnd < ptr; })};
+        auto symbols{executable->symbols.template cast<ElfSym>()};
+
         if (executable != executables.end() && ptr >= executable->patchStart && ptr <= executable->programEnd) {
             if (ptr >= executable->programStart) {
                 auto offset{reinterpret_cast<u8 *>(ptr) - reinterpret_cast<u8 *>(executable->programStart)};
-                auto symbol{std::find_if(executable->symbols.begin(), executable->symbols.end(), [&offset](const Elf64_Sym &sym) { return sym.st_value <= offset && sym.st_value + sym.st_size > offset; })};
-                if (symbol != executable->symbols.end() && symbol->st_name && symbol->st_name < executable->symbolStrings.size()) {
+                auto symbol{std::find_if(symbols.begin(), symbols.end(), [&offset](const ElfSym &sym) { return sym.st_value <= offset && sym.st_value + sym.st_size > offset; })};
+                if (symbol != symbols.end() && symbol->st_name && symbol->st_name < executable->symbolStrings.size()) {
                     return {executable->symbolStrings.data() + symbol->st_name, executable->name};
                 } else {
                     return {.executableName = executable->name};
@@ -109,7 +112,7 @@ namespace skyline::loader {
 
     inline std::string GetFunctionStackTrace(Loader *loader, void *pointer) {
         Dl_info info;
-        auto symbol{loader->ResolveSymbol(pointer)};
+        auto symbol{loader->ResolveSymbol64(pointer)};
         if (symbol.name) {
             int status{};
             size_t length{};
