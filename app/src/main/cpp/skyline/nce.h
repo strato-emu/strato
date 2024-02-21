@@ -114,15 +114,9 @@ namespace skyline::nce {
          */
         static void PatchCode(std::vector<u8> &text, u32 *patch, size_t patchSize, const std::vector<size_t> &offsets, size_t textOffset = 0);
 
-        struct HookedSymbolEntry : hle::HookedSymbol {
-            Elf64_Addr* offset{}; //!< A pointer to the hooked function's offset (st_value) in the ELF's dynsym, this is set by the loader and is used to resolve/update the address of the function
+        static size_t GetHookSectionSize(span<hle::HookedSymbolEntry> entries);
 
-            HookedSymbolEntry(std::string name, const hle::HookType &hook, Elf64_Addr* offset) : HookedSymbol{std::move(name), hook}, offset{offset} {}
-        };
-
-        static size_t GetHookSectionSize(span<HookedSymbolEntry> entries);
-
-        void WriteHookSection(span<HookedSymbolEntry> entries, span<u32> hookSection);
+        void WriteHookSection(span<hle::HookedSymbolEntry> entries, span<u32> hookSection);
 
         /**
          * @brief An opaque handle to a group of trapped region
