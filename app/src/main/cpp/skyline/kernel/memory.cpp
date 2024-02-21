@@ -21,7 +21,7 @@ namespace skyline::kernel {
     void MemoryManager::MapInternal(const std::pair<u8 *, ChunkDescriptor> &newDesc) {
         // The chunk that contains / precedes the new chunk base address
         auto firstChunkBase{chunks.lower_bound(newDesc.first)};
-        if (newDesc.first <= firstChunkBase->first)
+        if (newDesc.first <= firstChunkBase->first && firstChunkBase != chunks.begin())
             --firstChunkBase;
 
         // The chunk that contains / follows the end address of the new chunk
@@ -46,14 +46,14 @@ namespace skyline::kernel {
 
             // We reduce the size of the first half
             firstChunk.size = static_cast<size_t>(newDesc.first - firstChunkBase->first);
-            chunks[firstChunkBase->first] = firstChunk;
+            chunks.insert_or_assign(firstChunkBase->first, firstChunk);
 
             // We create the chunk's second half
             lastChunk.size = static_cast<size_t>((lastChunkBase->first + lastChunk.size) - (newDesc.first + newDesc.second.size));
-            chunks.insert({newDesc.first + newDesc.second.size, lastChunk});
+            chunks.insert_or_assign(newDesc.first + newDesc.second.size, lastChunk);
 
             // Insert new chunk in between
-            chunks.insert(newDesc);
+            chunks.insert_or_assign(newDesc.first, newDesc.second);
         } else {
             // If there are descriptors between first and last chunk, delete them
             if ((firstChunkBase->first + firstChunk.size) != lastChunkBase->first) {
@@ -69,22 +69,22 @@ namespace skyline::kernel {
 
             bool shouldInsert{true};
 
-            // We check if the new chunk and the first chunk is mergable
+            // We check if the new chunk and the first chunk is mergeable
             if (firstChunk.IsCompatible(newDesc.second)) {
                 shouldInsert = false;
 
                 firstChunk.size = static_cast<size_t>((newDesc.first + newDesc.second.size) - firstChunkBase->first);
-                chunks[firstChunkBase->first] = firstChunk;
-            } else if ((firstChunkBase->first + firstChunk.size) != newDesc.first) { // If it's not mergable check if it needs resizing
+                chunks.insert_or_assign(firstChunkBase->first, firstChunk);
+            } else if ((firstChunkBase->first + firstChunk.size) != newDesc.first) { // If it's not mergeable check if it needs resizing
                 firstChunk.size = static_cast<size_t>(newDesc.first - firstChunkBase->first);
 
-                chunks[firstChunkBase->first] = firstChunk;
+                chunks.insert_or_assign(firstChunkBase->first, firstChunk);
 
                 if ((firstChunk.state == memory::states::Unmapped) != isUnmapping)
                     needsReprotection = true;
             }
 
-            // We check if the new chunk and the last chunk is mergable
+            // We check if the new chunk and the last chunk is mergeable
             if (lastChunk.IsCompatible(newDesc.second)) {
                 u8 *oldBase{lastChunkBase->first};
                 chunks.erase(lastChunkBase);
@@ -94,16 +94,16 @@ namespace skyline::kernel {
 
                     lastChunk.size = static_cast<size_t>((lastChunk.size + oldBase) - (newDesc.first));
 
-                    chunks[newDesc.first] = lastChunk;
+                    chunks.insert_or_assign(newDesc.first, lastChunk);
                 } else {
                     firstChunk.size = static_cast<size_t>((lastChunk.size + oldBase) - firstChunkBase->first);
-                    chunks[firstChunkBase->first] = firstChunk;
+                    chunks.insert_or_assign(firstChunkBase->first, firstChunk);
                 }
-            } else if ((newDesc.first + newDesc.second.size) != lastChunkBase->first) { // If it's not mergable check if it needs resizing
+            } else if ((newDesc.first + newDesc.second.size) != lastChunkBase->first) { // If it's not mergeable check if it needs resizing
                 lastChunk.size = static_cast<size_t>((lastChunk.size + lastChunkBase->first) - (newDesc.first + newDesc.second.size));
 
                 chunks.erase(lastChunkBase);
-                chunks[newDesc.first + newDesc.second.size] = lastChunk;
+                chunks.insert_or_assign(newDesc.first + newDesc.second.size, lastChunk);
 
                 if ((lastChunk.state == memory::states::Unmapped) != isUnmapping)
                     needsReprotection = true;
@@ -111,7 +111,7 @@ namespace skyline::kernel {
 
             // Insert if not merged
             if (shouldInsert)
-                chunks.insert(newDesc);
+                chunks.insert_or_assign(newDesc.first, newDesc.second);
         }
 
         if (needsReprotection)
