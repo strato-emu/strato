@@ -28,7 +28,8 @@ namespace skyline::kernel::type {
         if (guest.valid()) [[unlikely]]
             throw exception("Mapping KMemory multiple times on guest is not supported: Requested Mapping: {} - {} (0x{:X}), Current Mapping: {} - {} (0x{:X})", fmt::ptr(map.data()), fmt::ptr(map.end().base()), map.size(), fmt::ptr(guest.data()), fmt::ptr(guest.end().base()), guest.size());
 
-        if (mmap(map.data(), map.size(), permission.Get() ? PROT_READ | PROT_WRITE : PROT_NONE, MAP_SHARED | (map.data() ? MAP_FIXED : 0), fileDescriptor, 0) == MAP_FAILED) [[unlikely]]
+        span<u8> hostMap{state.process->memory.GetHostSpan(map)};
+        if (mmap(hostMap.data(), hostMap.size(), permission.Get() ? PROT_READ | PROT_WRITE : PROT_NONE, MAP_SHARED | MAP_FIXED, fileDescriptor, 0) == MAP_FAILED) [[unlikely]]
             throw exception("An error occurred while mapping shared memory in guest: {}", strerror(errno));
         guest = map;
 
@@ -43,6 +44,7 @@ namespace skyline::kernel::type {
         if (guest.data() != map.data() && guest.size() != map.size()) [[unlikely]]
             throw exception("Unmapping KMemory partially is not supported: Requested Unmap: {} - {} (0x{:X}), Current Mapping: {} - {} (0x{:X})", fmt::ptr(map.data()), fmt::ptr(map.end().base()), map.size(), fmt::ptr(guest.data()), fmt::ptr(guest.end().base()), guest.size());
 
+        map = state.process->memory.GetHostSpan(map);
         if (mmap(map.data(), map.size(), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) == MAP_FAILED) [[unlikely]]
             throw exception("An error occurred while unmapping shared/transfer memory in guest: {}", strerror(errno));
     }
