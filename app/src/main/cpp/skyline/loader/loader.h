@@ -10,6 +10,13 @@
 
 namespace skyline::loader {
     /**
+     * @brief A concept that checks if a type is either a 32-bit or a 64-bit ELF symbol
+     * @tparam T The type to check
+     */
+    template<typename T>
+    concept ElfSymbol = std::same_as<T, Elf32_Sym> || std::same_as<T, Elf64_Sym>;
+
+    /**
      * @brief The types of ROM files
      * @note This needs to be synchronized with emu.skyline.loader.BaseLoader.RomFormat
      */
@@ -60,8 +67,8 @@ namespace skyline::loader {
             std::string name; //!< The name of the executable
             std::string patchName; //!< The name of the patch section
             std::string hookName; //!< The name of the hook section
-            std::vector<Elf64_Sym> symbols; //!< A span over the .dynsym section
-            std::vector<char> symbolStrings; //!< A span over the .dynstr section
+            span<u8> symbols; //!< A span over the .dynsym section, this may be casted to the appropriate Elf_Sym type on demand
+            span<char> symbolStrings; //!< A span over the .dynstr section
         };
 
         std::vector<ExecutableSymbolicInfo> executables;
@@ -110,7 +117,16 @@ namespace skyline::loader {
          * @return All symbolic information about the symbol for the specified address
          * @note If a symbol isn't found then SymbolInfo::name will be nullptr
          */
+        template<ElfSymbol ElfSym>
         SymbolInfo ResolveSymbol(void *ptr);
+
+        /**
+         * @return All symbolic information about the 64-bit symbol for the specified address
+         * @note If a symbol isn't found then SymbolInfo::name will be nullptr
+         */
+        SymbolInfo ResolveSymbol64(void *ptr) {
+            return ResolveSymbol<Elf64_Sym>(ptr);
+        }
 
         /**
          * @param frame The initial stack frame or the calling function's stack frame by default
