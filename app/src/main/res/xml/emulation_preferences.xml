@@ -73,6 +73,12 @@
             app:key="respect_display_cutout"
             app:title="@string/respect_display_cutout" />
         <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:summaryOff="@string/picture_in_picture_disabled"
+            android:summaryOn="@string/picture_in_picture_enabled"
+            app:key="picture_in_picture"
+            app:title="@string/picture_in_picture" />
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:summaryOff="@string/enable_foldable_layout_disabled"
             android:summaryOn="@string/enable_foldable_layout_enabled"
