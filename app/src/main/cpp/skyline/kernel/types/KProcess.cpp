@@ -67,20 +67,21 @@ namespace skyline::kernel::type {
         bool isAllocated{};
 
         u8 *pageCandidate{state.process->memory.tlsIo.guest.data()};
-        std::pair<u8 *, ChunkDescriptor> chunk;
         while (state.process->memory.tlsIo.guest.contains(span<u8>(pageCandidate, constant::PageSize))) {
-            chunk = memory.GetChunk(pageCandidate).value();
+            auto chunk = memory.GetChunk(pageCandidate);
+            if (!chunk)
+                break;
 
-            if (chunk.second.state == memory::states::Unmapped) {
+            if (chunk->second.state == memory::states::Unmapped) {
                 memory.MapThreadLocalMemory(span<u8>{pageCandidate, constant::PageSize});
                 isAllocated = true;
                 break;
             } else {
-                pageCandidate = chunk.first + chunk.second.size;
+                pageCandidate = chunk->first + chunk->second.size;
             }
         }
 
-        if (!isAllocated) [[unlikely]]
+        if (!isAllocated)
             throw exception("Failed to find free memory for a tls slot!");
 
         auto tlsPage{std::make_shared<TlsPage>(pageCandidate)};
@@ -96,20 +97,21 @@ namespace skyline::kernel::type {
             bool isAllocated{};
 
             u8 *pageCandidate{memory.stack.guest.data()};
-            std::pair<u8 *, ChunkDescriptor> chunk;
             while (state.process->memory.stack.guest.contains(span<u8>(pageCandidate, state.process->npdm.meta.mainThreadStackSize))) {
-                chunk = memory.GetChunk(pageCandidate).value();
+                auto chunk{memory.GetChunk(pageCandidate)};
+                if (!chunk)
+                    break;
 
-                if (chunk.second.state == memory::states::Unmapped && chunk.second.size >= state.process->npdm.meta.mainThreadStackSize) {
+                if (chunk->second.state == memory::states::Unmapped && chunk->second.size >= state.process->npdm.meta.mainThreadStackSize) {
                     memory.MapStackMemory(span<u8>{pageCandidate, state.process->npdm.meta.mainThreadStackSize});
                     isAllocated = true;
                     break;
                 } else {
-                    pageCandidate = chunk.first + chunk.second.size;
+                    pageCandidate = chunk->first + chunk->second.size;
                 }
             }
 
-            if (!isAllocated) [[unlikely]]
+            if (!isAllocated)
                 throw exception("Failed to map main thread stack!");
 
             stackTop = pageCandidate + state.process->npdm.meta.mainThreadStackSize;
