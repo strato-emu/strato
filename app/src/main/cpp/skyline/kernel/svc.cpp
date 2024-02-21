@@ -28,7 +28,7 @@ namespace skyline::kernel::svc {
         }
 
         size_t heapCurrSize{state.process->memory.processHeapSize};
-        u8 *heapBaseAddr{state.process->memory.heap.data()};
+        u8 *heapBaseAddr{state.process->memory.heap.guest.data()};
 
         if (heapCurrSize < size)
             state.process->memory.MapHeapMemory(span<u8>{heapBaseAddr + heapCurrSize, size - heapCurrSize});
@@ -159,7 +159,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        if (!state.process->memory.stack.contains(span<u8>{destination, size})) [[unlikely]] {
+        if (!state.process->memory.stack.guest.contains(span<u8>{destination, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
             LOGW("Destination not within stack region: 'source': {}, 'destination': {}, 'size': 0x{:X} bytes", fmt::ptr(source), fmt::ptr(destination), size);
             return;
@@ -195,7 +195,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        if (!state.process->memory.stack.contains(span<u8>{destination, size})) [[unlikely]] {
+        if (!state.process->memory.stack.guest.contains(span<u8>{destination, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
             LOGW("Source not within stack region: 'source': {}, 'destination': {}, 'size': 0x{:X} bytes", fmt::ptr(source), fmt::ptr(destination), size);
             return;
@@ -982,7 +982,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::AliasRegionBaseAddr:
-                out = reinterpret_cast<u64>(state.process->memory.alias.data());
+                out = reinterpret_cast<u64>(state.process->memory.alias.guest.data());
                 break;
 
             case InfoState::AliasRegionSize:
@@ -990,7 +990,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::HeapRegionBaseAddr:
-                out = reinterpret_cast<u64>(state.process->memory.heap.data());
+                out = reinterpret_cast<u64>(state.process->memory.heap.guest.data());
                 break;
 
             case InfoState::HeapRegionSize:
@@ -1022,7 +1022,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::StackRegionBaseAddr:
-                out = reinterpret_cast<u64>(state.process->memory.stack.data());
+                out = reinterpret_cast<u64>(state.process->memory.stack.guest.data());
                 break;
 
             case InfoState::StackRegionSize:
@@ -1088,7 +1088,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        if (!state.process->memory.alias.contains(span<u8>{address, size})) [[unlikely]] {
+        if (!state.process->memory.alias.guest.contains(span<u8>{address, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
             LOGW("Tried to map physical memory outside of alias region: {} - {} (0x{:X} bytes)", fmt::ptr(address), fmt::ptr(address + size), size);
             return;
@@ -1116,7 +1116,7 @@ namespace skyline::kernel::svc {
             return;
         }
 
-        if (!state.process->memory.alias.contains(span<u8>{address, size})) [[unlikely]] {
+        if (!state.process->memory.alias.guest.contains(span<u8>{address, size})) [[unlikely]] {
             state.ctx->gpr.w0 = result::InvalidMemoryRegion;
             LOGW("Tried to unmap physical memory outside of alias region: {} - {} (0x{:X} bytes)", fmt::ptr(address), fmt::ptr(address + size), size);
             return;

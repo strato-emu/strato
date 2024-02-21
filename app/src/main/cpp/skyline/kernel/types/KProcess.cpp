@@ -52,7 +52,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
-        memory.MapHeapMemory(span<u8>{state.process->memory.heap.data(), DefaultHeapSize});
+        memory.MapHeapMemory(span<u8>{state.process->memory.heap.guest.data(), DefaultHeapSize});
         memory.processHeapSize = DefaultHeapSize;
         tlsExceptionContext = AllocateTlsSlot();
     }
@@ -66,9 +66,9 @@ namespace skyline::kernel::type {
 
         bool isAllocated{};
 
-        u8 *pageCandidate{state.process->memory.tlsIo.data()};
+        u8 *pageCandidate{state.process->memory.tlsIo.guest.data()};
         std::pair<u8 *, ChunkDescriptor> chunk;
-        while (state.process->memory.tlsIo.contains(span<u8>(pageCandidate, constant::PageSize))) {
+        while (state.process->memory.tlsIo.guest.contains(span<u8>(pageCandidate, constant::PageSize))) {
             chunk = memory.GetChunk(pageCandidate).value();
 
             if (chunk.second.state == memory::states::Unmapped) {
@@ -95,9 +95,9 @@ namespace skyline::kernel::type {
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
             bool isAllocated{};
 
-            u8 *pageCandidate{memory.stack.data()};
+            u8 *pageCandidate{memory.stack.guest.data()};
             std::pair<u8 *, ChunkDescriptor> chunk;
-            while (state.process->memory.stack.contains(span<u8>(pageCandidate, state.process->npdm.meta.mainThreadStackSize))) {
+            while (state.process->memory.stack.guest.contains(span<u8>(pageCandidate, state.process->npdm.meta.mainThreadStackSize))) {
                 chunk = memory.GetChunk(pageCandidate).value();
 
                 if (chunk.second.state == memory::states::Unmapped && chunk.second.size >= state.process->npdm.meta.mainThreadStackSize) {

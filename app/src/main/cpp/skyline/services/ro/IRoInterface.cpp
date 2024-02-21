@@ -11,6 +11,9 @@ namespace skyline::service::ro {
     IRoInterface::IRoInterface(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
 
     Result IRoInterface::LoadModule(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
+        if (state.process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace32Bit)
+            throw exception("ldr:ro LoadModule is not yet supported on 32-bit processes!");
+
         u64 pid{request.Pop<u64>()};
         u64 nroAddress{request.Pop<u64>()};
         u64 nroSize{request.Pop<u64>()};
@@ -68,7 +71,7 @@ namespace skyline::service::ro {
         do {
             ptr = util::AlignDown(util::RandomNumber(state.process->memory.base.data(), std::prev(state.process->memory.base.end()).base()), constant::PageSize) - size;
 
-            if (state.process->memory.heap.contains(ptr) || state.process->memory.alias.contains(ptr))
+            if (state.process->memory.heap.guest.contains(ptr) || state.process->memory.alias.guest.contains(ptr))
                 continue;
 
             auto desc{state.process->memory.GetChunk(ptr)};
