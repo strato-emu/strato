@@ -445,6 +445,7 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
     }
 
     private fun getPictureInPictureBuilder() : PictureInPictureParams.Builder {
+        if(emulationSettings.pictureInPicture) {
         val pictureInPictureParamsBuilder = PictureInPictureParams.Builder()
 
         val pictureInPictureActions : MutableList<RemoteAction> = mutableListOf()
@@ -468,6 +469,8 @@ class EmulationActivity : AppCompatActivity(), SurfaceHolder.Callback, View.OnTo
 
         return pictureInPictureParamsBuilder
     }
+  return null
+ }
 
     private var pictureInPictureReceiver = object : BroadcastReceiver() {
         override fun onReceive(context : Context?, intent : Intent) {
