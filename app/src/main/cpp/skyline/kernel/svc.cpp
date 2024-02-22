@@ -1325,12 +1325,150 @@ namespace skyline::kernel::svc {
                 return;
         }
 
-        if (result == Result{})
-            [[likely]]
-                LOGD("Signalled {} for {} successfully", fmt::ptr(address), count);
+        if (result == Result{}) [[likely]]
+            LOGD("Signalled {} for {} successfully", fmt::ptr(address), count);
         else if (result == result::InvalidState)
             LOGD("The value at {} did not satisfy the mutation condition", fmt::ptr(address));
 
         ctx.w0 = result;
     }
+
+    #define SVC_NONE SvcDescriptor{} //!< A macro with a placeholder value for the SVC not being implemented or not existing
+    #define SVC_STRINGIFY(name) #name
+    #define SVC_ENTRY(function) SvcDescriptor{function, SVC_STRINGIFY(Svc ## function)} //!< A macro which automatically stringifies the function name as the name to prevent pointless duplication
+
+    constexpr std::array<SvcDescriptor, 0x80> SvcTable{
+        SVC_NONE, // 0x00 (Does not exist)
+        SVC_ENTRY(SetHeapSize), // 0x01
+        SVC_ENTRY(SetMemoryPermission), // 0x02
+        SVC_ENTRY(SetMemoryAttribute), // 0x03
+        SVC_ENTRY(MapMemory), // 0x04
+        SVC_ENTRY(UnmapMemory), // 0x05
+        SVC_ENTRY(QueryMemory), // 0x06
+        SVC_ENTRY(ExitProcess), // 0x07
+        SVC_ENTRY(CreateThread), // 0x08
+        SVC_ENTRY(StartThread), // 0x09
+        SVC_ENTRY(ExitThread), // 0x0A
+        SVC_ENTRY(SleepThread), // 0x0B
+        SVC_ENTRY(GetThreadPriority), // 0x0C
+        SVC_ENTRY(SetThreadPriority), // 0x0D
+        SVC_ENTRY(GetThreadCoreMask), // 0x0E
+        SVC_ENTRY(SetThreadCoreMask), // 0x0F
+        SVC_ENTRY(GetCurrentProcessorNumber), // 0x10
+        SVC_NONE, // 0x11
+        SVC_ENTRY(ClearEvent), // 0x12
+        SVC_ENTRY(MapSharedMemory), // 0x13
+        SVC_ENTRY(UnmapSharedMemory), // 0x14
+        SVC_ENTRY(CreateTransferMemory), // 0x15
+        SVC_ENTRY(CloseHandle), // 0x16
+        SVC_ENTRY(ResetSignal), // 0x17
+        SVC_ENTRY(WaitSynchronization), // 0x18
+        SVC_ENTRY(CancelSynchronization), // 0x19
+        SVC_ENTRY(ArbitrateLock), // 0x1A
+        SVC_ENTRY(ArbitrateUnlock), // 0x1B
+        SVC_ENTRY(WaitProcessWideKeyAtomic), // 0x1C
+        SVC_ENTRY(SignalProcessWideKey), // 0x1D
+        SVC_ENTRY(GetSystemTick), // 0x1E
+        SVC_ENTRY(ConnectToNamedPort), // 0x1F
+        SVC_NONE, // 0x20
+        SVC_ENTRY(SendSyncRequest), // 0x21
+        SVC_NONE, // 0x22
+        SVC_NONE, // 0x23
+        SVC_NONE, // 0x24
+        SVC_ENTRY(GetThreadId), // 0x25
+        SVC_ENTRY(Break), // 0x26
+        SVC_ENTRY(OutputDebugString), // 0x27
+        SVC_NONE, // 0x28
+        SVC_ENTRY(GetInfo), // 0x29
+        SVC_NONE, // 0x2A
+        SVC_NONE, // 0x2B
+        SVC_ENTRY(MapPhysicalMemory), // 0x2C
+        SVC_ENTRY(UnmapPhysicalMemory), // 0x2D
+        SVC_NONE, // 0x2E
+        SVC_NONE, // 0x2F
+        SVC_NONE, // 0x30
+        SVC_NONE, // 0x31
+        SVC_ENTRY(SetThreadActivity), // 0x32
+        SVC_ENTRY(GetThreadContext3), // 0x33
+        SVC_ENTRY(WaitForAddress), // 0x34
+        SVC_ENTRY(SignalToAddress), // 0x35
+        SVC_NONE, // 0x36
+        SVC_NONE, // 0x37
+        SVC_NONE, // 0x38
+        SVC_NONE, // 0x39
+        SVC_NONE, // 0x3A
+        SVC_NONE, // 0x3B
+        SVC_NONE, // 0x3C
+        SVC_NONE, // 0x3D
+        SVC_NONE, // 0x3E
+        SVC_NONE, // 0x3F
+        SVC_NONE, // 0x40
+        SVC_NONE, // 0x41
+        SVC_NONE, // 0x42
+        SVC_NONE, // 0x43
+        SVC_NONE, // 0x44
+        SVC_NONE, // 0x45
+        SVC_NONE, // 0x46
+        SVC_NONE, // 0x47
+        SVC_NONE, // 0x48
+        SVC_NONE, // 0x49
+        SVC_NONE, // 0x4A
+        SVC_NONE, // 0x4B
+        SVC_NONE, // 0x4C
+        SVC_NONE, // 0x4D
+        SVC_NONE, // 0x4E
+        SVC_NONE, // 0x4F
+        SVC_NONE, // 0x50
+        SVC_NONE, // 0x51
+        SVC_NONE, // 0x52
+        SVC_NONE, // 0x53
+        SVC_NONE, // 0x54
+        SVC_NONE, // 0x55
+        SVC_NONE, // 0x56
+        SVC_NONE, // 0x57
+        SVC_NONE, // 0x58
+        SVC_NONE, // 0x59
+        SVC_NONE, // 0x5A
+        SVC_NONE, // 0x5B
+        SVC_NONE, // 0x5C
+        SVC_NONE, // 0x5D
+        SVC_NONE, // 0x5E
+        SVC_NONE, // 0x5F
+        SVC_NONE, // 0x60
+        SVC_NONE, // 0x61
+        SVC_NONE, // 0x62
+        SVC_NONE, // 0x63
+        SVC_NONE, // 0x64
+        SVC_NONE, // 0x65
+        SVC_NONE, // 0x66
+        SVC_NONE, // 0x67
+        SVC_NONE, // 0x68
+        SVC_NONE, // 0x69
+        SVC_NONE, // 0x6A
+        SVC_NONE, // 0x6B
+        SVC_NONE, // 0x6C
+        SVC_NONE, // 0x6D
+        SVC_NONE, // 0x6E
+        SVC_NONE, // 0x6F
+        SVC_NONE, // 0x70
+        SVC_NONE, // 0x71
+        SVC_NONE, // 0x72
+        SVC_NONE, // 0x73
+        SVC_NONE, // 0x74
+        SVC_NONE, // 0x75
+        SVC_NONE, // 0x76
+        SVC_NONE, // 0x77
+        SVC_NONE, // 0x78
+        SVC_NONE, // 0x79
+        SVC_NONE, // 0x7A
+        SVC_NONE, // 0x7B
+        SVC_NONE, // 0x7C
+        SVC_NONE, // 0x7D
+        SVC_NONE, // 0x7E
+        SVC_NONE // 0x7F
+    };
+
+    #undef SVC_NONE
+    #undef SVC_STRINGIFY
+    #undef SVC_ENTRY
 }
