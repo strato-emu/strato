@@ -4,6 +4,7 @@
 #pragma once
 
 #include <common.h>
+#include <common/wregister.h>
 
 namespace skyline {
     struct DeviceState;
@@ -11,20 +12,6 @@ namespace skyline {
         constexpr u64 SkyTlsMagic{util::MakeMagic<u64>("SKYTLS")};
     }
     namespace nce {
-        struct WRegister {
-            u32 lower;
-            u32 upper;
-
-            constexpr operator u32() {
-                return lower;
-            }
-
-            void operator=(u32 value) {
-                lower = value;
-                upper = 0;
-            }
-        };
-
         /**
          * @brief The state of callee-saved general purpose registers in the guest
          * @note Read about ARMv8 registers here: https://developer.arm.com/architectures/learn-the-architecture/armv8-a-instruction-set-architecture/registers-in-aarch64-general-purpose-registers
