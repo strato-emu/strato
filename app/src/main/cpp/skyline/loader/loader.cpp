@@ -11,7 +11,10 @@
 
 namespace skyline::loader {
     Loader::ExecutableLoadInfo Loader::LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset, const std::string &name, bool dynamicallyLinked) {
-        u8 *base{reinterpret_cast<u8 *>(process->memory.code.data() + offset)};
+        u8 *base{reinterpret_cast<u8 *>(process->memory.code.host.data() + offset)};
+        // The base address in the guest address space, used to map memory by the memory manager
+        u8 *guestBase{reinterpret_cast<u8 *>(process->memory.code.guest.data() + offset)};
+
         const bool is64bit{process->npdm.meta.flags.is64Bit};
         // NCE patching is only required for 64-bit executables
         const bool needsNcePatching{is64bit};
@@ -48,25 +51,28 @@ namespace skyline::loader {
         // Reserve patch + hook size only if we need to patch
         if (patch.size > 0) {
             if (process->memory.addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit) {
-                process->memory.MapHeapMemory(span<u8>{base, patch.size + hookSize}); // ---
-                process->memory.SetRegionPermission(span<u8>{base, patch.size + hookSize}, memory::Permission{false, false, false});
+                process->memory.MapHeapMemory(span<u8>{guestBase, patch.size + hookSize}); // ---
+                process->memory.SetRegionPermission(span<u8>{guestBase, patch.size + hookSize}, memory::Permission{false, false, false});
             } else {
-                process->memory.Reserve(span<u8>{base, patch.size + hookSize}); // ---
+                process->memory.Reserve(span<u8>{guestBase, patch.size + hookSize}); // ---
             }
-            LOGD("Successfully mapped section .patch @ {}, Size = 0x{:X}", fmt::ptr(base), patch.size);
+            LOGD("Successfully mapped section .patch @ {}, Size = 0x{:X}", fmt::ptr(guestBase), patch.size);
             if (hookSize > 0)
-                LOGD("Successfully mapped section .hook @ {}, Size = 0x{:X}", fmt::ptr(base + patch.size), hookSize);
+                LOGD("Successfully mapped section .hook @ {}, Size = 0x{:X}", fmt::ptr(guestBase + patch.size), hookSize);
         }
 
         u8 *executableBase{base + patch.size + hookSize};
-        process->memory.MapCodeMemory(span<u8>{executableBase + executable.text.offset, textSize}, memory::Permission{true, false, true}); // R-X
-        LOGD("Successfully mapped section .text @ {}, Size = 0x{:X}", fmt::ptr(executableBase), textSize);
+        // The base executable address in the guest address space
+        u8 *executableGuestBase{guestBase + patch.size + hookSize};
 
-        process->memory.MapCodeMemory(span<u8>{executableBase + executable.ro.offset, roSize}, memory::Permission{true, false, false}); // R--
-        LOGD("Successfully mapped section .rodata @ {}, Size = 0x{:X}", fmt::ptr(executableBase + executable.ro.offset), roSize);
+        process->memory.MapCodeMemory(span<u8>{executableGuestBase + executable.text.offset, textSize}, memory::Permission{true, false, true}); // R-X
+        LOGD("Successfully mapped section .text @ {}, Size = 0x{:X}", fmt::ptr(executableGuestBase), textSize);
 
-        process->memory.MapMutableCodeMemory(span<u8>{executableBase + executable.data.offset, dataSize}); // RW-
-        LOGD("Successfully mapped section .data + .bss @ {}, Size = 0x{:X}", fmt::ptr(executableBase + executable.data.offset), dataSize);
+        process->memory.MapCodeMemory(span<u8>{executableGuestBase + executable.ro.offset, roSize}, memory::Permission{true, false, false}); // R--
+        LOGD("Successfully mapped section .rodata @ {}, Size = 0x{:X}", fmt::ptr(executableGuestBase + executable.ro.offset), roSize);
+
+        process->memory.MapMutableCodeMemory(span<u8>{executableGuestBase + executable.data.offset, dataSize}); // RW-
+        LOGD("Successfully mapped section .data + .bss @ {}, Size = 0x{:X}", fmt::ptr(executableGuestBase + executable.data.offset), dataSize);
 
         size_t size{patch.size + hookSize + textSize + roSize + dataSize};
         {
@@ -97,7 +103,7 @@ namespace skyline::loader {
         std::memcpy(executableBase + executable.ro.offset, executable.ro.contents.data(), roSize);
         std::memcpy(executableBase + executable.data.offset, executable.data.contents.data(), dataSize - executable.bssSize);
 
-        return {base, size, executableBase + executable.text.offset};
+        return {guestBase, size, executableGuestBase + executable.text.offset};
     }
 
     template<ElfSymbol ElfSym>
