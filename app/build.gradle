@@ -194,23 +194,24 @@ kapt {
 def getGitVersionName() {
     def versionName = '0.0.0'
 
-    try {
-        // Check if HEAD is a tag
-        def process = 'git describe --exact-match'.execute([], project.rootDir)
-        def isTag = process.waitFor() == 0
+    if (System.getenv("CI") != "true") {
+        try {
+            // Check if HEAD is a tag
+            def process = 'git describe --exact-match'.execute([], project.rootDir)
+            def isTag = process.waitFor() == 0
 
-        // Use the tag name as the version name
-        def tag = 'git describe --abbrev=0'.execute([], project.rootDir).text.trim()
-        if (!tag.isEmpty())
-            versionName = tag
+            // Use the tag name as the version name
+            def tag = 'git describe --abbrev=0'.execute([], project.rootDir).text.trim()
+            if (!tag.isEmpty())
+                versionName = tag
 
-        // If HEAD is not a tag, append the branch name and the short commit hash
-        if (!isTag)
-            versionName += '-' + getGitBranch() + '-' + getGitShortHash()
-    } catch (Exception e) {
-        logger.quiet(e.toString() + ': defaulting to dummy version number ' + versionName)
+            // If HEAD is not a tag, append the branch name and the short commit hash
+            if (!isTag)
+                versionName += '-' + getGitBranch() + '-' + getGitShortHash()
+        } catch (Exception e) {
+            logger.quiet(e.toString() + ': defaulting to dummy version number ' + versionName)
+        }
     }
-
     logger.quiet('Version name: ' + versionName)
     return versionName
 }
@@ -221,13 +222,14 @@ def getGitVersionName() {
 def getGitVersionCode() {
     def versionCode = 1
 
-    try {
-        versionCode = Integer.max('git rev-list --first-parent --count --tags'.execute([], project.rootDir).text
-                .toInteger(), versionCode)
-    } catch (Exception e) {
-        logger.error(e.toString() + ': defaulting to dummy version code ' + versionCode)
+    if (System.getenv("CI") != "true") {
+        try {
+            versionCode = Integer.max('git rev-list --first-parent --count --tags'.execute([], project.rootDir).text
+                    .toInteger(), versionCode)
+        } catch (Exception e) {
+            logger.error(e.toString() + ': defaulting to dummy version code ' + versionCode)
+        }
     }
-
     logger.quiet('Version code: ' + versionCode)
     return versionCode
 }
@@ -238,12 +240,13 @@ def getGitVersionCode() {
 def getGitShortHash() {
     def gitHash = '0'
 
-    try {
-        gitHash = 'git rev-parse --short HEAD'.execute([], project.rootDir).text.trim()
-    } catch (Exception e) {
-        logger.error(e.toString() + ': defaulting to dummy build hash ' + gitHash)
+    if (System.getenv("CI") != "true") {
+        try {
+            gitHash = 'git rev-parse --short HEAD'.execute([], project.rootDir).text.trim()
+        } catch (Exception e) {
+            logger.error(e.toString() + ': defaulting to dummy build hash ' + gitHash)
+        }
     }
-
     return gitHash
 }
 
@@ -253,11 +256,12 @@ def getGitShortHash() {
 def getGitBranch() {
     def branch = 'unk'
 
-    try {
-        branch = 'git rev-parse --abbrev-ref HEAD'.execute([], project.rootDir).text.trim()
-    } catch (Exception e) {
-        logger.error(e.toString() + ': defaulting to dummy branch ' + branch)
+    if (System.getenv("CI") != "true") {
+        try {
+            branch = 'git rev-parse --abbrev-ref HEAD'.execute([], project.rootDir).text.trim()
+        } catch (Exception e) {
+            logger.error(e.toString() + ': defaulting to dummy branch ' + branch)
+        }
     }
-
     return branch
 }
