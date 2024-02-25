@@ -52,7 +52,7 @@ namespace skyline::kernel::type {
 
     void KProcess::InitializeHeapTls() {
         constexpr size_t DefaultHeapSize{0x200000};
-        memory.MapHeapMemory(span<u8>{state.process->memory.heap.data(), DefaultHeapSize});
+        memory.MapHeapMemory(span<u8>{state.process->memory.heap.guest.data(), DefaultHeapSize});
         memory.processHeapSize = DefaultHeapSize;
         tlsExceptionContext = AllocateTlsSlot();
     }
@@ -66,21 +66,22 @@ namespace skyline::kernel::type {
 
         bool isAllocated{};
 
-        u8 *pageCandidate{state.process->memory.tlsIo.data()};
-        std::pair<u8 *, ChunkDescriptor> chunk;
-        while (state.process->memory.tlsIo.contains(span<u8>(pageCandidate, constant::PageSize))) {
-            chunk = memory.GetChunk(pageCandidate).value();
+        u8 *pageCandidate{state.process->memory.tlsIo.guest.data()};
+        while (state.process->memory.tlsIo.guest.contains(span<u8>(pageCandidate, constant::PageSize))) {
+            auto chunk = memory.GetChunk(pageCandidate);
+            if (!chunk)
+                break;
 
-            if (chunk.second.state == memory::states::Unmapped) {
+            if (chunk->second.state == memory::states::Unmapped) {
                 memory.MapThreadLocalMemory(span<u8>{pageCandidate, constant::PageSize});
                 isAllocated = true;
                 break;
             } else {
-                pageCandidate = chunk.first + chunk.second.size;
+                pageCandidate = chunk->first + chunk->second.size;
             }
         }
 
-        if (!isAllocated) [[unlikely]]
+        if (!isAllocated)
             throw exception("Failed to find free memory for a tls slot!");
 
         auto tlsPage{std::make_shared<TlsPage>(pageCandidate)};
@@ -95,21 +96,22 @@ namespace skyline::kernel::type {
         if (!stackTop && threads.empty()) { //!< Main thread stack is created by the kernel and owned by the process
             bool isAllocated{};
 
-            u8 *pageCandidate{memory.stack.data()};
-            std::pair<u8 *, ChunkDescriptor> chunk;
-            while (state.process->memory.stack.contains(span<u8>(pageCandidate, state.process->npdm.meta.mainThreadStackSize))) {
-                chunk = memory.GetChunk(pageCandidate).value();
+            u8 *pageCandidate{memory.stack.guest.data()};
+            while (state.process->memory.stack.guest.contains(span<u8>(pageCandidate, state.process->npdm.meta.mainThreadStackSize))) {
+                auto chunk{memory.GetChunk(pageCandidate)};
+                if (!chunk)
+                    break;
 
-                if (chunk.second.state == memory::states::Unmapped && chunk.second.size >= state.process->npdm.meta.mainThreadStackSize) {
+                if (chunk->second.state == memory::states::Unmapped && chunk->second.size >= state.process->npdm.meta.mainThreadStackSize) {
                     memory.MapStackMemory(span<u8>{pageCandidate, state.process->npdm.meta.mainThreadStackSize});
                     isAllocated = true;
                     break;
                 } else {
-                    pageCandidate = chunk.first + chunk.second.size;
+                    pageCandidate = chunk->first + chunk->second.size;
                 }
             }
 
-            if (!isAllocated) [[unlikely]]
+            if (!isAllocated)
                 throw exception("Failed to map main thread stack!");
 
             stackTop = pageCandidate + state.process->npdm.meta.mainThreadStackSize;

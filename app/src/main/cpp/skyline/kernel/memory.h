@@ -204,6 +204,19 @@ namespace skyline {
             AddressSpace32BitNoReserved = 2, //!< 32-bit address space without the map region
             AddressSpace39Bit = 3, //!< 39-bit address space used by 64-bit applications after 2.0.0
         };
+
+        inline std::string to_string(AddressSpaceType as) {
+            switch (as) {
+                case AddressSpaceType::AddressSpace32Bit:
+                    return "AddressSpace32Bit";
+                case AddressSpaceType::AddressSpace36Bit:
+                    return "AddressSpace36Bit";
+                case AddressSpaceType::AddressSpace32BitNoReserved:
+                    return "AddressSpace32BitNoReserved";
+                case AddressSpaceType::AddressSpace39Bit:
+                    return "AddressSpace39Bit";
+            }
+        }
     }
 
     namespace kernel {
@@ -216,6 +229,24 @@ namespace skyline {
 
             constexpr bool IsCompatible(const ChunkDescriptor &chunk) const noexcept {
                 return chunk.permission == permission && chunk.state.value == state.value && chunk.attributes.value == attributes.value && !isSrcMergeDisallowed;
+            }
+        };
+
+        /**
+         * @brief A memory region representing a guest region mapped in the host address space
+         * @details This is used to keep track of the host mapping of a memory region, while also
+         * tracking the mapping this region represents in the guest address space
+         */
+        struct MemoryRegion {
+            span<u8> host; //!< The host mapping of this memory region
+            span<u8> guest; //!< The guest mapping of this memory region, may not be valid memory in the host address space
+
+            MemoryRegion() = default;
+
+            MemoryRegion(span<u8> host, u64 guestOffset = 0) : host{host}, guest{host.data() - guestOffset, host.size()} {}
+
+            constexpr size_t size() {
+                return host.size();
             }
         };
 
@@ -238,11 +269,13 @@ namespace skyline {
             span<u8> addressSpace{}; //!< The entire address space
             span<u8> codeBase36Bit{}; //!< A mapping in the lower 36 bits of the address space for mapping code and stack on 36-bit guests
             span<u8> base{}; //!< The application-accessible address space (for 39-bit guests) or the heap/alias address space (for 36-bit guests)
-            span<u8> code{};
-            span<u8> alias{};
-            span<u8> heap{};
-            span<u8> stack{};
-            span<u8> tlsIo{}; //!< TLS/IO
+            MemoryRegion code{};
+            MemoryRegion alias{};
+            MemoryRegion heap{};
+            MemoryRegion stack{};
+            MemoryRegion tlsIo{}; //!< TLS/IO
+
+            size_t guestOffset{0}; //!< The offset between the guest address space and its host mapping, 0 when running in NCE mode
 
             size_t processHeapSize; //!< For use by svcSetHeapSize
 
@@ -344,7 +377,7 @@ namespace skyline {
             /**
              * @brief Removes the reference added by `AddRef`
              */
-            void RemoveRef(std::shared_ptr<type::KMemory> ptr);
+            void RemoveRef(const std::shared_ptr<type::KMemory> &ptr);
 
             /**
              * @return The cumulative size of all heap (Physical Memory + Process Heap) memory mappings, the code region and the main thread stack in bytes
@@ -358,27 +391,34 @@ namespace skyline {
             size_t GetSystemResourceUsage();
 
             /**
-             * @return If the supplied region is contained withing the accessible guest address space
+             * @return If the supplied guest region is contained withing the accessible guest address space
              */
             constexpr bool AddressSpaceContains(span<u8> region) const {
+                region = GetHostSpan(region);
                 if (addressSpaceType == memory::AddressSpaceType::AddressSpace36Bit)
                     return codeBase36Bit.contains(region) || base.contains(region);
                 else
                     return base.contains(region);
             }
+
+            /**
+             * @brief Gets the host address of a guest region
+             * @return A span with `guestOffset` applied to it
+             */
+            span<u8> GetHostSpan(span<u8> guestSpan) const;
         };
     }
 }
 
-template<> struct fmt::formatter<skyline::memory::Permission> {
+template<>
+struct fmt::formatter<skyline::memory::Permission> {
     template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx)
-    {
+    constexpr auto parse(ParseContext &ctx) {
         return ctx.begin();
     }
+
     template<typename FormatContext>
-    constexpr auto format(skyline::memory::Permission const& permission, FormatContext& ctx)
-    {
+    constexpr auto format(skyline::memory::Permission const &permission, FormatContext &ctx) {
         return fmt::format_to(ctx.out(), "{}{}{}", permission.r ? 'R' : '-', permission.w ? 'W' : '-', permission.x ? 'X' : '-');
     }
 };

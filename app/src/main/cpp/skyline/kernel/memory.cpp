@@ -13,15 +13,14 @@ namespace skyline::kernel {
     MemoryManager::~MemoryManager() noexcept {
         if (base.valid() && !base.empty())
             munmap(reinterpret_cast<void *>(base.data()), base.size());
-        if (addressSpaceType != memory::AddressSpaceType::AddressSpace39Bit)
-            if (codeBase36Bit.valid() && !codeBase36Bit.empty())
-                munmap(reinterpret_cast<void *>(codeBase36Bit.data()), codeBase36Bit.size());
+        if (codeBase36Bit.valid() && !codeBase36Bit.empty())
+            munmap(reinterpret_cast<void *>(codeBase36Bit.data()), codeBase36Bit.size());
     }
 
     void MemoryManager::MapInternal(const std::pair<u8 *, ChunkDescriptor> &newDesc) {
         // The chunk that contains / precedes the new chunk base address
         auto firstChunkBase{chunks.lower_bound(newDesc.first)};
-        if (newDesc.first <= firstChunkBase->first)
+        if (newDesc.first <= firstChunkBase->first && firstChunkBase != chunks.begin())
             --firstChunkBase;
 
         // The chunk that contains / follows the end address of the new chunk
@@ -46,14 +45,14 @@ namespace skyline::kernel {
 
             // We reduce the size of the first half
             firstChunk.size = static_cast<size_t>(newDesc.first - firstChunkBase->first);
-            chunks[firstChunkBase->first] = firstChunk;
+            chunks.insert_or_assign(firstChunkBase->first, firstChunk);
 
             // We create the chunk's second half
             lastChunk.size = static_cast<size_t>((lastChunkBase->first + lastChunk.size) - (newDesc.first + newDesc.second.size));
-            chunks.insert({newDesc.first + newDesc.second.size, lastChunk});
+            chunks.insert_or_assign(newDesc.first + newDesc.second.size, lastChunk);
 
             // Insert new chunk in between
-            chunks.insert(newDesc);
+            chunks.insert_or_assign(newDesc.first, newDesc.second);
         } else {
             // If there are descriptors between first and last chunk, delete them
             if ((firstChunkBase->first + firstChunk.size) != lastChunkBase->first) {
@@ -69,22 +68,22 @@ namespace skyline::kernel {
 
             bool shouldInsert{true};
 
-            // We check if the new chunk and the first chunk is mergable
+            // We check if the new chunk and the first chunk is mergeable
             if (firstChunk.IsCompatible(newDesc.second)) {
                 shouldInsert = false;
 
                 firstChunk.size = static_cast<size_t>((newDesc.first + newDesc.second.size) - firstChunkBase->first);
-                chunks[firstChunkBase->first] = firstChunk;
-            } else if ((firstChunkBase->first + firstChunk.size) != newDesc.first) { // If it's not mergable check if it needs resizing
+                chunks.insert_or_assign(firstChunkBase->first, firstChunk);
+            } else if ((firstChunkBase->first + firstChunk.size) != newDesc.first) { // If it's not mergeable check if it needs resizing
                 firstChunk.size = static_cast<size_t>(newDesc.first - firstChunkBase->first);
 
-                chunks[firstChunkBase->first] = firstChunk;
+                chunks.insert_or_assign(firstChunkBase->first, firstChunk);
 
                 if ((firstChunk.state == memory::states::Unmapped) != isUnmapping)
                     needsReprotection = true;
             }
 
-            // We check if the new chunk and the last chunk is mergable
+            // We check if the new chunk and the last chunk is mergeable
             if (lastChunk.IsCompatible(newDesc.second)) {
                 u8 *oldBase{lastChunkBase->first};
                 chunks.erase(lastChunkBase);
@@ -94,16 +93,16 @@ namespace skyline::kernel {
 
                     lastChunk.size = static_cast<size_t>((lastChunk.size + oldBase) - (newDesc.first));
 
-                    chunks[newDesc.first] = lastChunk;
+                    chunks.insert_or_assign(newDesc.first, lastChunk);
                 } else {
                     firstChunk.size = static_cast<size_t>((lastChunk.size + oldBase) - firstChunkBase->first);
-                    chunks[firstChunkBase->first] = firstChunk;
+                    chunks.insert_or_assign(firstChunkBase->first, firstChunk);
                 }
-            } else if ((newDesc.first + newDesc.second.size) != lastChunkBase->first) { // If it's not mergable check if it needs resizing
+            } else if ((newDesc.first + newDesc.second.size) != lastChunkBase->first) { // If it's not mergeable check if it needs resizing
                 lastChunk.size = static_cast<size_t>((lastChunk.size + lastChunkBase->first) - (newDesc.first + newDesc.second.size));
 
                 chunks.erase(lastChunkBase);
-                chunks[newDesc.first + newDesc.second.size] = lastChunk;
+                chunks.insert_or_assign(newDesc.first + newDesc.second.size, lastChunk);
 
                 if ((lastChunk.state == memory::states::Unmapped) != isUnmapping)
                     needsReprotection = true;
@@ -111,12 +110,15 @@ namespace skyline::kernel {
 
             // Insert if not merged
             if (shouldInsert)
-                chunks.insert(newDesc);
+                chunks.insert_or_assign(newDesc.first, newDesc.second);
         }
 
-        if (needsReprotection)
-            if (mprotect(newDesc.first, newDesc.second.size, !isUnmapping ? PROT_READ | PROT_WRITE | PROT_EXEC : PROT_NONE)) [[unlikely]]
+        if (needsReprotection) {
+            // Retrieve the host region to re-protect
+            span<u8> hostSpan{GetHostSpan({newDesc.first, newDesc.second.size})};
+            if (mprotect(hostSpan.data(), hostSpan.size(), !isUnmapping ? PROT_READ | PROT_WRITE | PROT_EXEC : PROT_NONE)) [[unlikely]]
                 LOGW("Reprotection failed: {}", strerror(errno));
+        }
     }
 
     void MemoryManager::ForeachChunkInRange(span<u8> memory, auto editCallback) {
@@ -153,9 +155,6 @@ namespace skyline::kernel {
             }
         }
     }
-
-    constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
-    constexpr size_t CodeRegionSize{4ULL * 1024 * 1024 * 1024}; //!< The assumed maximum size of the code region (4GiB)
 
     static span<u8> AllocateMappedRange(size_t minSize, size_t align, size_t minAddress, size_t maxAddress, bool findLargest) {
         span<u8> region{};
@@ -194,10 +193,35 @@ namespace skyline::kernel {
         return region;
     }
 
+    namespace {
+        constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
+
+        namespace AS36bit {
+            constexpr size_t CodeRegionStart{0x8000000}; //!< The start address of the code region (128MiB)
+            constexpr size_t CodeRegionSize{0x78000000}; //!< The size of the code region (2GiB - 128MiB)
+            constexpr size_t AliasRegionSize{0x180000000}; //!< The size of the alias region (6GiB)
+            constexpr size_t HeapRegionSize{0x180000000}; //!< The size of the heap region (6GiB)
+
+            constexpr size_t TotalSize{AliasRegionSize + HeapRegionSize};
+        }
+
+        namespace AS39bit {
+            constexpr size_t MaxCodeRegionSize{4ULL * 1024 * 1024 * 1024}; //!< The assumed maximum size of the code region (4GiB)
+            constexpr size_t AliasRegionSize{0x1000000000}; //!< The size of the alias region (64GiB)
+            constexpr size_t HeapRegionSize{0x180000000}; //!< The size of the heap region (6GiB)
+            constexpr size_t StackRegionSize{0x80000000}; //!< The size of the stack region (2GiB)
+            constexpr size_t TlsIoRegionSize{0x1000000000}; //!< The size of the TLS/IO region (64GiB)
+
+            constexpr size_t TotalSize{MaxCodeRegionSize + AliasRegionSize + HeapRegionSize + StackRegionSize + TlsIoRegionSize};
+        }
+    }
+
     void MemoryManager::InitializeVmm(memory::AddressSpaceType type) {
         addressSpaceType = type;
 
-        size_t baseSize{};
+        LOGD("Initializing VMM for {}", to_string(addressSpaceType));
+
+        size_t baseSize{}, maxAddress{};
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
             case memory::AddressSpaceType::AddressSpace32BitNoReserved:
@@ -205,13 +229,15 @@ namespace skyline::kernel {
 
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 addressSpace = span<u8>{reinterpret_cast<u8 *>(0), (1ULL << 36)};
-                baseSize = 0x180000000 + 0x180000000;
+                baseSize = AS36bit::TotalSize;
+                maxAddress = addressSpace.size();
                 break;
             }
 
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 addressSpace = span<u8>{reinterpret_cast<u8 *>(0), 1ULL << 39};
-                baseSize = CodeRegionSize + 0x1000000000 + 0x180000000 + 0x80000000 + 0x1000000000;
+                baseSize = AS39bit::TotalSize;
+                maxAddress = addressSpace.size();
                 break;
             }
 
@@ -222,63 +248,73 @@ namespace skyline::kernel {
         // Qualcomm KGSL (Kernel Graphic Support Layer/Kernel GPU driver) maps below 35-bits, reserving it causes KGSL to go OOM
         static constexpr size_t KgslReservedRegionSize{1ULL << 35};
 
-        base = AllocateMappedRange(baseSize, RegionAlignment, KgslReservedRegionSize, addressSpace.size(), false);
+        base = AllocateMappedRange(baseSize, RegionAlignment, KgslReservedRegionSize, maxAddress, false);
 
-        if (type != memory::AddressSpaceType::AddressSpace36Bit) {
-            code = base;
-        } else {
-            code = codeBase36Bit = AllocateMappedRange(0x78000000, RegionAlignment, 0x8000000, KgslReservedRegionSize, false);
+        switch (type) {
+            case memory::AddressSpaceType::AddressSpace36Bit: {
+                code = codeBase36Bit = AllocateMappedRange(AS36bit::CodeRegionSize, RegionAlignment, AS36bit::CodeRegionStart, KgslReservedRegionSize, false);
 
-            if ((reinterpret_cast<u64>(base.data()) + baseSize) > (1ULL << 36)) {
-                LOGW("Couldn't fit regions into 36 bit AS! Resizing AS to 39 bits!");
-                addressSpace = span<u8>{reinterpret_cast<u8 *>(0), 1ULL << 39};
+                if ((reinterpret_cast<u64>(base.data()) + baseSize) > (1ULL << 36)) {
+                    LOGW("Couldn't fit regions into 36 bit AS! Resizing AS to 39 bits!");
+                    addressSpace = span<u8>{reinterpret_cast<u8 *>(0), 1ULL << 39};
+                }
+
+                break;
+            }
+
+            default: {
+                // Will be resized later when initializing regions
+                code = base;
+                break;
             }
         }
 
         // Insert a placeholder element at the end of the map to make sure upper_bound/lower_bound never triggers std::map::end() which is broken
-        chunks = {{addressSpace.data(),{
+        chunks = {{addressSpace.data(), {
             .size = addressSpace.size(),
             .state = memory::states::Unmapped,
-        }}, {reinterpret_cast<u8 *>(UINT64_MAX), {
+        }}, {addressSpace.end().base(), {
             .state = memory::states::Reserved,
         }}};
     }
 
     void MemoryManager::InitializeRegions(span<u8> codeRegion) {
+        // Get the host address of the code region
+        codeRegion = GetHostSpan(codeRegion);
+
         if (!util::IsAligned(codeRegion.data(), RegionAlignment)) [[unlikely]]
             throw exception("Non-aligned code region was used to initialize regions: {} - {}", fmt::ptr(codeRegion.data()), fmt::ptr(codeRegion.end().base()));
 
         switch (addressSpaceType) {
             case memory::AddressSpaceType::AddressSpace36Bit: {
-
                 // As a workaround if we can't place the code region at the base of the AS we mark it as inaccessible heap so rtld doesn't crash
-                if (codeBase36Bit.data() != reinterpret_cast<u8 *>(0x8000000)) {
-                    MapInternal(std::pair<u8 *, ChunkDescriptor>(reinterpret_cast<u8 *>(0x8000000),{
-                        .size = reinterpret_cast<size_t>(codeBase36Bit.data() - 0x8000000),
+                if (codeBase36Bit.data() != reinterpret_cast<u8 *>(AS36bit::CodeRegionStart)) {
+                    MapInternal(std::pair<u8 *, ChunkDescriptor>(reinterpret_cast<u8 *>(AS36bit::CodeRegionStart), {
+                        .size = reinterpret_cast<size_t>(codeBase36Bit.data() - AS36bit::CodeRegionStart),
                         .state = memory::states::Heap
                     }));
                 }
 
                 // Place code, stack and TLS/IO in the lower 36-bits of the host AS and heap and alias past that
-                code = span<u8>{codeBase36Bit.data(), codeBase36Bit.data() + 0x70000000};
-                stack = span<u8>{codeBase36Bit.data(), codeBase36Bit.data() + 0x78000000};
-                tlsIo = stack; //!< TLS/IO is shared with Stack on 36-bit
-                alias = span<u8>{base.data(), 0x180000000};
-                heap = span<u8>{alias.end().base(), 0x180000000};
+                code = span<u8>{codeBase36Bit.data(), codeBase36Bit.data() + AS36bit::CodeRegionSize};
+                stack = code; // stack is shared with code on 36-bit
+                tlsIo = stack; // TLS/IO is shared with stack on 36-bit
+                alias = span<u8>{base.data(), AS36bit::AliasRegionSize};
+                heap = span<u8>{alias.host.end().base(), AS36bit::HeapRegionSize};
                 break;
             }
 
             case memory::AddressSpaceType::AddressSpace39Bit: {
                 code = span<u8>{base.data(), util::AlignUp(codeRegion.size(), RegionAlignment)};
-                alias = span<u8>{code.end().base(), 0x1000000000};
-                heap = span<u8>{alias.end().base(), 0x180000000};
-                stack = span<u8>{heap.end().base(), 0x80000000};
-                tlsIo = span<u8>{stack.end().base(), 0x1000000000};
+                alias = span<u8>{code.host.end().base(), AS39bit::AliasRegionSize};
+                heap = span<u8>{alias.host.end().base(), AS39bit::HeapRegionSize};
+                stack = span<u8>{heap.host.end().base(), AS39bit::StackRegionSize};
+                tlsIo = span<u8>{stack.host.end().base(), AS39bit::TlsIoRegionSize};
 
                 u64 newSize{code.size() + alias.size() + stack.size() + heap.size() + tlsIo.size()};
 
                 if (newSize > base.size()) [[unlikely]]
-                    throw exception("Guest VMM size has exceeded host carveout size: 0x{:X}/0x{:X} (Code: 0x{:X}/0x{:X})", newSize, base.size(), code.size(), CodeRegionSize);
+                    throw exception("Guest VMM size has exceeded host carveout size: 0x{:X}/0x{:X} (Code: 0x{:X}/0x{:X})", newSize, base.size(), code.size(), AS39bit::MaxCodeRegionSize);
 
                 if (newSize != base.size()) [[likely]]
                     munmap(base.end().base(), newSize - base.size());
@@ -300,15 +336,18 @@ namespace skyline::kernel {
              "Heap Region: {} - {} (Size: 0x{:X})\n"
              "Stack Region: {} - {} (Size: 0x{:X})\n"
              "TLS/IO Region: {} - {} (Size: 0x{:X})",
-             fmt::ptr(code.data()),
-             fmt::ptr(code.data()), fmt::ptr(code.end().base()), code.size(),
-             fmt::ptr(alias.data()), fmt::ptr(alias.end().base()), alias.size(),
-             fmt::ptr(heap.data()), fmt::ptr(heap.end().base()), heap.size(),
-             fmt::ptr(stack.data()), fmt::ptr(stack.end().base()), stack.size(),
-             fmt::ptr(tlsIo.data()), fmt::ptr(tlsIo.end().base()), tlsIo.size());
+             fmt::ptr(base.data()),
+             fmt::ptr(code.guest.data()), fmt::ptr(code.guest.end().base()), code.size(),
+             fmt::ptr(alias.guest.data()), fmt::ptr(alias.guest.end().base()), alias.size(),
+             fmt::ptr(heap.guest.data()), fmt::ptr(heap.guest.end().base()), heap.size(),
+             fmt::ptr(stack.guest.data()), fmt::ptr(stack.guest.end().base()), stack.size(),
+             fmt::ptr(tlsIo.guest.data()), fmt::ptr(tlsIo.guest.end().base()), tlsIo.size());
     }
 
     span<u8> MemoryManager::CreateMirror(span<u8> mapping) {
+        // Get the host address of the mapping
+        mapping = GetHostSpan(mapping);
+
         if (!base.contains(mapping)) [[unlikely]]
             throw exception("Mapping is outside of VMM base: {} - {}", fmt::ptr(mapping.data()), fmt::ptr(mapping.end().base()));
 
@@ -336,20 +375,23 @@ namespace skyline::kernel {
 
         size_t mirrorOffset{};
         for (const auto &region : regions) {
-            if (!base.contains(region)) [[unlikely]]
-                throw exception("Mapping is outside of VMM base: {} - {}", fmt::ptr(region.data()), fmt::ptr(region.end().base()));
+            // Get the host address of the region
+            auto hostRegion{GetHostSpan(region)};
 
-            auto offset{static_cast<size_t>(region.data() - base.data())};
-            if (!util::IsPageAligned(offset) || !util::IsPageAligned(region.size())) [[unlikely]]
-                throw exception("Mapping is not aligned to a page: {} - {} (0x{:X})", fmt::ptr(region.data()), fmt::ptr(region.end().base()), offset);
+            if (!base.contains(hostRegion)) [[unlikely]]
+                throw exception("Mapping is outside of VMM base: {} - {}", fmt::ptr(hostRegion.data()), fmt::ptr(hostRegion.end().base()));
 
-            auto mirror{mremap(region.data(), 0, region.size(), MREMAP_FIXED | MREMAP_MAYMOVE, reinterpret_cast<u8 *>(mirrorBase) + mirrorOffset)};
+            auto offset{static_cast<size_t>(hostRegion.data() - base.data())};
+            if (!util::IsPageAligned(offset) || !util::IsPageAligned(hostRegion.size())) [[unlikely]]
+                throw exception("Mapping is not aligned to a page: {} - {} (0x{:X})", fmt::ptr(hostRegion.data()), fmt::ptr(hostRegion.end().base()), offset);
+
+            auto mirror{mremap(hostRegion.data(), 0, hostRegion.size(), MREMAP_FIXED | MREMAP_MAYMOVE, reinterpret_cast<u8 *>(mirrorBase) + mirrorOffset)};
             if (mirror == MAP_FAILED) [[unlikely]]
-                throw exception("Failed to create mirror mapping at {} - {} (0x{:X}): {}", fmt::ptr(region.data()), fmt::ptr(region.end().base()), offset, strerror(errno));
+                throw exception("Failed to create mirror mapping at {} - {} (0x{:X}): {}", fmt::ptr(hostRegion.data()), fmt::ptr(hostRegion.end().base()), offset, strerror(errno));
 
-            mprotect(mirror, region.size(), PROT_READ | PROT_WRITE);
+            mprotect(mirror, hostRegion.size(), PROT_READ | PROT_WRITE);
 
-            mirrorOffset += region.size();
+            mirrorOffset += hostRegion.size();
         }
 
         if (mirrorOffset != totalSize) [[unlikely]]
@@ -402,91 +444,91 @@ namespace skyline::kernel {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = permission,
                 .state = memory::states::Code
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::MapMutableCodeMemory(span<u8> memory) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = {true, true, false},
                 .state = memory::states::CodeMutable
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::MapStackMemory(span<u8> memory) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = {true, true, false},
                 .state = memory::states::Stack,
                 .isSrcMergeDisallowed = true
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::MapHeapMemory(span<u8> memory) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = {true, true, false},
                 .state = memory::states::Heap
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::MapSharedMemory(span<u8> memory, memory::Permission permission) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = permission,
                 .state = memory::states::SharedMemory,
                 .isSrcMergeDisallowed = true
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::MapTransferMemory(span<u8> memory, memory::Permission permission) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = permission,
                 .state = permission.raw ? memory::states::TransferMemory : memory::states::TransferMemoryIsolated,
                 .isSrcMergeDisallowed = true
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::MapThreadLocalMemory(span<u8> memory) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = {true, true, false},
                 .state = memory::states::ThreadLocal
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::Reserve(span<u8> memory) {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = {false, false, false},
                 .state = memory::states::Reserved
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::UnmapMemory(span<u8> memory) {
@@ -498,14 +540,17 @@ namespace skyline::kernel {
         });
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            memory.data(),{
+            memory.data(), {
                 .size = memory.size(),
                 .permission = {false, false, false},
                 .state = memory::states::Unmapped
-        }));
+            }));
     }
 
     __attribute__((always_inline)) void MemoryManager::FreeMemory(span<u8> memory) {
+        // Get the host address of memory
+        memory = GetHostSpan(memory);
+
         u8 *alignedStart{util::AlignUp(memory.data(), constant::PageSize)};
         u8 *alignedEnd{util::AlignDown(memory.end().base(), constant::PageSize)};
 
@@ -518,14 +563,16 @@ namespace skyline::kernel {
         std::unique_lock lock{mutex};
 
         MapInternal(std::pair<u8 *, ChunkDescriptor>(
-            destination.data(),{
+            destination.data(), {
                 .size = destination.size(),
                 .permission = {true, true, false},
                 .state = memory::states::Stack,
                 .isSrcMergeDisallowed = true
-        }));
+            }));
 
-        std::memcpy(destination.data(), source.data(), source.size());
+        auto sourceHost{GetHostSpan(source)};
+        auto destinationHost{GetHostSpan(destination)};
+        std::memcpy(destinationHost.data(), sourceHost.data(), sourceHost.size());
 
         ForeachChunkInRange(source, [&](std::pair<u8 *, ChunkDescriptor> &desc) __attribute__((always_inline)) {
             desc.second.permission = {false, false, false};
@@ -550,7 +597,10 @@ namespace skyline::kernel {
                 MapInternal(desc);
             });
 
-            std::memcpy(source.data() + (dstChunk->first - destination.data()), dstChunk->first, dstChunk->second.size);
+            auto sourceHost{GetHostSpan(source)};
+            auto dstChunkHost{GetHostSpan(span<u8>{dstChunk->first, dstChunk->second.size})};
+            auto destinationOffset{dstChunk->first - destination.data()};
+            std::memcpy(sourceHost.data() + destinationOffset, dstChunkHost.data(), dstChunkHost.size());
         }
     }
 
@@ -558,7 +608,7 @@ namespace skyline::kernel {
         memRefs.push_back(std::move(ptr));
     }
 
-    void MemoryManager::RemoveRef(std::shared_ptr<type::KMemory> ptr) {
+    void MemoryManager::RemoveRef(const std::shared_ptr<type::KMemory> &ptr) {
         auto i = std::find(memRefs.begin(), memRefs.end(), ptr);
 
         if (*i == ptr) [[likely]]
@@ -569,9 +619,9 @@ namespace skyline::kernel {
         std::shared_lock lock{mutex};
         size_t size{};
 
-        auto currChunk = chunks.lower_bound(heap.data());
+        auto currChunk = chunks.lower_bound(heap.guest.data());
 
-        while (currChunk->first < heap.end().base()) {
+        while (currChunk->first < heap.guest.end().base()) {
             if (currChunk->second.state == memory::states::Heap)
                 size += currChunk->second.size;
             ++currChunk;
@@ -584,5 +634,9 @@ namespace skyline::kernel {
         std::shared_lock lock{mutex};
         constexpr size_t KMemoryBlockSize{0x40};
         return std::min(static_cast<size_t>(state.process->npdm.meta.systemResourceSize), util::AlignUp(chunks.size() * KMemoryBlockSize, constant::PageSize));
+    }
+
+    __attribute__((always_inline)) span<u8> MemoryManager::GetHostSpan(span<u8> guestSpan) const {
+        return {guestSpan.data() + guestOffset, guestSpan.size()};
     }
 }

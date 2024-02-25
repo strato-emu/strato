@@ -29,7 +29,8 @@ namespace skyline::nce {
         try {
             if (svc) [[likely]] {
                 TRACE_EVENT("kernel", perfetto::StaticString{svc.name});
-                (svc.function)(state);
+                auto &svcContext{*reinterpret_cast<kernel::svc::SvcContext *>(ctx)};
+                (svc.function)(state, svcContext);
             } else {
                 throw exception("Unimplemented SVC 0x{:X}", svcId);
             }
@@ -505,7 +506,7 @@ namespace skyline::nce {
         }
     }
 
-    size_t NCE::GetHookSectionSize(span<HookedSymbolEntry> entries) {
+    size_t NCE::GetHookSectionSize(span<hle::HookedSymbolEntry> entries) {
         if (entries.empty())
             return 0;
 
@@ -520,7 +521,7 @@ namespace skyline::nce {
         return size * sizeof(u32);
     }
 
-    void NCE::WriteHookSection(span<HookedSymbolEntry> entries, span<u32> hookSection) {
+    void NCE::WriteHookSection(span<hle::HookedSymbolEntry> entries, span<u32> hookSection) {
         u32 *start{hookSection.data()};
         u32 *end{hookSection.end().base()};
         u32 *hook{start};

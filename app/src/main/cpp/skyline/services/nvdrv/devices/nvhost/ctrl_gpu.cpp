@@ -72,10 +72,11 @@ namespace skyline::service::nvdrv::device::nvhost {
         }
     }
 
+// @fmt:off
 #include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 CtrlGpuMagic{0x47};
 
-    IOCTL_HANDLER_FUNC(CtrlGpu, ({
+    IOCTL_HANDLER_FUNC(CtrlGpu,
         IOCTL_CASE_ARGS(OUT,   SIZE(0x4),  MAGIC(CtrlGpuMagic), FUNC(0x1),
                         ZCullGetCtxSize,    ARGS(Out<u32>))
         IOCTL_CASE_ARGS(OUT,   SIZE(0x28), MAGIC(CtrlGpuMagic), FUNC(0x2),
@@ -90,13 +91,14 @@ namespace skyline::service::nvdrv::device::nvhost {
                         GetActiveSlotMask,  ARGS(Out<u32>, Out<u32>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x10), MAGIC(CtrlGpuMagic), FUNC(0x1C),
                         GetGpuTime,         ARGS(Out<u64>, Pad<u64>))
-    }))
+    )
 
-    INLINE_IOCTL_HANDLER_FUNC(Ioctl3, CtrlGpu, ({
+    INLINE_IOCTL_HANDLER_FUNC(Ioctl3, CtrlGpu,
         INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0xB0), MAGIC(CtrlGpuMagic), FUNC(0x5),
                                GetCharacteristics3, ARGS(InOut<u64>, In<u64>, Out<GpuCharacteristics>))
         INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(CtrlGpuMagic), FUNC(0x6),
                                GetTpcMasks3,        ARGS(In<u32>, Pad<u32, 3>, Out<u32>))
-    }))
+    )
 #include <services/nvdrv/devices/deserialisation/macro_undef.inc>
+// @fmt:on
 }

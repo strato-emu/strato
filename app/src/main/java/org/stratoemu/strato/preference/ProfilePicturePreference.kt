@@ -37,7 +37,7 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
     private val pickMedia = (context as ComponentActivity).registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         try {
             if (uri != null) { // The user selected a picture
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, profilePicture).apply()
+                persistString(profilePicture)
                 File(profilePictureDir).mkdirs()
                 context.applicationContext.contentResolver.let { contentResolver : ContentResolver ->
                     val readUriPermission : Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -53,7 +53,7 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
                 if (File(profilePicture).exists()) {
                     File(profilePicture).delete()
                 }
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, "No picture selected").apply()
+                persistString(context.getString(R.string.profile_picture_not_selected))
             }
             updatePreview()
             notifyChanged()
@@ -64,7 +64,7 @@ class ProfilePicturePreference @JvmOverloads constructor(context : Context, attr
 
     init {
         summaryProvider = SummaryProvider<ProfilePicturePreference> { preference ->
-            var relativePath = Uri.decode(preference.getPersistedString("No picture selected"))
+            var relativePath = Uri.decode(preference.getPersistedString(context.getString(R.string.profile_picture_not_selected)))
             if (relativePath.startsWith(skylineFilesDir))
                 relativePath = relativePath.substring(skylineFilesDir.length)
             relativePath

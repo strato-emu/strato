@@ -91,6 +91,7 @@
     <string name="username">Username</string>
     <string name="username_default" translatable="false">@string/app_name</string>
     <string name="profile_picture">Profile Picture</string>
+    <string name="profile_picture_not_selected">No picture selected</string>
     <string name="system_language">System Language</string>
     <string name="system_region">System Region</string>
     <string name="internet">The system will be able to use internet</string>

@@ -225,11 +225,12 @@ namespace skyline::service::nvdrv::device::nvhost {
         }
     }
 
+// @fmt:off
 #include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 GpuChannelUserMagic{0x47};
     static constexpr u32 GpuChannelMagic{0x48};
 
-    VARIABLE_IOCTL_HANDLER_FUNC(GpuChannel, ({
+    VARIABLE_IOCTL_HANDLER_FUNC(GpuChannel,
         IOCTL_CASE_ARGS(IN,    SIZE(0x4),  MAGIC(GpuChannelMagic),     FUNC(0x1),
                         SetNvmapFd,       ARGS(In<FileDescriptor>))
         IOCTL_CASE_ARGS(IN,    SIZE(0x4),  MAGIC(GpuChannelMagic),     FUNC(0x3),
@@ -250,14 +251,15 @@ namespace skyline::service::nvdrv::device::nvhost {
                         SetUserData,      ARGS(In<u64>))
         IOCTL_CASE_ARGS(OUT,   SIZE(0x8),  MAGIC(GpuChannelUserMagic), FUNC(0x15),
                         GetUserData,      ARGS(Out<u64>))
-    }), ({
+    ,
         VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(GpuChannelMagic), FUNC(0x8),
                                  SubmitGpfifo, ARGS(In<u64>, In<u32>, InOut<SubmitGpfifoFlags>, InOut<Fence>, AutoSizeSpan<soc::gm20b::GpEntry>))
-    }))
+    )
 
-    INLINE_IOCTL_HANDLER_FUNC(Ioctl2, GpuChannel, ({
+    INLINE_IOCTL_HANDLER_FUNC(Ioctl2, GpuChannel,
         INLINE_IOCTL_CASE_ARGS(INOUT, SIZE(0x18), MAGIC(GpuChannelMagic), FUNC(0x1B),
                                SubmitGpfifo2, ARGS(In<u64>, In<u32>, InOut<SubmitGpfifoFlags>, InOut<Fence>))
-    }))
+    )
 #include <services/nvdrv/devices/deserialisation/macro_undef.inc>
+// @fmt:on
 }

@@ -111,11 +111,13 @@ namespace skyline::service::nvdrv::device::nvhost {
 
         return PosixResult::Success;
     }
+
+// @fmt:off
 #include <services/nvdrv/devices/deserialisation/macro_def.inc>
     static constexpr u32 Host1xChannelMagic{0x00};
     static constexpr u32 GpuChannelMagic{0x48}; //!< Used for SetNvmapFd which is needed in both GPU and host1x channels
 
-    VARIABLE_IOCTL_HANDLER_FUNC(Host1xChannel, ({
+    VARIABLE_IOCTL_HANDLER_FUNC(Host1xChannel,
         IOCTL_CASE_ARGS(IN,    SIZE(0x4), MAGIC(GpuChannelMagic),    FUNC(0x1),
                         SetNvmapFd,       ARGS(In<FileDescriptor>))
         IOCTL_CASE_ARGS(INOUT, SIZE(0x8), MAGIC(Host1xChannelMagic), FUNC(0x2),
@@ -124,7 +126,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                         GetWaitBase,      ARGS(In<core::ChannelType>, Out<u32>))
         IOCTL_CASE_ARGS(IN,    SIZE(0x4), MAGIC(Host1xChannelMagic), FUNC(0x7),
                         SetSubmitTimeout, ARGS(In<u32>))
-    }), ({
+    ,
         VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1xChannelMagic), FUNC(0x1),
                                  Submit,      ARGS(Save<u32, 0>, Save<u32, 1>, Save<u32, 2>, Save<u32, 3>,
                                                    SlotSizeSpan<SubmitCmdBuf, 0>,
@@ -134,6 +136,7 @@ namespace skyline::service::nvdrv::device::nvhost {
                                  MapBuffer,   ARGS(Save<u32, 0>, Pad<u32>, In<u8>, Pad<u8, 3>, SlotSizeSpan<BufferHandle, 0>))
         VARIABLE_IOCTL_CASE_ARGS(INOUT, MAGIC(Host1xChannelMagic), FUNC(0xA),
                                  UnmapBuffer, ARGS(Save<u32, 0>, Pad<u32>, In<u8>, Pad<u8, 3>, SlotSizeSpan<BufferHandle, 0>))
-    }))
+    )
 #include <services/nvdrv/devices/deserialisation/macro_undef.inc>
+// @fmt:on
 }
