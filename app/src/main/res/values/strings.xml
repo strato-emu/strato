@@ -304,6 +304,9 @@
     <string name="save_data_found">Save data found. What would you like to do?</string>
     <string name="save_data_not_found">No save data found. What would you like to do?</string>
     <string name="delete_save_confirmation_message">Are you sure you want to delete this save?</string>
+    <string name="delete_shader_cache_confirmation_message">Are you sure you want to delete all cached shaders?</string>
+    <string name="manage_shader_cache">Manage shader cache</string>
+    <string name="clear_shader_cache">Clear shader cache</string>
     <string name="action_irreversible">This action is irreversible</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>

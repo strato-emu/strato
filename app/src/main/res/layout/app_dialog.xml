@@ -148,7 +148,6 @@
             android:layout_marginTop="8dp"
             app:alignItems="center"
             app:flexWrap="nowrap"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/save_management"
@@ -183,6 +182,40 @@
                 android:tooltipText="@string/delete_save"
                 app:icon="@drawable/ic_delete"
                 app:iconGravity="textStart" />
+
+        </com.google.android.flexbox.FlexboxLayout>
+
+        <TextView
+            android:id="@+id/delete_pipeline_cache"
+            style="?attr/textAppearanceLabelLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/manage_shader_cache"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/flexboxSaves" />
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/flexboxCache"
+            style="@style/ThemeOverlay.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:alignItems="center"
+            app:flexWrap="nowrap"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/delete_pipeline_cache"
+            app:layout_constraintVertical_bias="1">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cache_delete"
+                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/clear_shader_cache"
+                android:text="@string/clear_shader_cache"
+                app:icon="@drawable/ic_delete" />
 
         </com.google.android.flexbox.FlexboxLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
