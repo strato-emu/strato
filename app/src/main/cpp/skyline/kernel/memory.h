@@ -268,7 +268,7 @@ namespace skyline {
             memory::AddressSpaceType addressSpaceType{};
             span<u8> addressSpace{}; //!< The entire address space
             span<u8> codeBase36Bit{}; //!< A mapping in the lower 36 bits of the address space for mapping code and stack on 36-bit guests
-            span<u8> base{}; //!< The application-accessible address space (for 39-bit guests) or the heap/alias address space (for 36-bit guests)
+            span<u8> base{}; //!< The application-accessible address space (for 39-bit and 32-bit guests) or the heap/alias address space (for 36-bit guests)
             MemoryRegion code{};
             MemoryRegion alias{};
             MemoryRegion heap{};

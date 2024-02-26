@@ -196,6 +196,15 @@ namespace skyline::kernel {
     namespace {
         constexpr size_t RegionAlignment{1ULL << 21}; //!< The minimum alignment of a HOS memory region
 
+        namespace AS32bit {
+            constexpr size_t CodeRegionStart{0x200000}; //!< The start address of the code/stack region (2MiB)
+            constexpr size_t CodeRegionSize{0x3fe00000}; //!< The size of the code/stack region (1GiB - 2MiB)
+            constexpr size_t AliasRegionSize{0x40000000}; //!< The size of the alias region (1GiB)
+            constexpr size_t HeapRegionSize{0x40000000}; //!< The size of the heap region (1GiB)
+
+            constexpr size_t TotalSize{1ULL << 32};
+        }
+
         namespace AS36bit {
             constexpr size_t CodeRegionStart{0x8000000}; //!< The start address of the code region (128MiB)
             constexpr size_t CodeRegionSize{0x78000000}; //!< The size of the code region (2GiB - 128MiB)
@@ -224,8 +233,12 @@ namespace skyline::kernel {
         size_t baseSize{}, maxAddress{};
         switch (type) {
             case memory::AddressSpaceType::AddressSpace32Bit:
-            case memory::AddressSpaceType::AddressSpace32BitNoReserved:
-                throw exception("32-bit address spaces are not supported");
+            case memory::AddressSpaceType::AddressSpace32BitNoReserved: {
+                addressSpace = span<u8>{reinterpret_cast<u8 *>(0), 1ULL << 32};
+                baseSize = AS32bit::TotalSize;
+                maxAddress = std::numeric_limits<size_t>::max(); // No limit on address space placement
+                break;
+            }
 
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 addressSpace = span<u8>{reinterpret_cast<u8 *>(0), (1ULL << 36)};
@@ -251,6 +264,13 @@ namespace skyline::kernel {
         base = AllocateMappedRange(baseSize, RegionAlignment, KgslReservedRegionSize, maxAddress, false);
 
         switch (type) {
+            case memory::AddressSpaceType::AddressSpace32Bit:
+            case memory::AddressSpaceType::AddressSpace32BitNoReserved: {
+                code = MemoryRegion{span<u8>{base.data() + AS32bit::CodeRegionStart, AS32bit::CodeRegionSize}, reinterpret_cast<uintptr_t>(base.data())};
+                guestOffset = reinterpret_cast<uintptr_t>(base.data());
+                break;
+            }
+
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 code = codeBase36Bit = AllocateMappedRange(AS36bit::CodeRegionSize, RegionAlignment, AS36bit::CodeRegionStart, KgslReservedRegionSize, false);
 
@@ -286,6 +306,22 @@ namespace skyline::kernel {
             throw exception("Non-aligned code region was used to initialize regions: {} - {}", fmt::ptr(codeRegion.data()), fmt::ptr(codeRegion.end().base()));
 
         switch (addressSpaceType) {
+            case memory::AddressSpaceType::AddressSpace32Bit: {
+                stack = code; // stack is shared with code on 32-bit
+                tlsIo = stack; // TLS/IO is shared with stack on 32-bit
+                alias = MemoryRegion{span<u8>{stack.host.end().base(), AS32bit::AliasRegionSize}, guestOffset};
+                heap = MemoryRegion{span<u8>{alias.host.end().base(), AS32bit::HeapRegionSize}, guestOffset};
+                break;
+            }
+
+            case memory::AddressSpaceType::AddressSpace32BitNoReserved: {
+                stack = code; // stack is shared with code on 32-bit
+                tlsIo = stack; // TLS/IO is shared with stack on 32-bit
+                heap = MemoryRegion{span<u8>{stack.host.end().base(), AS32bit::HeapRegionSize * 2}, guestOffset};
+                alias = MemoryRegion{span<u8>{heap.host.end().base(), 0}, guestOffset};
+                break;
+            }
+
             case memory::AddressSpaceType::AddressSpace36Bit: {
                 // As a workaround if we can't place the code region at the base of the AS we mark it as inaccessible heap so rtld doesn't crash
                 if (codeBase36Bit.data() != reinterpret_cast<u8 *>(AS36bit::CodeRegionStart)) {
