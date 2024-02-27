@@ -12,8 +12,6 @@ idea.module {
     excludeDirs.add(file("libraries/boost"))
 }
 
-project.ext.isBuildSigned = (System.getenv("CI") == "true") && (System.getenv("IS_BUILD_SIGNED") == "true")
-
 android {
     namespace 'org.stratoemu.strato'
     compileSdk 34
@@ -58,15 +56,6 @@ android {
         jniLibs.useLegacyPackaging = true
     }
 
-    signingConfigs {
-        ci {
-            storeFile file(System.getenv("SIGNING_STORE_PATH") ?: "${System.getenv("user.home")}/keystore.jks")
-            storePassword System.getenv("SIGNING_STORE_PASSWORD")
-            keyAlias System.getenv("SIGNING_KEY_ALIAS")
-            keyPassword System.getenv("SIGNING_KEY_PASSWORD")
-        }
-    }
-
     buildTypes {
         release {
             debuggable true
@@ -78,7 +67,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
+            signingConfig signingConfigs.debug
             manifestPlaceholders["emulationProcess"] = ":emulationProcess"
         }
 
@@ -91,14 +80,14 @@ android {
             }
             minifyEnabled false
             shrinkResources false
-            signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
+            signingConfig signingConfigs.debug
         }
 
         debug {
             debuggable true
             minifyEnabled false
             shrinkResources false
-            signingConfig = isBuildSigned ? signingConfigs.ci : signingConfigs.debug
+            signingConfig signingConfigs.debug
         }
     }
 
@@ -188,8 +177,10 @@ kapt {
  * Returns the version name based on the current git state
  * If HEAD is a tag, the tag name is used as the version name
  * e.g. `1.0.0`
- * If HEAD is not a tag, the tag name, the branch name and the short commit hash are used
+ * If HEAD is not a tag, the closest tag name, the branch name and the short commit hash are used
  * e.g. `1.0.0-master-ab00cd11`
+ * If PR_NUMBER is set, prPR_NUMBER is used instead of the branch name
+ * e.g. `1.0.0-pr123-ab00cd11`
  */
 def getGitVersionName() {
     def versionName = '0.0.0'
@@ -248,13 +239,17 @@ def getGitShortHash() {
 }
 
 /**
- * Returns the current branch name
+ * Returns the current branch name, or prPR_NUMBER if PR_NUMBER is set
  */
 def getGitBranch() {
     def branch = 'unk'
 
     try {
-        branch = 'git rev-parse --abbrev-ref HEAD'.execute([], project.rootDir).text.trim()
+        def prNumber = System.getenv('PR_NUMBER') ?: ''
+        if (!prNumber.isEmpty())
+            branch = 'pr' + prNumber
+        else
+            branch = 'git rev-parse --abbrev-ref HEAD'.execute([], project.rootDir).text.trim()
     } catch (Exception e) {
         logger.error(e.toString() + ': defaulting to dummy branch ' + branch)
     }
