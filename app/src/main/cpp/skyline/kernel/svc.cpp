@@ -1218,17 +1218,19 @@ namespace skyline::kernel::svc {
             auto &context{*reinterpret_cast<ThreadContext *>(ctx.x0)};
             context = {}; // Zero-initialize the contents of the context as not all fields are set
 
-            auto &targetContext{thread->ctx};
-            for (size_t i{}; i < targetContext.gpr.regs.size(); i++)
-                context.gpr[i] = targetContext.gpr.regs[i];
+            if (state.process->is64bit()) {
+                auto &targetContext{dynamic_cast<type::KNceThread *>(thread.get())->ctx};
+                for (size_t i{}; i < targetContext.gpr.regs.size(); i++)
+                    context.gpr[i] = targetContext.gpr.regs[i];
 
-            for (size_t i{}; i < targetContext.fpr.regs.size(); i++)
-                context.vreg[i] = targetContext.fpr.regs[i];
+                for (size_t i{}; i < targetContext.fpr.regs.size(); i++)
+                    context.vreg[i] = targetContext.fpr.regs[i];
 
-            context.fpcr = targetContext.fpr.fpcr;
-            context.fpsr = targetContext.fpr.fpsr;
+                context.fpcr = targetContext.fpr.fpcr;
+                context.fpsr = targetContext.fpr.fpsr;
 
-            context.tpidr = reinterpret_cast<u64>(targetContext.tpidrEl0);
+                context.tpidr = reinterpret_cast<u64>(targetContext.tpidrEl0);
+            }
 
             // Note: We don't write the whole context as we only store the parts required according to the ARMv8 ABI for syscall handling
             LOGD("Written partial context for thread #{}", thread->id);

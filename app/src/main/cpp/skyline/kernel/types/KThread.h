@@ -5,6 +5,7 @@
 
 #include <csetjmp>
 #include <nce/guest.h>
+#include <jit/thread_context32.h>
 #include <kernel/scheduler.h>
 #include <common/signal.h>
 #include <common/spin_lock.h>
@@ -24,27 +25,37 @@ namespace skyline {
             timer_t preemptionTimer{}; //!< A kernel timer used for preemption interrupts
 
             /**
-             * @brief Entry function any guest threads, sets up necessary context and jumps into guest code from the calling thread
-             * @note This function also serves as the entry point for host threads created in StartThread
+             * @brief Entry function of any guest threads, sets up necessary context and jumps into guest code from the calling thread
              */
-            void StartThread();
+            void ThreadEntrypoint();
+
+          protected:
+            /**
+             * @brief Initializes the thread's execution-mode-specific host object
+             */
+            virtual void Init() = 0;
+
+            /**
+             * @brief Runs this thread's guest code
+             */
+            virtual void Run() = 0;
 
           public:
             std::mutex statusMutex; //!< Synchronizes all thread state changes (running/ready/killed)
             std::condition_variable statusCondition; //!< Signalled on the status of the thread changing
             bool running{false}; //!< If the host thread that corresponds to this thread is running, this doesn't reflect guest scheduling changes
-            bool ready{false}; //!< If this thread is ready to recieve signals or not
+            bool ready{false}; //!< If this thread is ready to receive signals or not
             bool killed{false}; //!< If this thread was previously running and has been killed
 
             KHandle handle;
             size_t id; //!< Index of thread in parent process's KThread vector
 
-            nce::ThreadContext ctx{}; //!< The context of the guest thread during the last SVC
-            jmp_buf originalCtx; //!< The context of the host thread prior to jumping into guest code
+            jmp_buf originalCtx{}; //!< The context of the host thread prior to jumping into guest code
 
             void *entry; //!< A function pointer to the thread's entry
             u64 entryArgument; //!< An argument to provide with to the thread entry function
             void *stackTop; //!< The top of the guest's stack, this is set to the initial guest stack pointer
+            u8 *tlsRegion{}; //!< The TLS region for this thread
 
             AdaptiveSingleWaiterConditionVariable scheduleCondition; //!< Signalled to wake the thread when it's scheduled or its resident core changes
             std::atomic<i8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
@@ -63,11 +74,11 @@ namespace skyline {
             bool forceYield{}; //!< If the thread has been forcefully yielded by another thread
 
             RecursiveSpinLock waiterMutex; //!< Synchronizes operations on mutation of the waiter members
-            u32 *waitMutex; //!< The key of the mutex which this thread is waiting on
-            KHandle waitTag; //!< The handle of the thread which requested the mutex lock
+            u32 *waitMutex{}; //!< The key of the mutex which this thread is waiting on
+            KHandle waitTag{}; //!< The handle of the thread which requested the mutex lock
             std::shared_ptr<KThread> waitThread; //!< The thread which this thread is waiting on
             std::list<std::shared_ptr<type::KThread>> waiters; //!< A queue of threads waiting on this thread sorted by priority
-            void *waitConditionVariable; //!< The condition variable which this thread is waiting on
+            void *waitConditionVariable{}; //!< The condition variable which this thread is waiting on
             bool waitSignalled{}; //!< If the conditional variable has been signalled already
             Result waitResult; //!< The result of the wait operation
 
@@ -78,9 +89,11 @@ namespace skyline {
             bool isPaused{false}; //!< If the thread is currently paused and not runnable
             bool insertThreadOnResume{false}; //!< If the thread should be inserted into the scheduler when it resumes (used for pausing threads during sleep/sync)
 
+            static thread_local inline jit::JitCore32 *jit{nullptr}; //!< The JIT core this thread is running on, or nullptr if it's not currently running
+
             KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore);
 
-            ~KThread();
+            virtual ~KThread();
 
             /**
              * @param self If the calling thread should jump directly into guest code or if a new thread should be created for it
@@ -122,6 +135,41 @@ namespace skyline {
             static constexpr bool IsHigherPriority(const i8 priority, const std::shared_ptr<type::KThread> &it) {
                 return priority < it->priority;
             }
+        };
+
+        class KNceThread : public KThread {
+            /**
+             * @brief Initializes the thread object for execution in NCE mode
+             */
+            void Init() override;
+
+            /**
+             * @brief Entry function for any guest thread when running in NCE mode
+             * @note This function does not return as it jumps into guest code
+             */
+            void Run() override;
+
+          public:
+            nce::ThreadContext ctx{}; //!< The context of the guest thread during the last SVC
+
+            using KThread::KThread;
+        };
+
+        class KJit32Thread : public KThread {
+            /**
+             * @brief Initializes the thread object for execution in 32-bit JIT mode
+             */
+            void Init() override;
+
+            /**
+             * @brief Entry function for any guest thread when running in 32-bit JIT mode
+             */
+            void Run() override;
+
+          public:
+            jit::ThreadContext32 ctx{}; //!< The context of the guest thread
+
+            using KThread::KThread;
         };
     }
 }

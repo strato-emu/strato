@@ -6,7 +6,7 @@
 
 namespace skyline::kernel::ipc {
     IpcRequest::IpcRequest(bool isDomain, const DeviceState &state) : isDomain(isDomain) {
-        auto tls{state.ctx->tpidrroEl0};
+        auto tls{state.thread->tlsRegion};
         u8 *pointer{tls};
 
         header = reinterpret_cast<CommandHeader *>(pointer);
@@ -136,7 +136,7 @@ namespace skyline::kernel::ipc {
     IpcResponse::IpcResponse(const DeviceState &state) : state(state) {}
 
     void IpcResponse::WriteResponse(bool isDomain, bool isTipc) {
-        auto tls{state.ctx->tpidrroEl0};
+        auto tls{state.thread->tlsRegion};
         u8 *pointer{tls};
 
         memset(tls, 0, constant::TlsIpcSize);

@@ -120,7 +120,13 @@ namespace skyline::kernel::type {
             mainThreadStack = span<u8>(pageCandidate, state.process->npdm.meta.mainThreadStackSize);
         }
         size_t tid{threads.size() + 1}; //!< The first thread is HOS-1 rather than HOS-0, this is to match the HOS kernel's behaviour
-        auto thread{NewHandle<KThread>(this, tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item};
+
+        auto thread{[&]() -> std::shared_ptr<KThread> {
+            if (is64bit())
+                return NewHandle<KNceThread>(this, tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item;
+            else
+                return NewHandle<KJit32Thread>(this, tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item;
+        }()};
         threads.push_back(thread);
         return thread;
     }
