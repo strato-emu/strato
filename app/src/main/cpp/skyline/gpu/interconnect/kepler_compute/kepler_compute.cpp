@@ -11,11 +11,11 @@
 namespace skyline::gpu::interconnect::kepler_compute {
     KeplerCompute::KeplerCompute(GPU &gpu,
                                  soc::gm20b::ChannelContext &channelCtx,
-                                 nce::NCE &nce,
+                                 TrapManager &trap,
                                  kernel::MemoryManager &memoryManager,
                                  DirtyManager &manager,
                                  const EngineRegisterBundle &registerBundle)
-        : ctx{channelCtx, channelCtx.executor, gpu, nce, memoryManager},
+        : ctx{channelCtx, channelCtx.executor, gpu, trap, memoryManager},
           pipelineState{manager, registerBundle.pipelineStateRegisters},
           samplers{manager, registerBundle.samplerPoolRegisters},
           textures{manager, registerBundle.texturePoolRegisters} {

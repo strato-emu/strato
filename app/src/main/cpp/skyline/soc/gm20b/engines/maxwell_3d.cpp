@@ -108,7 +108,7 @@ namespace skyline::soc::gm20b::engine::maxwell3d {
           syncpoints{state.soc->host1x.syncpoints},
           i2m{state, channelCtx},
           dirtyManager{registers},
-          interconnect{*state.gpu, channelCtx, *state.nce, state.process->memory, dirtyManager, MakeEngineRegisters(registers)},
+          interconnect{*state.gpu, channelCtx, state.process->trap, state.process->memory, dirtyManager, MakeEngineRegisters(registers)},
           channelCtx{channelCtx} {
         channelCtx.executor.AddFlushCallback([this]() { FlushEngineState(); });
         InitializeRegisters();

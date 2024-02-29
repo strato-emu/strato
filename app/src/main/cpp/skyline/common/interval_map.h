@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <list>
+#include <vector>
 #include "utils.h"
 #include "span.h"
 

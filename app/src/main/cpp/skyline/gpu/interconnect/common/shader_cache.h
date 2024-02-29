@@ -4,6 +4,7 @@
 #pragma once
 
 #include <tsl/robin_map.h>
+#include <common/trap_manager.h>
 #include "common.h"
 
 namespace skyline::gpu::interconnect {
@@ -18,7 +19,7 @@ namespace skyline::gpu::interconnect {
         struct MirrorEntry {
             span<u8> mirror;
             tsl::robin_map<u8 *, std::pair<ShaderBinary, u64>> cache;
-            std::optional<nce::NCE::TrapHandle> trap;
+            std::optional<TrapHandle> trap;
 
             static constexpr u32 SkipTrapThreshold{20}; //!< Threshold for the number of times a mirror trap needs to be hit before we fallback to always hashing
             u32 trapCount{}; //!< The number of times the trap has been hit, used to avoid trapping in cases where the constant retraps would harm performance

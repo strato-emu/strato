@@ -30,7 +30,7 @@ namespace skyline::gpu::interconnect {
         soc::gm20b::ChannelContext &channelCtx;
         CommandExecutor &executor;
         GPU &gpu;
-        nce::NCE &nce;
+        TrapManager &trap;
         kernel::MemoryManager &memory;
     };
 

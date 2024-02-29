@@ -28,7 +28,7 @@ namespace skyline::gpu::interconnect {
                 auto newIt{mirrorMap.emplace(blockMapping.data(), std::make_unique<MirrorEntry>(ctx.memory.CreateMirror(blockMapping)))};
 
                 // We need to create the trap after allocating the entry so that we have an `invalid` pointer we can pass in
-                auto trapHandle{ctx.nce.CreateTrap(blockMapping, [mutex = &trapMutex]() {
+                auto trapHandle{ctx.trap.CreateTrap(blockMapping, [mutex = &trapMutex]() {
                     std::scoped_lock lock{*mutex};
                     return;
                 }, []() { return true; }, [entry = newIt.first->second.get(), mutex = &trapMutex]() {
@@ -42,7 +42,7 @@ namespace skyline::gpu::interconnect {
                 })};
 
                 // Write only trap
-                ctx.nce.TrapRegions(trapHandle, true);
+                ctx.trap.TrapRegions(trapHandle, true);
 
                 entry = newIt.first->second.get();
                 entry->trap = trapHandle;
@@ -64,7 +64,7 @@ namespace skyline::gpu::interconnect {
             entry->dirty = false;
 
             if (entry->trapCount <= MirrorEntry::SkipTrapThreshold)
-                ctx.nce.TrapRegions(*entry->trap, true);
+                ctx.trap.TrapRegions(*entry->trap, true);
         } else if (auto it{entry->cache.find(blockMapping.data() + blockOffset)}; it != entry->cache.end()) {
             return it->second;
         }

@@ -13,11 +13,11 @@
 namespace skyline::gpu::interconnect::maxwell3d {
     Maxwell3D::Maxwell3D(GPU &gpu,
                          soc::gm20b::ChannelContext &channelCtx,
-                         nce::NCE &nce,
+                         TrapManager &trap,
                          skyline::kernel::MemoryManager &memoryManager,
                          DirtyManager &manager,
                          const EngineRegisterBundle &registerBundle)
-        : ctx{channelCtx, channelCtx.executor, gpu, nce, memoryManager},
+        : ctx{channelCtx, channelCtx.executor, gpu, trap, memoryManager},
           activeState{manager, registerBundle.activeStateRegisters},
           clearEngineRegisters{registerBundle.clearRegisters},
           constantBuffers{manager, registerBundle.constantBufferSelectorRegisters},

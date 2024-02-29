@@ -7,7 +7,7 @@
 #include <range/v3/algorithm.hpp>
 #include <common/spin_lock.h>
 #include <common/lockable_shared_ptr.h>
-#include <nce.h>
+#include "common/trap_manager.h"
 #include <gpu/tag_allocator.h>
 #include <gpu/memory_manager.h>
 #include <gpu/usage_tracker.h>
@@ -384,7 +384,7 @@ namespace skyline::gpu {
 
         span<u8> mirror{}; //!< A contiguous mirror of all the guest mappings to allow linear access on the CPU
         span<u8> alignedMirror{}; //!< The mirror mapping aligned to page size to reflect the full mapping
-        std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< The handle of the traps for the guest mappings
+        std::optional<TrapHandle> trapHandle{}; //!< The handle of the traps for the guest mappings
         enum class DirtyState {
             Clean, //!< The CPU mappings are in sync with the GPU texture
             CpuDirty, //!< The CPU mappings have been modified but the GPU texture is not up to date

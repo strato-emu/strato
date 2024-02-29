@@ -7,6 +7,7 @@
 #include <gpu/interconnect/common/samplers.h>
 #include <gpu/interconnect/common/textures.h>
 #include <soc/gm20b/gmmu.h>
+#include <common/trap_manager.h>
 #include "common.h"
 #include "active_state.h"
 #include "constant_buffers.h"
@@ -83,7 +84,7 @@ namespace skyline::gpu::interconnect::maxwell3d {
 
         Maxwell3D(GPU &gpu,
                   soc::gm20b::ChannelContext &channelCtx,
-                  nce::NCE &nce,
+                  TrapManager &trap,
                   kernel::MemoryManager &memoryManager,
                   DirtyManager &manager,
                   const EngineRegisterBundle &registerBundle);
