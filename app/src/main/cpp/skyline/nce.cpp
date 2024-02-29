@@ -36,7 +36,7 @@ namespace skyline::nce {
             }
 
             while (kernel::Scheduler::YieldPending) [[unlikely]] {
-                state.scheduler->Rotate(false);
+                state.scheduler->Rotate();
                 kernel::Scheduler::YieldPending = false;
                 state.scheduler->WaitSchedule();
             }
@@ -113,7 +113,7 @@ namespace skyline::nce {
             }, hookedSymbol.hook);
 
             while (kernel::Scheduler::YieldPending) [[unlikely]] {
-                state.scheduler->Rotate(false);
+                state.scheduler->Rotate();
                 kernel::Scheduler::YieldPending = false;
                 state.scheduler->WaitSchedule();
             }

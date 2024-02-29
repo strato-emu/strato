@@ -29,6 +29,10 @@ namespace skyline::jit {
                 SvcHandler(lastSwi);
                 break;
 
+            case HaltReason::Preempted:
+                state.thread->isPreempted = false;
+                return;
+
             default:
                 LOGE("JIT halted: {}", to_string(haltReason));
                 break;
