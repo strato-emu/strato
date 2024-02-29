@@ -70,6 +70,10 @@ namespace skyline {
 
             ~KProcess();
 
+            bool is64bit() {
+                return npdm.meta.flags.is64Bit;
+            }
+
             /**
              * @brief Kill the main thread/all running threads in the process in a graceful manner
              * @param join Return after the main thread has joined rather than instantly
@@ -117,7 +121,7 @@ namespace skyline {
                 std::unique_lock lock(handleMutex);
 
                 std::shared_ptr<objectClass> item;
-                if constexpr (std::is_same<objectClass, KThread>())
+                if constexpr (std::is_base_of<KThread, objectClass>())
                     item = std::make_shared<objectClass>(state, constant::BaseHandleIndex + handles.size(), args...);
                 else
                     item = std::make_shared<objectClass>(state, args...);
@@ -142,23 +146,23 @@ namespace skyline {
                 std::shared_lock lock(handleMutex);
 
                 KType objectType;
-                if constexpr(std::is_same<objectClass, KThread>()) {
+                if constexpr (std::is_same<objectClass, KThread>()) {
                     constexpr KHandle threadSelf{0xFFFF8000}; // The handle used by threads to refer to themselves
                     if (handle == threadSelf)
                         return state.thread;
                     objectType = KType::KThread;
-                } else if constexpr(std::is_same<objectClass, KProcess>()) {
+                } else if constexpr (std::is_same<objectClass, KProcess>()) {
                     constexpr KHandle processSelf{0xFFFF8001}; // The handle used by threads in a process to refer to the process
                     if (handle == processSelf)
                         return state.process;
                     objectType = KType::KProcess;
-                } else if constexpr(std::is_same<objectClass, KSharedMemory>()) {
+                } else if constexpr (std::is_same<objectClass, KSharedMemory>()) {
                     objectType = KType::KSharedMemory;
-                } else if constexpr(std::is_same<objectClass, KTransferMemory>()) {
+                } else if constexpr (std::is_same<objectClass, KTransferMemory>()) {
                     objectType = KType::KTransferMemory;
-                } else if constexpr(std::is_same<objectClass, KSession>()) {
+                } else if constexpr (std::is_same<objectClass, KSession>()) {
                     objectType = KType::KSession;
-                } else if constexpr(std::is_same<objectClass, KEvent>()) {
+                } else if constexpr (std::is_same<objectClass, KEvent>()) {
                     objectType = KType::KEvent;
                 } else {
                     throw exception("KProcess::GetHandle couldn't determine object type");

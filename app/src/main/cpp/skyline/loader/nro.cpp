@@ -63,6 +63,7 @@ namespace skyline::loader {
             executable.dynstr = {header.dynstr.offset, header.dynstr.size};
         }
 
+        state.process->npdm.meta.flags.is64Bit = true;
         state.process->memory.InitializeVmm(memory::AddressSpaceType::AddressSpace39Bit);
         auto applicationName{nacp ? nacp->GetApplicationName(nacp->GetFirstSupportedTitleLanguage()) : ""};
         auto loadInfo{LoadExecutable(process, state, executable, 0, applicationName.empty() ? "main.nro" : applicationName + ".nro")};

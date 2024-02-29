@@ -28,6 +28,9 @@ namespace skyline {
         class NCE;
         struct ThreadContext;
     }
+    namespace jit {
+        class Jit32;
+    }
     class JvmManager;
     namespace gpu {
         class GPU;
@@ -66,6 +69,7 @@ namespace skyline {
         std::shared_ptr<Settings> settings;
         std::shared_ptr<loader::Loader> loader;
         std::shared_ptr<nce::NCE> nce;
+        std::shared_ptr<jit::Jit32> jit32;
         std::shared_ptr<kernel::type::KProcess> process{};
         static thread_local inline std::shared_ptr<kernel::type::KThread> thread{}; //!< The KThread of the thread which accesses this object
         static thread_local inline nce::ThreadContext *ctx{}; //!< The context of the guest thread for the corresponding host thread

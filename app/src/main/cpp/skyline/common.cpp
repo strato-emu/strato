@@ -16,7 +16,6 @@ namespace skyline {
         gpu = std::make_shared<gpu::GPU>(*this);
         soc = std::make_shared<soc::SOC>(*this);
         audio = std::make_shared<audio::Audio>(*this);
-        nce = std::make_shared<nce::NCE>(*this);
         scheduler = std::make_shared<kernel::Scheduler>(*this);
         input = std::make_shared<input::Input>(*this);
     }
