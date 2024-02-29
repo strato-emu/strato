@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <common/trap_manager.h>
 #include <vfs/npdm.h>
 #include "KThread.h"
 #include "KTransferMemory.h"
@@ -23,6 +24,7 @@ namespace skyline {
         class KProcess : public KSyncObject {
           public: // We have intermittent public/private members to ensure proper construction/destruction order
             MemoryManager memory;
+            TrapManager trap;
 
           private:
             std::mutex threadMutex; //!< Synchronizes thread creation to prevent a race between thread creation and thread killing

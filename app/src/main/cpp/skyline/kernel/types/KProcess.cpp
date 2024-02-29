@@ -17,7 +17,9 @@ namespace skyline::kernel::type {
         return memory + (constant::TlsSlotSize * index++);
     }
 
-    KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {}
+    KProcess::KProcess(const DeviceState &state) : memory(state), KSyncObject(state, KType::KProcess) {
+        trap.InstallStaticInstance();
+    }
 
     KProcess::~KProcess() {
         std::scoped_lock guard{threadMutex};

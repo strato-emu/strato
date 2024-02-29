@@ -6,7 +6,7 @@
 #include <boost/functional/hash.hpp>
 #include <common/linear_allocator.h>
 #include <common/spin_lock.h>
-#include <nce.h>
+#include <common/trap_manager.h>
 #include <gpu/tag_allocator.h>
 #include "usage_tracker.h"
 #include "megabuffer.h"
@@ -60,7 +60,7 @@ namespace skyline::gpu {
         std::optional<memory::Buffer> backing;
         std::optional<memory::ImportedBuffer> directBacking;
 
-        std::optional<nce::NCE::TrapHandle> trapHandle{}; //!< (Staged) The handle of the traps for the guest mappings
+        std::optional<TrapHandle> trapHandle{}; //!< (Staged) The handle of the traps for the guest mappings
 
         enum class DirtyState {
             Clean, //!< The CPU mappings are in sync with the GPU buffer

@@ -6,6 +6,7 @@
 #include <gpu/descriptor_allocator.h>
 #include <gpu/interconnect/common/samplers.h>
 #include <gpu/interconnect/common/textures.h>
+#include <common/trap_manager.h>
 #include "constant_buffers.h"
 #include "pipeline_state.h"
 
@@ -34,7 +35,7 @@ namespace skyline::gpu::interconnect::kepler_compute {
       public:
         KeplerCompute(GPU &gpu,
                       soc::gm20b::ChannelContext &channelCtx,
-                      nce::NCE &nce,
+                      TrapManager &trap,
                       kernel::MemoryManager &memoryManager,
                       DirtyManager &manager,
                       const EngineRegisterBundle &registerBundle);

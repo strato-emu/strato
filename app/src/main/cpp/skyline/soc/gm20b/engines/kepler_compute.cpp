@@ -20,7 +20,7 @@ namespace skyline::soc::gm20b::engine {
           channelCtx{channelCtx},
           i2m{state, channelCtx},
           dirtyManager{registers},
-          interconnect{*state.gpu, channelCtx, *state.nce, state.process->memory, dirtyManager, MakeEngineRegisters(registers)} {}
+          interconnect{*state.gpu, channelCtx, state.process->trap, state.process->memory, dirtyManager, MakeEngineRegisters(registers)} {}
 
     __attribute__((always_inline)) void KeplerCompute::CallMethod(u32 method, u32 argument) {
         LOGV("Called method in Kepler compute: 0x{:X} args: 0x{:X}", method, argument);

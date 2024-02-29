@@ -25,7 +25,7 @@ namespace skyline::gpu {
 
         // We can't just capture this in the lambda since the lambda could exceed the lifetime of the buffer
         std::weak_ptr<Buffer> weakThis{shared_from_this()};
-        trapHandle = gpu.state.nce->CreateTrap(*guest, [weakThis] {
+        trapHandle = gpu.state.process->trap.CreateTrap(*guest, [weakThis] {
             auto buffer{weakThis.lock()};
             if (!buffer)
                 return;
@@ -346,7 +346,7 @@ namespace skyline::gpu {
         if (dirtyState == DirtyState::GpuDirty)
             return;
 
-        gpu.state.nce->TrapRegions(*trapHandle, false); // This has to occur prior to any synchronization as it'll skip trapping
+        gpu.state.process->trap.TrapRegions(*trapHandle, false); // This has to occur prior to any synchronization as it'll skip trapping
 
         if (dirtyState == DirtyState::CpuDirty)
             SynchronizeHost(true); // Will transition the Buffer to Clean
@@ -369,7 +369,7 @@ namespace skyline::gpu {
     Buffer::Buffer(LinearAllocatorState<> &delegateAllocator, GPU &gpu, GuestBuffer guest, size_t id, bool direct)
         : gpu{gpu},
           guest{guest},
-          mirror{gpu.state.process->memory.CreateMirror(guest)},
+      mirror{gpu.state.process->memory.CreateMirror(guest)},
           delegate{delegateAllocator.EmplaceUntracked<BufferDelegate>(this)},
           isDirect{direct},
           id{id},
@@ -392,7 +392,7 @@ namespace skyline::gpu {
 
     Buffer::~Buffer() {
         if (trapHandle)
-            gpu.state.nce->DeleteTrap(*trapHandle);
+            gpu.state.process->trap.DeleteTrap(*trapHandle);
         SynchronizeGuest(true);
         if (mirror.valid())
             munmap(mirror.data(), mirror.size());
@@ -430,7 +430,7 @@ namespace skyline::gpu {
 
     void Buffer::Invalidate() {
         if (trapHandle) {
-            gpu.state.nce->DeleteTrap(*trapHandle);
+            gpu.state.process->trap.DeleteTrap(*trapHandle);
             trapHandle = {};
         }
 
@@ -455,7 +455,7 @@ namespace skyline::gpu {
             AdvanceSequence(); // We are modifying GPU backing contents so advance to the next sequence
 
             if (!skipTrap)
-                gpu.state.nce->TrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
+                gpu.state.process->trap.TrapRegions(*trapHandle, true); // Trap any future CPU writes to this buffer, must be done before the memcpy so that any modifications during the copy are tracked
         }
 
         std::memcpy(backing->data(), mirror.data(), mirror.size());
@@ -483,7 +483,7 @@ namespace skyline::gpu {
         }
 
         if (!skipTrap)
-            gpu.state.nce->TrapRegions(*trapHandle, true);
+            gpu.state.process->trap.TrapRegions(*trapHandle, true);
 
         return true;
     }
