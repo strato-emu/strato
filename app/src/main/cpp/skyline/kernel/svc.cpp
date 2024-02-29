@@ -1230,6 +1230,28 @@ namespace skyline::kernel::svc {
                 context.fpsr = targetContext.fpr.fpsr;
 
                 context.tpidr = reinterpret_cast<u64>(targetContext.tpidrEl0);
+            } else { // 32 bit
+                constexpr u32 El0Aarch32PsrMask = 0xFE0FFE20;
+                // https://developer.arm.com/documentation/ddi0601/2023-12/AArch32-Registers/FPSCR--Floating-Point-Status-and-Control-Register
+                constexpr u32 FpsrMask = 0xF800009F; // [31:27], [7], [4:0]
+                constexpr u32 FpcrMask = 0x07FF9F00; // [26:15], [12:8]
+
+                auto &targetContext{dynamic_cast<type::KJit32Thread *>(thread.get())->ctx};
+
+                context.pc = targetContext.pc;
+                context.pstate = targetContext.cpsr & El0Aarch32PsrMask;
+
+                for (size_t i{}; i < targetContext.gpr.size() - 1; i++)
+                    context.gpr[i] = targetContext.gpr[i];
+
+                // TODO: Check if this is correct
+                for (size_t i{}; i < targetContext.fpr.size(); i++) {
+                    context.vreg[i] = targetContext.fpr_d[i];
+                }
+
+                context.fpsr = targetContext.fpscr & FpsrMask;
+                context.fpcr = targetContext.fpscr & FpcrMask;
+                context.tpidr = targetContext.tpidr;
             }
 
             // Note: We don't write the whole context as we only store the parts required according to the ARMv8 ABI for syscall handling
