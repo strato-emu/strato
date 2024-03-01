@@ -10,6 +10,7 @@
 #include "IMultiCommitManager.h"
 #include "IFileSystemProxy.h"
 #include "ISaveDataInfoReader.h"
+#include "vfs/patch_manager.h"
 
 namespace skyline::service::fssrv {
     IFileSystemProxy::IFileSystemProxy(const DeviceState &state, ServiceManager &manager) : BaseService(state, manager) {}
@@ -92,10 +93,17 @@ namespace skyline::service::fssrv {
     }
 
     Result IFileSystemProxy::OpenDataStorageByCurrentProcess(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        if (!state.loader->romFs)
-            return result::NoRomFsAvailable;
 
-        manager.RegisterService(std::make_shared<IStorage>(state.loader->romFs, state, manager), session, response);
+        if (state.updateLoader) {
+            auto patchManager{std::make_shared<vfs::PatchManager>()};
+            auto romFs{patchManager->PatchRomFS(state, state.updateLoader->programNca, state.loader->programNca->ivfcOffset)};
+            manager.RegisterService(std::make_shared<IStorage>(romFs, state, manager), session, response);
+        } else {
+            if (!state.loader->romFs)
+                return result::NoRomFsAvailable;
+
+            manager.RegisterService(std::make_shared<IStorage>(state.loader->romFs, state, manager), session, response);
+        }
         return {};
     }
 
@@ -103,6 +111,16 @@ namespace skyline::service::fssrv {
         auto storageId{request.Pop<StorageId>()};
         request.Skip<std::array<u8, 7>>(); // 7-bytes padding
         auto dataId{request.Pop<u64>()};
+        auto patchManager{std::make_shared<vfs::PatchManager>()};
+
+        // Try load DLC first
+        for (const auto &dlc : state.dlcLoaders) {
+            if (dlc->cnmt->header.id == dataId) {
+                auto romFs{patchManager->PatchRomFS(state, dlc->publicNca, state.loader->programNca->ivfcOffset)};
+                manager.RegisterService(std::make_shared<IStorage>(romFs, state, manager), session, response);
+                return {};
+            }
+        }
 
         auto systemArchivesFileSystem{std::make_shared<vfs::OsFileSystem>(state.os->publicAppFilesPath + "/switch/nand/system/Contents/registered/")};
         auto systemArchives{systemArchivesFileSystem->OpenDirectory("")};
@@ -112,7 +130,7 @@ namespace skyline::service::fssrv {
             std::shared_ptr<vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
             auto nca{vfs::NCA(backing, keyStore)};
 
-            if (nca.header.programId == dataId && nca.romFs != nullptr) {
+            if (nca.header.titleId == dataId && nca.romFs != nullptr) {
                 manager.RegisterService(std::make_shared<IStorage>(nca.romFs, state, manager), session, response);
                 return {};
             }

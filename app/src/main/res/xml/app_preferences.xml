@@ -64,7 +64,7 @@
             app:key="select_action"
             app:title="@string/select_action" />
         <org.stratoemu.strato.preference.RefreshSwitchPreferenceCompat
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:summaryOff="@string/filter_invalid_files_desc_off"
             android:summaryOn="@string/filter_invalid_files_desc_on"
             app:key="filter_invalid_files"

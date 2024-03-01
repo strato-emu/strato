@@ -34,6 +34,11 @@ namespace skyline::vfs {
         return std::string(applicationPublisher.as_string(true));
     }
 
+    std::string NACP::GetAddOnContentBaseId() {
+        auto addOnContentBaseId{nacpContents.addOnContentBaseId};
+        return fmt::format("{:016X}", addOnContentBaseId);
+    }
+
     std::string NACP::GetSaveDataOwnerId() {
         auto applicationTitleId{nacpContents.saveDataOwnerId};
         return fmt::format("{:016X}", applicationTitleId);

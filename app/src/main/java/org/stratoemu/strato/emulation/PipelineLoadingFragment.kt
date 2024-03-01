@@ -15,7 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.google.android.renderscript.Toolkit
-import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.BaseAppItem
 import org.stratoemu.strato.data.AppItemTag
 import org.stratoemu.strato.databinding.PipelineLoadingBinding
 import org.stratoemu.strato.utils.serializable
@@ -24,7 +24,7 @@ private const val TotalPipelineCountTag = "PipelineLoadingFragment::TotalCount"
 private const val PipelineProgressTag = "PipelineLoadingFragment::Progress"
 
 class PipelineLoadingFragment : Fragment() {
-    private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
+    private val item by lazy { requireArguments().serializable<BaseAppItem>(AppItemTag)!! }
     private val totalPipelineCount by lazy { requireArguments().getInt(TotalPipelineCountTag) }
 
     private lateinit var binding : PipelineLoadingBinding
@@ -69,7 +69,7 @@ class PipelineLoadingFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance(item : AppItem, totalPipelineCount : Int) = PipelineLoadingFragment().apply {
+        fun newInstance(item : BaseAppItem, totalPipelineCount : Int) = PipelineLoadingFragment().apply {
             arguments = Bundle().apply {
                 putSerializable(AppItemTag, item)
                 putInt(TotalPipelineCountTag, totalPipelineCount)

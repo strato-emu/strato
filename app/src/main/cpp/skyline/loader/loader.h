@@ -5,6 +5,8 @@
 
 #include <linux/elf.h>
 #include <vfs/nacp.h>
+#include <vfs/cnmt.h>
+#include <vfs/nca.h>
 #include <common/signal.h>
 #include "executable.h"
 
@@ -39,6 +41,9 @@ namespace skyline::loader {
         MissingTitleKey,
         MissingTitleKek,
         MissingKeyArea,
+
+        ErrorSparseNCA,
+        ErrorCompressedNCA,
     };
 
     /**
@@ -92,6 +97,10 @@ namespace skyline::loader {
         ExecutableLoadInfo LoadExecutable(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state, Executable &executable, size_t offset = 0, const std::string &name = {}, bool dynamicallyLinked = false);
 
         std::optional<vfs::NACP> nacp;
+        std::optional<vfs::CNMT> cnmt;
+        std::optional<vfs::NCA> programNca; //!< The main program NCA within the NSP
+        std::optional<vfs::NCA> controlNca; //!< The main control NCA within the NSP
+        std::optional<vfs::NCA> publicNca;
         std::shared_ptr<vfs::Backing> romFs;
 
         virtual ~Loader() = default;

@@ -5,6 +5,7 @@
 #include <vfs/ticket.h>
 #include "nca.h"
 #include "nsp.h"
+#include "vfs/patch_manager.h"
 
 namespace skyline::loader {
     static void ExtractTickets(const std::shared_ptr<vfs::PartitionFileSystem>& dir, const std::shared_ptr<crypto::KeyStore> &keyStore) {
@@ -33,10 +34,14 @@ namespace skyline::loader {
             try {
                 auto nca{vfs::NCA(nsp->OpenFile(entry.name), keyStore)};
 
-                if (nca.contentType == vfs::NcaContentType::Program && nca.romFs != nullptr && nca.exeFs != nullptr)
+                if (nca.contentType == vfs::NCAContentType::Program && nca.romFs != nullptr && nca.exeFs != nullptr)
                     programNca = std::move(nca);
-                else if (nca.contentType == vfs::NcaContentType::Control && nca.romFs != nullptr)
+                else if (nca.contentType == vfs::NCAContentType::Control && nca.romFs != nullptr)
                     controlNca = std::move(nca);
+                else if (nca.contentType == vfs::NCAContentType::Meta)
+                    metaNca = std::move(nca);
+                else if (nca.contentType == vfs::NCAContentType::PublicData)
+                    publicNca = std::move(nca);
             } catch (const loader_exception &e) {
                 throw loader_exception(e.error);
             } catch (const std::exception &e) {
@@ -44,15 +49,24 @@ namespace skyline::loader {
             }
         }
 
-        if (!programNca || !controlNca)
-            throw exception("Incomplete NSP file");
+        if (programNca)
+            romFs = programNca->romFs;
 
-        romFs = programNca->romFs;
-        controlRomFs = std::make_shared<vfs::RomFileSystem>(controlNca->romFs);
-        nacp.emplace(controlRomFs->OpenFile("control.nacp"));
+        if (controlNca) {
+            controlRomFs = std::make_shared<vfs::RomFileSystem>(controlNca->romFs);
+            nacp.emplace(controlRomFs->OpenFile("control.nacp"));
+        }
+
+        if (metaNca)
+            cnmt = vfs::CNMT(metaNca->cnmt);
     }
 
     void *NspLoader::LoadProcessData(const std::shared_ptr<kernel::type::KProcess> &process, const DeviceState &state) {
+        if (state.updateLoader) {
+            auto patchManager{std::make_shared<vfs::PatchManager>()};
+            programNca->exeFs = patchManager->PatchExeFS(state, programNca->exeFs);
+        }
+
         process->npdm = vfs::NPDM(programNca->exeFs->OpenFile("main.npdm"));
         return NcaLoader::LoadExeFs(this, programNca->exeFs, process, state);
     }
