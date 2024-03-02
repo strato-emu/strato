@@ -25,7 +25,8 @@ import java.io.FilenameFilter
 import java.io.IOException
 
 class FirmwareImportPreference @JvmOverloads constructor(context : Context, attrs : AttributeSet? = null, defStyleAttr : Int = androidx.preference.R.attr.preferenceStyle) : Preference(context, attrs, defStyleAttr) {
-    private class Firmware(val valid : Boolean, val version : String)
+    private enum class FirmwareStatus { VALID, INVALID, KEYS_OUTDATED }
+    private class Firmware(val status : FirmwareStatus, val version : String?)
 
     private val firmwarePath = File(context.getPublicFilesDir().canonicalPath + "/switch/nand/system/Contents/registered/")
     private val keysPath = "${context.filesDir.canonicalPath}/keys/"
@@ -49,17 +50,19 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
                     ZipUtils.unzip(inputZip, cacheFirmwareDir)
 
                     val firmware = isFirmwareValid(cacheFirmwareDir)
-                    messageToShow = if (!firmware.valid) {
-                        R.string.import_firmware_invalid_contents
-                    } else {
-                        firmwarePath.deleteRecursively()
-                        cacheFirmwareDir.copyRecursively(firmwarePath, true)
-                        persistString(firmware.version)
-                        extractFonts(firmwarePath.path, keysPath, fontsPath)
-                        CoroutineScope(Dispatchers.Main).launch {
-                            notifyChanged()
+                    messageToShow = when (firmware.status) {
+                        FirmwareStatus.INVALID -> R.string.import_firmware_invalid_contents
+                        FirmwareStatus.KEYS_OUTDATED -> R.string.import_firmware_outdated_keys
+                        else -> {
+                            firmwarePath.deleteRecursively()
+                            cacheFirmwareDir.copyRecursively(firmwarePath, true)
+                            persistString(firmware.version)
+                            extractFonts(firmwarePath.path, keysPath, fontsPath)
+                            CoroutineScope(Dispatchers.Main).launch {
+                                notifyChanged()
+                            }
+                            R.string.import_firmware_success
                         }
-                        R.string.import_firmware_success
                     }
                 } catch (e : IOException) {
                     messageToShow = R.string.error
@@ -104,8 +107,12 @@ class FirmwareImportPreference @JvmOverloads constructor(context : Context, attr
 
         return if (unfilteredNumOfFiles == filteredNumOfFiles) {
             val version = fetchFirmwareVersion(cacheFirmwareDir.path, keysPath)
-            Firmware(version.isNotEmpty(), version)
-        } else Firmware(false, "")
+            when {
+                version.isEmpty() -> Firmware(FirmwareStatus.INVALID, null)
+                version == "-1" -> Firmware(FirmwareStatus.KEYS_OUTDATED, null)
+                else -> Firmware(FirmwareStatus.VALID, version)
+            }
+        } else Firmware(FirmwareStatus.INVALID, null)
     }
 
     private external fun fetchFirmwareVersion(systemArchivesPath : String, keysPath : String) : String
