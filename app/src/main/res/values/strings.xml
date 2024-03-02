@@ -52,6 +52,7 @@
     <string name="import_firmware_success">Firmware was successfully imported</string>
     <string name="import_firmware_failure">Firmware installation failed</string>
     <string name="import_firmware_invalid_contents">The supplied firmware package does not contain a valid firmware</string>
+    <string name="import_firmware_outdated_keys">The supplied firmware package version is newer than the currently installed keys</string>
     <string name="firmware_keys_needed">Valid keys are required for firmware installation</string>
     <string name="firmware_not_installed">No firmware installed</string>
     <!-- Settings - Appearance -->
