@@ -39,7 +39,7 @@
 	url = https://github.com/ericniebler/range-v3
 [submodule "Sirit"]
 	path = app/libraries/sirit
-	url = https://github.com/yuzu-emu/sirit
+	url = https://github.com/strato-emu/sirit.git
 [submodule "Shader Compiler"]
 	path = app/libraries/shader-compiler
 	url = https://github.com/strato-emu/shader-compiler.git
