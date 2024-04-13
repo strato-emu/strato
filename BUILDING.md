@@ -41,8 +41,7 @@ Import the project by clicking on the `Open` icon, then in the file picker choos
     <img height="400" src="https://user-images.githubusercontent.com/37104290/162196879-08d9684b-c6a2-4636-9c23-c026cb7d7494.png">
 </p>
 
-Exclude the following folders from indexing:
-- `app/libraries/llvm`
+Exclude the following folder from indexing:
 - `app/libraries/boost`
 
 To exclude a folder, switch to the project view:
