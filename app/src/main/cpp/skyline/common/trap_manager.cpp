@@ -104,7 +104,7 @@ namespace skyline {
 
     bool TrapManager::TrapHandler(u8 *address, bool write) {
         assert(staticTrap != nullptr);
-        return staticTrap->TrapHandler(address, write);
+        return staticTrap->HandleTrap(address, write);
     }
 
     bool TrapManager::HandleTrap(u8 *address, bool write) {
