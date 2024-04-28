@@ -41,22 +41,6 @@ Import the project by clicking on the `Open` icon, then in the file picker choos
     <img height="400" src="https://user-images.githubusercontent.com/37104290/162196879-08d9684b-c6a2-4636-9c23-c026cb7d7494.png">
 </p>
 
-Exclude the following folders from indexing:
-- `app/libraries/llvm`
-- `app/libraries/boost`
-
-To exclude a folder, switch to the project view:
-<p>
-    <img height="400" src="https://user-images.githubusercontent.com/37104290/163343887-56a0b170-2249-45c4-a758-2b33cbfbc4ab.png"> 
-    <img height="400" src="https://user-images.githubusercontent.com/37104290/163343932-bed0c59c-7aaa-44f6-bdc4-0a10f966fb56.png">
-</p>
-
-In the project view navigate to the `app/libraries` folder, right-click on the folder you want to exclude and navigate the menus to the `Exclude` option:
-<p>
-    <img height="400" src="https://user-images.githubusercontent.com/37104290/162200274-f739e960-82ca-4b12-95eb-caa88a063d61.png"> 
-    <img height="400" src="https://user-images.githubusercontent.com/37104290/162196999-a0376e13-0399-4352-a30d-85d6785151a9.png">
-</p>
-
 If an `Invalid Gradle JDK configuration found` error comes up, select `Use Embedded JDK`:
 <p><img height="250" src="https://user-images.githubusercontent.com/37104290/162197215-b28ea3ec-ed5c-4d83-ac9a-19e892caa129.png"></p>
 
