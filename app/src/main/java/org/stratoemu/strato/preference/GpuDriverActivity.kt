@@ -22,7 +22,7 @@ import org.stratoemu.strato.adapter.GenericListItem
 import org.stratoemu.strato.adapter.GpuDriverViewItem
 import org.stratoemu.strato.adapter.SelectableGenericAdapter
 import org.stratoemu.strato.adapter.SpacingItemDecoration
-import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.BaseAppItem
 import org.stratoemu.strato.data.AppItemTag
 import org.stratoemu.strato.databinding.GpuDriverActivityBinding
 import org.stratoemu.strato.settings.EmulationSettings
@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 class GpuDriverActivity : AppCompatActivity() {
     private val binding by lazy { GpuDriverActivityBinding.inflate(layoutInflater) }
 
-    private val item by lazy { intent.extras?.serializable(AppItemTag) as AppItem? }
+    private val item by lazy { intent.extras?.serializable(AppItemTag) as BaseAppItem? }
 
     private val adapter = SelectableGenericAdapter(0)
 
@@ -142,7 +142,7 @@ class GpuDriverActivity : AppCompatActivity() {
         emulationSettings = if (item == null) {
             EmulationSettings.global
         } else {
-            val appItem = item as AppItem
+            val appItem = item as BaseAppItem
             EmulationSettings.forTitleId(appItem.titleId ?: appItem.key())
         }
 

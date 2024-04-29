@@ -30,26 +30,18 @@ namespace skyline::kernel {
           state(this, jvmManager, settings),
           serviceManager(state) {}
 
-    void OS::Execute(int romFd, loader::RomFormat romType) {
+    void OS::Execute(int romFd, std::vector<int> dlcFds, int updateFd, loader::RomFormat romType) {
         auto romFile{std::make_shared<vfs::OsBacking>(romFd)};
-        auto keyStore{std::make_shared<crypto::KeyStore>(privateAppFilesPath + "keys/")};
+        keyStore = std::make_shared<crypto::KeyStore>(privateAppFilesPath + "keys/");
 
-        state.loader = [&]() -> std::shared_ptr<loader::Loader> {
-            switch (romType) {
-                case loader::RomFormat::NRO:
-                    return std::make_shared<loader::NroLoader>(std::move(romFile));
-                case loader::RomFormat::NSO:
-                    return std::make_shared<loader::NsoLoader>(std::move(romFile));
-                case loader::RomFormat::NCA:
-                    return std::make_shared<loader::NcaLoader>(std::move(romFile), std::move(keyStore));
-                case loader::RomFormat::NSP:
-                    return std::make_shared<loader::NspLoader>(romFile, keyStore);
-                case loader::RomFormat::XCI:
-                    return std::make_shared<loader::XciLoader>(romFile, keyStore);
-                default:
-                    throw exception("Unsupported ROM extension.");
-            }
-        }();
+        state.loader = GetLoader(romFd, keyStore, romType);
+
+        if (updateFd > 0)
+            state.updateLoader = GetLoader(updateFd, keyStore, romType);
+
+        if (dlcFds.size() > 0)
+            for (int fd : dlcFds)
+                state.dlcLoaders.push_back(GetLoader(fd, keyStore, romType));
 
         state.gpu->Initialise();
 
@@ -64,7 +56,15 @@ namespace skyline::kernel {
                 name = nacp->GetApplicationName(nacp->GetFirstSupportedTitleLanguage());
             if (publisher.empty())
                 publisher = nacp->GetApplicationPublisher(nacp->GetFirstSupportedTitleLanguage());
-            LOGINF(R"(Starting "{}" ({}) v{} by "{}")", name, nacp->GetSaveDataOwnerId(), nacp->GetApplicationVersion(), publisher);
+
+            if (state.updateLoader)
+                LOGINF("Applied update v{}", state.updateLoader->nacp->GetApplicationVersion());
+
+            if (state.dlcLoaders.size() > 0)
+                for (auto &loader : state.dlcLoaders)
+                    LOGINF("Applied DLC {}", loader->cnmt->GetTitleId());
+
+            LOGINF(R"(Starting "{}" ({}) v{} by "{}")", name, nacp->GetSaveDataOwnerId(), state.updateLoader ? state.updateLoader->nacp->GetApplicationVersion() : nacp->GetApplicationVersion(), publisher);
         }
 
         process->InitializeHeapTls();
@@ -73,6 +73,24 @@ namespace skyline::kernel {
             LOGI("Starting main HOS thread");
             thread->Start(true);
             process->Kill(true, true, true);
+        }
+    }
+
+    std::shared_ptr<loader::Loader> OS::GetLoader(int fd, std::shared_ptr<crypto::KeyStore> keyStore, loader::RomFormat romType) {
+        auto file{std::make_shared<vfs::OsBacking>(fd)};
+        switch (romType) {
+            case loader::RomFormat::NRO:
+                return std::make_shared<loader::NroLoader>(std::move(file));
+            case loader::RomFormat::NSO:
+                return std::make_shared<loader::NsoLoader>(std::move(file));
+            case loader::RomFormat::NCA:
+                return std::make_shared<loader::NcaLoader>(std::move(file), std::move(keyStore));
+            case loader::RomFormat::NSP:
+                return std::make_shared<loader::NspLoader>(file, keyStore);
+            case loader::RomFormat::XCI:
+                return std::make_shared<loader::XciLoader>(file, keyStore);
+            default:
+                throw exception("Unsupported ROM extension.");
         }
     }
 }

@@ -8,18 +8,8 @@ namespace skyline::service::fssrv {
     IStorage::IStorage(std::shared_ptr<vfs::Backing> backing, const DeviceState &state, ServiceManager &manager) : backing(std::move(backing)), BaseService(state, manager) {}
 
     Result IStorage::Read(type::KSession &session, ipc::IpcRequest &request, ipc::IpcResponse &response) {
-        auto offset{request.Pop<i64>()};
-        auto size{request.Pop<i64>()};
-
-        if (offset < 0) {
-            LOGW("Trying to read a file with a negative offset");
-            return result::InvalidOffset;
-        }
-
-        if (size < 0) {
-            LOGW("Trying to read a file with a negative size");
-            return result::InvalidSize;
-        }
+        auto offset{request.Pop<u64>()};
+        auto size{request.Pop<u64>()};
 
         backing->Read(request.outputBuf.at(0), static_cast<size_t>(offset));
         return {};

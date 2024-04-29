@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.*
 import org.stratoemu.strato.BuildConfig
 import org.stratoemu.strato.R
-import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.BaseAppItem
 import org.stratoemu.strato.data.AppItemTag
 import org.stratoemu.strato.preference.GpuDriverPreference
 import org.stratoemu.strato.utils.GpuDriverHelper
@@ -22,7 +22,7 @@ import org.stratoemu.strato.utils.serializable
  * This fragment is used to display custom game preferences
  */
 class GameSettingsFragment : PreferenceFragmentCompat() {
-    private val item by lazy { requireArguments().serializable<AppItem>(AppItemTag)!! }
+    private val item by lazy { requireArguments().serializable<BaseAppItem>(AppItemTag)!! }
 
     override fun onViewCreated(view : View, savedInstanceState : Bundle?) {
         super.onViewCreated(view, savedInstanceState)

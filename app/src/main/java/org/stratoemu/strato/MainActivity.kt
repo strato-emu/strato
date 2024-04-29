@@ -29,16 +29,19 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import org.stratoemu.strato.adapter.*
 import org.stratoemu.strato.data.AppItem
+import org.stratoemu.strato.data.BaseAppItem
 import org.stratoemu.strato.data.AppItemTag
 import org.stratoemu.strato.databinding.MainActivityBinding
 import org.stratoemu.strato.loader.AppEntry
 import org.stratoemu.strato.loader.LoaderResult
+import org.stratoemu.strato.loader.RomType
 import org.stratoemu.strato.provider.DocumentsProvider
 import org.stratoemu.strato.settings.AppSettings
 import org.stratoemu.strato.settings.EmulationSettings
 import org.stratoemu.strato.settings.SettingsActivity
 import org.stratoemu.strato.utils.GpuDriverHelper
 import org.stratoemu.strato.utils.WindowInsetsHelper
+import java.util.Collections
 import javax.inject.Inject
 import kotlin.math.ceil
 import com.google.android.material.R as MaterialR
@@ -88,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         if (appSettings.refreshRequired) loadRoms(false)
     }
 
-    private fun AppItem.toViewItem() = AppViewItem(layoutType, this, ::selectStartGame, ::selectShowGameDialog)
+    private fun BaseAppItem.toViewItem() = AppViewItem(layoutType, this, ::selectStartGame, ::selectShowGameDialog)
 
     override fun onCreate(savedInstanceState : Bundle?) {
         // Need to create new instance of settings, dependency injection happens
@@ -216,7 +219,9 @@ class MainActivity : AppCompatActivity() {
     private fun getAppItems() = mutableListOf<AppViewItem>().apply {
         appEntries?.let { entries ->
             sortGameList(entries.toList()).forEach { entry ->
-                add(AppItem(entry).toViewItem())
+                val updates : List<BaseAppItem> = entries.filter { it.romType == RomType.Update && it.parentTitleId == entry.titleId }.map { BaseAppItem(it, true) }
+                val dlcs : List<BaseAppItem> = entries.filter { it.romType == RomType.DLC && it.parentTitleId == entry.titleId }.map { BaseAppItem(it, true) }
+                add(AppItem(entry, updates, dlcs).toViewItem())
             }
         }
     }
@@ -224,7 +229,7 @@ class MainActivity : AppCompatActivity() {
     private fun sortGameList(gameList : List<AppEntry>) : List<AppEntry> {
         val sortedApps : MutableList<AppEntry> = mutableListOf()
         gameList.forEach { entry ->
-            if (!appSettings.filterInvalidFiles || entry.loaderResult != LoaderResult.ParsingError)
+            if (validateAppEntry(entry))
                 sortedApps.add(entry)
         }
         when (appSettings.sortAppsBy) {
@@ -232,6 +237,11 @@ class MainActivity : AppCompatActivity() {
             SortingOrder.AlphabeticalDesc.ordinal -> sortedApps.sortByDescending { it.name }
         }
         return sortedApps
+    }
+
+    private fun validateAppEntry(entry : AppEntry) : Boolean {
+        // Unknown ROMs are shown because NROs have this type
+        return !appSettings.filterInvalidFiles || entry.loaderResult != LoaderResult.ParsingError && (entry.romType == RomType.Base || entry.romType == RomType.Unknown)
     }
 
     private fun handleState(state : MainState) = when (state) {
@@ -250,7 +260,7 @@ class MainActivity : AppCompatActivity() {
         is MainState.Error -> Snackbar.make(findViewById(android.R.id.content), getString(R.string.error) + ": ${state.ex.localizedMessage}", Snackbar.LENGTH_SHORT).show()
     }
 
-    private fun selectStartGame(appItem : AppItem) {
+    private fun selectStartGame(appItem : BaseAppItem) {
         if (binding.swipeRefreshLayout.isRefreshing) return
 
         if (appSettings.selectAction) {
@@ -263,7 +273,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun selectShowGameDialog(appItem : AppItem) {
+    private fun selectShowGameDialog(appItem : BaseAppItem) {
         if (binding.swipeRefreshLayout.isRefreshing) return
 
         AppDialog.newInstance(appItem).show(supportFragmentManager, "game")
