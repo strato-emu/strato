@@ -94,23 +94,27 @@ extern "C" JNIEXPORT jstring Java_org_stratoemu_strato_preference_FirmwareImport
     auto systemArchives{systemArchivesFileSystem->OpenDirectory("")};
     auto keyStore{std::make_shared<skyline::crypto::KeyStore>(skyline::JniString(env, keysPathJstring))};
 
-    for (const auto &entry : systemArchives->Read()) {
-        std::shared_ptr<skyline::vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
-        auto nca{skyline::vfs::NCA(backing, keyStore)};
+    try {
+        for (const auto &entry : systemArchives->Read()) {
+            std::shared_ptr<skyline::vfs::Backing> backing{systemArchivesFileSystem->OpenFile(entry.name)};
+            auto nca{skyline::vfs::NCA(backing, keyStore)};
 
-        if (nca.header.programId == systemVersionProgramId && nca.romFs != nullptr) {
-            auto controlRomFs{std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs)};
-            auto file{controlRomFs->OpenFile("file")};
-            SystemVersion systemVersion;
-            file->Read<SystemVersion>(systemVersion);
-            return env->NewStringUTF(reinterpret_cast<char *>(systemVersion.displayVersion));
+            if (nca.header.programId == systemVersionProgramId && nca.romFs != nullptr) {
+                auto controlRomFs{std::make_shared<skyline::vfs::RomFileSystem>(nca.romFs)};
+                auto file{controlRomFs->OpenFile("file")};
+                SystemVersion systemVersion;
+                file->Read<SystemVersion>(systemVersion);
+                return env->NewStringUTF(reinterpret_cast<char *>(systemVersion.displayVersion));
+            }
         }
+    } catch (skyline::loader::loader_exception &e) {
+        return env->NewStringUTF("-1");
     }
 
     return env->NewStringUTF("");
 }
 
-std::vector<skyline::u8> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile){
+std::vector<skyline::u8> decodeBfttfFont(const std::shared_ptr<skyline::vfs::Backing> bfttfFile) {
     constexpr skyline::u32 fontKey{0x06186249};
     constexpr skyline::u32 BFTTFMagic{0x18029a7f};
 
