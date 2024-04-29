@@ -25,8 +25,10 @@ import org.stratoemu.strato.data.AppItemTag
 import org.stratoemu.strato.databinding.AppDialogBinding
 import org.stratoemu.strato.loader.LoaderResult
 import org.stratoemu.strato.settings.SettingsActivity
+import org.stratoemu.strato.utils.CacheManagementUtils
 import org.stratoemu.strato.utils.SaveManagementUtils
 import org.stratoemu.strato.utils.serializable
+import java.io.File
 
 /**
  * This dialog is used to show extra game metadata and provide extra options such as pinning the game to the home screen
@@ -127,11 +129,26 @@ class AppDialog : BottomSheetDialogFragment() {
             AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.delete_save_confirmation_message))
                 .setMessage(getString(R.string.action_irreversible))
-                .setNegativeButton(getString(R.string.no), null)
-                .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                .setNegativeButton(getString(R.string.cancel), null)
+                .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
                     SaveManagementUtils.deleteSaveFile(item.titleId)
                     binding.deleteSave.isEnabled = false
                     binding.exportSave.isEnabled = false
+                }.show()
+        }
+
+        val cacheExists = CacheManagementUtils.pipelineCacheExists(item.titleId!!)
+
+        binding.cacheDelete.isEnabled = cacheExists
+        binding.cacheDelete.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.delete_shader_cache_confirmation_message))
+                .setMessage(getString(R.string.action_irreversible))
+                .setNegativeButton(getString(R.string.cancel), null)
+                .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
+                    if(CacheManagementUtils.deleteCacheFile(item.titleId!!)) {
+                        binding.cacheDelete.isEnabled = false
+                    }
                 }.show()
         }
 
