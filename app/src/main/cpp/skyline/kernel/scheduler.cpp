@@ -42,9 +42,9 @@ namespace skyline::kernel {
     }
 
     void Scheduler::JitSignalHandler(int signal, siginfo *info, ucontext *ctx) {
-        if (type::KThread::jit)
+        if (kernel::this_thread->jit)
             // The thread is running on a JIT core, preempt it
-            type::KThread::jit->HaltExecution(jit::HaltReason::Preempted);
+            kernel::this_thread->jit->HaltExecution(jit::HaltReason::Preempted);
         else
             // The thread is running host code
             YieldPending = true;

@@ -12,9 +12,9 @@
 #include "KThread.h"
 
 namespace skyline::kernel::type {
-    KThread::KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore)
+    KThread::KThread(const DeviceState &state, KHandle handle, KProcess &process, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore)
         : handle(handle),
-          parent(parent),
+          process(process),
           id(id),
           entry(entry),
           entryArgument(argument),
@@ -25,6 +25,7 @@ namespace skyline::kernel::type {
           coreId(idealCore),
           KSyncObject(state, KType::KThread) {
         affinityMask.set(coreId);
+        this_thread = this;
     }
 
     KThread::~KThread() {
@@ -46,7 +47,7 @@ namespace skyline::kernel::type {
         AsyncLogger::UpdateTag();
 
         if (!tlsRegion)
-            tlsRegion = parent->AllocateTlsSlot();
+            tlsRegion = process.AllocateTlsSlot();
 
         state.thread = shared_from_this();
 

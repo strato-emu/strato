@@ -123,9 +123,9 @@ namespace skyline::kernel::type {
 
         auto thread{[&]() -> std::shared_ptr<KThread> {
             if (is64bit())
-                return NewHandle<KNceThread>(this, tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item;
+                return NewHandle<KNceThread>(std::ref(*this), tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item;
             else
-                return NewHandle<KJit32Thread>(this, tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item;
+                return NewHandle<KJit32Thread>(std::ref(*this), tid, entry, argument, stackTop, priority ? *priority : state.process->npdm.meta.mainThreadPriority, idealCore ? *idealCore : state.process->npdm.meta.idealCore).item;
         }()};
         threads.push_back(thread);
         return thread;

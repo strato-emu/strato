@@ -12,14 +12,18 @@
 #include "KSyncObject.h"
 #include "KSharedMemory.h"
 
-namespace skyline {
-    namespace kernel::type {
+namespace skyline::kernel {
+    thread_local inline type::KThread *this_thread{nullptr}; //!< The guest KThread for the current host thread
+
+    namespace type {
         /**
          * @brief KThread manages a single thread of execution which is responsible for running guest code and kernel code which is invoked by the guest
          */
         class KThread : public KSyncObject, public std::enable_shared_from_this<KThread> {
+          public:
+            KProcess &process; //!< The process this thread belongs to
+
           private:
-            KProcess *parent;
             std::thread thread; //!< If this KThread is backed by a host thread then this'll hold it
             pthread_t pthread{}; //!< The pthread_t for the host thread running this guest thread
             timer_t preemptionTimer{}; //!< A kernel timer used for preemption interrupts
@@ -89,11 +93,11 @@ namespace skyline {
             bool isPaused{false}; //!< If the thread is currently paused and not runnable
             bool insertThreadOnResume{false}; //!< If the thread should be inserted into the scheduler when it resumes (used for pausing threads during sleep/sync)
 
-            static thread_local inline jit::JitCore32 *jit{nullptr}; //!< The JIT core this thread is running on, or nullptr if it's not currently running
+            jit::JitCore32 *jit{nullptr}; //!< The JIT core this thread is running on, or nullptr if it's not currently running
 
-            KThread(const DeviceState &state, KHandle handle, KProcess *parent, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore);
+            KThread(const DeviceState &state, KHandle handle, KProcess &process, size_t id, void *entry, u64 argument, void *stackTop, i8 priority, u8 idealCore);
 
-            virtual ~KThread();
+            ~KThread() override;
 
             /**
              * @param self If the calling thread should jump directly into guest code or if a new thread should be created for it
