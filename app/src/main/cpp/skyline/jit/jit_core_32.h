@@ -6,6 +6,7 @@
 #include <common.h>
 #include <dynarmic/interface/A32/a32.h>
 #include <kernel/svc_context.h>
+#include "coproc_15.h"
 #include "thread_context32.h"
 #include "halt_reason.h"
 
@@ -13,12 +14,13 @@ namespace skyline::jit {
     /**
      * @brief A wrapper around a Dynarmic 32-bit JIT object with additional state and functionality, representing a single core of the emulated CPU
      */
-    class JitCore32 : public Dynarmic::A32::UserCallbacks {
+    class JitCore32 final : public Dynarmic::A32::UserCallbacks {
       private:
         const DeviceState &state;
         u32 coreId;
         u32 lastSwi{};
 
+        std::shared_ptr<Coprocessor15> coproc15;
         Dynarmic::A32::Jit jit;
 
         /**
@@ -69,11 +71,13 @@ namespace skyline::jit {
 
         /**
          * @brief Sets the Thread Pointer register to the specified value
+         * @details Thread pointer is stored in TPIDRURO
          */
         void SetThreadPointer(u32 threadPtr);
 
         /**
          * @brief Sets the Thread Local Storage Pointer register to the specified value
+         * @details TLS is stored in TPIDRURW
          */
         void SetTlsPointer(u32 tlsPtr);
 

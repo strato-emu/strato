@@ -149,6 +149,7 @@ add_library(skyline SHARED
         ${source_DIR}/skyline/common/trace.cpp
         ${source_DIR}/skyline/common/trap_manager.cpp
         ${source_DIR}/skyline/logger/logger.cpp
+        ${source_DIR}/skyline/jit/coproc_15.cpp
         ${source_DIR}/skyline/jit/jit_core_32.cpp
         ${source_DIR}/skyline/jit/jit32.cpp
         ${source_DIR}/skyline/nce/guest.S

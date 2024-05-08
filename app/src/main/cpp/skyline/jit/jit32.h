@@ -13,7 +13,7 @@ namespace skyline::jit {
      */
     class Jit32 {
       public:
-        Jit32(DeviceState &state);
+        explicit Jit32(DeviceState &state);
 
         /**
          * @brief Gets the JIT core for the specified core ID

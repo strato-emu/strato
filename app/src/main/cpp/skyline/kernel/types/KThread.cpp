@@ -362,7 +362,7 @@ namespace skyline::kernel::type {
         jit = &state.jit32->GetCore(coreId);
 
         jit->RestoreContext(ctx);
-        jit->SetThreadPointer(0); // TODO: see if this is necessary at all
+        jit->SetThreadPointer(static_cast<u32>(handle)); // Probably unused by guest, set to the thread handle just in case
         jit->SetTlsPointer(static_cast<u32>(reinterpret_cast<uintptr_t>(tlsRegion)));
 
         jit->Run();

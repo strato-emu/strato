@@ -10,10 +10,14 @@ namespace skyline::jit {
     JitCore32::JitCore32(const DeviceState &state, u32 coreId) : state{state}, coreId{coreId}, jit{MakeDynarmicJit()} {}
 
     Dynarmic::A32::Jit JitCore32::MakeDynarmicJit() {
+        coproc15 = std::make_shared<Coprocessor15>();
+
         Dynarmic::A32::UserConfig config;
 
         config.callbacks = this;
         config.processor_id = coreId;
+
+        config.coprocessors[15] = coproc15;
 
         config.enable_cycle_counting = false;
 
@@ -79,11 +83,11 @@ namespace skyline::jit {
     }
 
     void JitCore32::SetThreadPointer(u32 threadPtr) {
-        // TODO: implement coprocessor 15
+        coproc15->tpidruro = threadPtr;
     }
 
     void JitCore32::SetTlsPointer(u32 tlsPtr) {
-        // TODO: implement coprocessor 15
+        coproc15->tpidrurw = tlsPtr;
     }
 
     u32 JitCore32::GetPC() {
