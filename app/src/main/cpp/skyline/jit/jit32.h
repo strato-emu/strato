@@ -20,6 +20,11 @@ namespace skyline::jit {
          */
         JitCore32 &GetCore(u32 coreId);
 
+        /**
+         * @brief Handles any signals in the JIT threads
+         */
+        static void SignalHandler(int signal, siginfo *info, ucontext *ctx);
+
       private:
         DeviceState &state;
         bool initialised{false};
