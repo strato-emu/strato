@@ -17,6 +17,7 @@ namespace skyline::jit {
     class JitCore32 final : public Dynarmic::A32::UserCallbacks {
       private:
         const DeviceState &state;
+        Dynarmic::ExclusiveMonitor &monitor;
         u32 coreId;
         u32 lastSwi{};
 
@@ -31,7 +32,7 @@ namespace skyline::jit {
         Dynarmic::A32::Jit MakeDynarmicJit();
 
       public:
-        JitCore32(const DeviceState &state, u32 coreId);
+        JitCore32(const DeviceState &state, Dynarmic::ExclusiveMonitor &monitor, u32 coreId);
 
         /**
          * @brief Runs the JIT
@@ -129,6 +130,11 @@ namespace skyline::jit {
         void MemoryWrite16(u32 vaddr, u16 value) override;
         void MemoryWrite32(u32 vaddr, u32 value) override;
         void MemoryWrite64(u32 vaddr, u64 value) override;
+
+        bool MemoryWriteExclusive8(u32 vaddr, std::uint8_t value, std::uint8_t expected) override;
+        bool MemoryWriteExclusive16(u32 vaddr, std::uint16_t value, std::uint16_t expected) override;
+        bool MemoryWriteExclusive32(u32 vaddr, std::uint32_t value, std::uint32_t expected) override;
+        bool MemoryWriteExclusive64(u32 vaddr, std::uint64_t value, std::uint64_t expected) override;
         // @fmt:on
 
         void InterpreterFallback(u32 pc, size_t numInstructions) override;
@@ -160,5 +166,16 @@ namespace skyline::jit {
          */
         template<typename T>
         void MemoryWrite(u32 vaddr, T value);
+
+        /**
+         * @brief Writes the given value to the memory at the given virtual address if the previous value matches the expected value
+         * @tparam T The type of the value to write
+         * @param vaddr The virtual address to write to
+         * @param value The value to write to memory
+         * @param expected The expected value to compare against
+         * @return True if the value was written, false otherwise
+         */
+        template<typename T>
+        bool MemoryWriteExclusive(u32 vaddr, T value, T expected);
     };
 }

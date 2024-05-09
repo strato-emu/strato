@@ -7,7 +7,8 @@
 #include "jit_core_32.h"
 
 namespace skyline::jit {
-    JitCore32::JitCore32(const DeviceState &state, u32 coreId) : state{state}, coreId{coreId}, jit{MakeDynarmicJit()} {}
+    JitCore32::JitCore32(const DeviceState &state, Dynarmic::ExclusiveMonitor &monitor, u32 coreId)
+        : state{state}, monitor{monitor}, coreId{coreId}, jit{MakeDynarmicJit()} {}
 
     Dynarmic::A32::Jit JitCore32::MakeDynarmicJit() {
         coproc15 = std::make_shared<Coprocessor15>();
@@ -16,6 +17,7 @@ namespace skyline::jit {
 
         config.callbacks = this;
         config.processor_id = coreId;
+        config.global_monitor = &monitor;
 
         config.coprocessors[15] = coproc15;
 
@@ -164,6 +166,13 @@ namespace skyline::jit {
             WriteUnaligned<T>(state.process->memory.base.data() + vaddr, value);
     }
 
+    template<typename T>
+    __attribute__((__always_inline__)) bool JitCore32::MemoryWriteExclusive(u32 vaddr, T value, T expected) {
+        auto ptr = reinterpret_cast<T *>(state.process->memory.base.data() + vaddr);
+        // Sync built-ins should handle unaligned accesses
+        return __sync_bool_compare_and_swap(ptr, expected, value);
+    }
+
     u8 JitCore32::MemoryRead8(u32 vaddr) {
         return MemoryRead<u8>(vaddr);
     }
@@ -194,6 +203,22 @@ namespace skyline::jit {
 
     void JitCore32::MemoryWrite64(u32 vaddr, u64 value) {
         MemoryWrite<u64>(vaddr, value);
+    }
+
+    bool JitCore32::MemoryWriteExclusive8(u32 vaddr, std::uint8_t value, std::uint8_t expected) {
+        return MemoryWriteExclusive<u8>(vaddr, value, expected);
+    }
+
+    bool JitCore32::MemoryWriteExclusive16(u32 vaddr, std::uint16_t value, std::uint16_t expected) {
+        return MemoryWriteExclusive<u16>(vaddr, value, expected);
+    }
+
+    bool JitCore32::MemoryWriteExclusive32(u32 vaddr, std::uint32_t value, std::uint32_t expected) {
+        return MemoryWriteExclusive<u32>(vaddr, value, expected);
+    }
+
+    bool JitCore32::MemoryWriteExclusive64(u32 vaddr, std::uint64_t value, std::uint64_t expected) {
+        return MemoryWriteExclusive<u64>(vaddr, value, expected);
     }
 
     void JitCore32::InterpreterFallback(u32 pc, size_t numInstructions) {

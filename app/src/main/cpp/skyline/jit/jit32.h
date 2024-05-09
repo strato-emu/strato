@@ -4,10 +4,13 @@
 #pragma once
 
 #include <array>
+#include <dynarmic/interface/exclusive_monitor.h>
 #include "common.h"
 #include "jit_core_32.h"
 
 namespace skyline::jit {
+    constexpr auto CoreCount{4};
+
     /**
      * @brief The JIT for the 32-bit ARM CPU
      */
@@ -27,8 +30,8 @@ namespace skyline::jit {
 
       private:
         DeviceState &state;
-        bool initialised{false};
 
-        std::array<jit::JitCore32, 4> cores;
+        Dynarmic::ExclusiveMonitor monitor;
+        std::array<jit::JitCore32, CoreCount> cores;
     };
 }

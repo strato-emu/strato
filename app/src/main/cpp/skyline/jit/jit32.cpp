@@ -9,19 +9,20 @@
 #include <loader/loader.h>
 
 namespace skyline::jit {
-    static std::array<JitCore32, 4> MakeJitCores(const DeviceState &state) {
+    static std::array<JitCore32, CoreCount> MakeJitCores(const DeviceState &state, Dynarmic::ExclusiveMonitor &monitor) {
         // Set the signal handler before creating the JIT cores to ensure proper chaining with the Dynarmic handler which is set during construction
         signal::SetHostSignalHandler({SIGINT, SIGILL, SIGTRAP, SIGBUS, SIGFPE, SIGSEGV}, Jit32::SignalHandler);
 
-        return {JitCore32(state, 0),
-                JitCore32(state, 1),
-                JitCore32(state, 2),
-                JitCore32(state, 3)};
+        return {JitCore32(state, monitor, 0),
+                JitCore32(state, monitor, 1),
+                JitCore32(state, monitor, 2),
+                JitCore32(state, monitor, 3)};
     }
 
     Jit32::Jit32(DeviceState &state)
         : state{state},
-          cores{MakeJitCores(state)} {}
+          monitor{CoreCount},
+          cores{MakeJitCores(state, monitor)} {}
 
     JitCore32 &Jit32::GetCore(u32 coreId) {
         return cores[coreId];
