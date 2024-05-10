@@ -21,6 +21,9 @@ namespace skyline::jit {
 
         config.coprocessors[15] = coproc15;
 
+        config.fastmem_pointer = state.process->memory.base.data();
+        config.fastmem_exclusive_access = true;
+
         config.enable_cycle_counting = false;
 
         return Dynarmic::A32::Jit{config};
