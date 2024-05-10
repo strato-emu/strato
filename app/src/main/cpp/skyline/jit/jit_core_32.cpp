@@ -5,6 +5,7 @@
 #include <kernel/types/KProcess.h>
 #include <kernel/svc.h>
 #include "jit_core_32.h"
+#include "exception.h"
 
 namespace skyline::jit {
     JitCore32::JitCore32(const DeviceState &state, Dynarmic::ExclusiveMonitor &monitor, u32 coreId)
@@ -21,9 +22,19 @@ namespace skyline::jit {
 
         config.coprocessors[15] = coproc15;
 
+        // Enable "safe" unsafe optimizations
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_UnfuseFMA;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN;
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_IgnoreGlobalMonitor;
+        config.unsafe_optimizations = true;
+
         config.fastmem_pointer = state.process->memory.base.data();
         config.fastmem_exclusive_access = true;
 
+        config.define_unpredictable_behaviour = true;
+
+        config.wall_clock_cntpct = true;
         config.enable_cycle_counting = false;
 
         return Dynarmic::A32::Jit{config};
@@ -225,7 +236,7 @@ namespace skyline::jit {
     }
 
     void JitCore32::InterpreterFallback(u32 pc, size_t numInstructions) {
-        // This is never called in practice.
+        LOGE("Interpreter fallback at 0x{:X} for {} instructions is not supported", pc, numInstructions);
         state.process->Kill(false, true);
     }
 
@@ -235,6 +246,7 @@ namespace skyline::jit {
     }
 
     void JitCore32::ExceptionRaised(u32 pc, Dynarmic::A32::Exception exception) {
-        // Do something.
+        LOGE("Exception raised at 0x{:X}: {}", pc, to_string(exception));
+        state.process->Kill(false, true);
     }
 }

@@ -25,20 +25,19 @@ namespace skyline::jit {
     };
 
     inline std::string to_string(HaltReason hr) {
+        #define CASE(x) case HaltReason::x: return #x
+
         switch (hr) {
-            case HaltReason::Step:
-                return "Step";
-            case HaltReason::CacheInvalidation:
-                return "CacheInvalidation";
-            case HaltReason::MemoryAbort:
-                return "MemoryAbort";
-            case HaltReason::Svc:
-                return "Svc";
-            case HaltReason::Preempted:
-                return "Preempted";
+            CASE(Step);
+            CASE(CacheInvalidation);
+            CASE(MemoryAbort);
+            CASE(Svc);
+            CASE(Preempted);
             default:
                 return "Unknown";
         }
+
+        #undef CASE
     }
 
     inline std::string to_string(Dynarmic::HaltReason dhr) {
