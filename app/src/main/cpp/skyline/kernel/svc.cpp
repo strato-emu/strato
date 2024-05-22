@@ -225,7 +225,7 @@ namespace skyline::kernel::svc {
                 .ipcRefCount = 0,
             };
 
-            fmt::format("Address: {}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Attributes: 0x{:X}, Permissions: {}", fmt::ptr(address), memInfo.address, memInfo.size, memInfo.type, memInfo.attributes, chunk->second.permission);
+            LOGD("Address: {}, Region Start: 0x{:X}, Size: 0x{:X}, Type: 0x{:X}, Attributes: 0x{:X}, Permissions: {}", fmt::ptr(address), memInfo.address, memInfo.size, memInfo.type, memInfo.attributes, chunk->second.permission);
         } else {
             u64 addressSpaceEnd{reinterpret_cast<u64>(state.process->memory.addressSpace.end().base())};
 
