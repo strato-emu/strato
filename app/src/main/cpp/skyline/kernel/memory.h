@@ -406,6 +406,19 @@ namespace skyline {
              * @return A span with `guestOffset` applied to it
              */
             span<u8> GetHostSpan(span<u8> guestSpan) const;
+
+            /**
+             * @brief Translates a guest virtual address to a host address
+             * @return The virtual address with `guestOffset` applied to it
+             */
+            u64 TranslateVirtualAddress(u64 vaddr) const;
+
+            /**
+             * @brief Translates a guest virtual address to a host address and returns a pointer of the specified type to it
+             * @return A pointer to the translated address of the specified type
+             */
+            template<typename T>
+            T TranslateVirtualPointer(u64 vaddr) const;
         };
     }
 }

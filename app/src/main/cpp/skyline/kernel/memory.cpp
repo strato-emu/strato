@@ -675,4 +675,16 @@ namespace skyline::kernel {
     __attribute__((always_inline)) span<u8> MemoryManager::GetHostSpan(span<u8> guestSpan) const {
         return {guestSpan.data() + guestOffset, guestSpan.size()};
     }
+
+    __attribute__((always_inline)) u64 MemoryManager::TranslateVirtualAddress(u64 vaddr) const {
+        return vaddr + guestOffset;
+    }
+
+    template<typename T>
+    __attribute__((always_inline)) T MemoryManager::TranslateVirtualPointer(u64 vaddr) const {
+        u64 paddr = TranslateVirtualAddress(vaddr);
+        auto *ptr = reinterpret_cast<void *>(paddr);
+
+        return reinterpret_cast<T>(ptr);
+    }
 }
