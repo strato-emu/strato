@@ -1052,7 +1052,7 @@ namespace skyline::kernel::svc {
                 break;
 
             case InfoState::UserExceptionContextAddr:
-                out = reinterpret_cast<u64>(state.process->tlsExceptionContext);
+                out = state.process->memory.TranslateHostAddress(state.process->tlsExceptionContext);
                 break;
 
             default:

@@ -59,7 +59,7 @@ namespace skyline::kernel {
             void *entry; //!< A function pointer to the thread's entry
             u64 entryArgument; //!< An argument to provide with to the thread entry function
             void *stackTop; //!< The top of the guest's stack, this is set to the initial guest stack pointer
-            u8 *tlsRegion{}; //!< The TLS region for this thread
+            u8 *tlsRegion{}; //!< The TLS region for this thread, this is a host pointer so it may need translation before use in guest code
 
             AdaptiveSingleWaiterConditionVariable scheduleCondition; //!< Signalled to wake the thread when it's scheduled or its resident core changes
             std::atomic<i8> basePriority; //!< The priority of the thread for the scheduler without any priority-inheritance
